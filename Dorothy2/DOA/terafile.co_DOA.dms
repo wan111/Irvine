@@ -1,0 +1,39 @@
+//Dorothy2
+//caption=terafile.co
+//version=0.1
+//hint=
+//match=http://terafile.co/\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+	common_load('download');
+this.main = function(url){
+	var http = download(url, false, {Cookie:'lang=english'});
+	if(http.responseHeader.code != 200){
+		DOA.comment = 'error> ' + http.responseHeader.code;
+		DOA.status = DOA_BS;
+		return;
+	}
+	if(http.data.match('<span style="width: 200px;">([^<]+)')){
+		DOA.name = RegExp.$1;
+		if(http.data.match('File Size:\s*<[^>]+>([^<]+)<')){
+			DOA.size = RegExp.$1;
+		}
+		DOA.status = DOA_OK;
+		return;
+	}
+	if(http.data.match('>File Not Found<')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'Flie Not Found';
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+this._ = function(){
+	
+};
+}
