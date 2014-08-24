@@ -1,0 +1,32 @@
+/*
+スクリプト初期化データ
+guid={8BFA7EB9-3A06-4BB3-A763-54C016E25104}
+caption=各スクリプトのショートカットを有効に
+version=0.1
+hint=
+event=OnCreate
+match=
+author=wan
+synchronize=0
+*/
+
+function OnCreate(){
+//アプリケーション開始イベント
+	var dcall = new DynaCall;
+	dcall.register('kernel32.dll','GetCurrentProcessId','f=s','r=u');
+	var processId = dcall.GetCurrentProcessId();
+	Win32.winExec ('wscript //E:JScript "' + WScript.ScriptFullName + '" ' + processId);
+}
+if(typeof IrvineInfo === 'undefined'){
+	var processId = WScript.Arguments(0);
+	var WshShell = new ActiveXObject('WScript.Shell');
+	var keys = ['M','T','Y','Z'];
+	for(var i=0; i < keys.length; i++){
+		for(var j = 0; j < 5; j++){
+			if(WshShell.AppActivate(processId) != -1) break;
+		}
+		WshShell.SendKeys("%T");
+		WshShell.SendKeys(keys[i] + "%");
+		WshShell.SendKeys("{ESC}");
+	}
+}

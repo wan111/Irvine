@@ -1,0 +1,51 @@
+//Dorothy2
+//caption=FileOm.com_DOA
+//version=0.12
+//hint=
+//match=http://fileom.com/\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download', 'utf8');
+//メイン
+this.main = function(url){
+	var url = new URL(url);
+	var http = download(url.url, false, {Cookie: 'lang=english'});
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('Filename: <span>([^<]+)<.+File Size: <span class="size">([^<]+)')){
+		DOA.status = DOA_OK;
+		DOA.size = RegExp.$2;
+		DOA.name = new Utf8(RegExp.$1).toSJIS();
+		return;
+	}
+	if(http.data.match('>File Not Found<')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File Not Found';
+		return;
+	}
+	if(http.data.match('>(This server is in maintenance mode[^<]*)<')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+	if(http.data.match('>(The file was removed by administrator)<')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
+}

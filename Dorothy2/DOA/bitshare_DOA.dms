@@ -1,0 +1,83 @@
+//Dorothy2
+//caption=BitShare.com
+//version=0.12
+//hint=
+//match=http://bitshare.com/(\?f=|files/|\?d=)
+//author=wan
+//path=DOA
+//end
+function(){
+//コンストラクタ
+	this.DOA_item_add2 = function(url,name,size){
+		a = frmDOA.ListView1.Items.add();
+		a.Caption = url;
+		a.url = url;
+		a.irvItem = -1;
+		a.doa_status = '';
+		a.doa_link   = '';
+		a.doa_name   = name;
+		DOA.urls.add(url);
+		a.SubItems.add('');
+		a.SubItems.add(size);
+		a.SubItems.add(name);
+		a.SubItems.add('');
+	};
+
+	common_load('download');
+//メイン
+this.main = function(url){
+	var http = download(url);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment='error> ' + http.responseHeader.code;
+		return;
+	}
+	if(url.indexOf('bitshare.com/?d=') == -1){
+		if(http.data.match('Error - File not available')){
+			DOA.comment='File not available';
+			DOA.status = DOA_NG;
+			return;
+		}
+		if(http.data.match(/<h1>Downloading (.*?) - (.*?)<\/h1>/)){
+			DOA.name = RegExp.$1.fromUTF8toSJIS();
+			DOA.size = RegExp.$2;
+			DOA.status = DOA_OK;
+			return;
+		}
+	}else{
+		DOA.status = DOA_LS;
+		if(http.data.indexOf('Folder does not contain any files!') != -1){
+			DOA.status_str = 'Folder';
+			DOA.comment = 'Folder does not contain any files!';
+			return;
+		}
+		if(http.data.match('>\s*(Folder can not be found!)\s*<')){
+			DOA.status = DOA_NG;
+			DOA.comment = RegExp.$1;
+			return;
+		}
+		if(http.data.match('<table style="width:100%;" class="basic">(.+?)</table>')){
+			var tmp = RegExp.$1;
+			var count = 0;
+			tmp.replace('<td><img src=[^>]+> <a href="([^"]+)">([^<]+)</a></td>\s*<td[^>]+>([^<]+)','g',function(m,url,name,size){
+				DOA_item_add2(url, name.fromUTF8toSJIS(), size);
+				count++;
+			});
+			http.data.match('<h1>View public folder "([^"]+)');
+			DOA.name = RegExp.$1.fromUTF8toSJIS();
+			tmp.match('Total file size:</td>\s*<td[^>]+>([^<]+)');
+			DOA.comment = RegExp.$1;
+			DOA.status_str = 'Folder(' + count + ')';
+			return;
+		}
+	}
+	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

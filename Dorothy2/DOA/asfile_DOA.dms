@@ -1,0 +1,57 @@
+//Dorothy2
+//caption=asfile.com
+//version=0.12
+//hint=
+//match=^http://(www\.)?asfile.com/([a-zA-Z]{2}/free-download/)?file/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('http');
+//メイン
+this.main = function(url){
+	urlinfo.url.match('^http://(www\.)?asfile.com/([a-zA-Z]{2}/free-download/)?file/(\w+)');
+	var file_id = RegExp.$3;
+	var url = new URL('http://asfile.com/file/' + file_id);
+
+	
+	//var http = download(url.url, true, {Cookie: ''});
+	var http = new Http({autoRedirect: true});
+	http.get(url.url);
+	if(http.responseHeader.code != 200){
+		if(http.data.match('<h2>Page not found</h2>')){
+			DOA.status = DOA_NG;
+			DOA.comment = 'Page not found';
+			return;
+		}
+		DOA.status = DOA_BS;
+		return;
+	}
+	if(http.data.match('>File is deleted<')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File is deleted';
+		return;
+	}
+	if(http.data.match('>File does not exist<')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File does not exist';
+		return;
+	}
+	if(http.data.match('Download:</div><div class=.+?><strong>([^<]+)</strong>.+?File size:</div><div class=.+?>([^<]+)</div>')){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		DOA.size = RegExp.$2;
+		if(http.data.match('This file is available only to premium users\s*</p>')) DOA.status_str = 'Premium Only';
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

@@ -1,0 +1,39 @@
+//Dorothy2
+//caption=FileOm.com
+//version=0.13
+//hint=fileom.com
+//match=http://fileom.com/\w+
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	var ini = new Ini(Dorothy.userIniPath);
+	var exp_enabled = ini.read('exp_setting', 'enabled', true);
+	var exp_minuts = ini.read('exp_setting', 'minuts', 60);	
+	
+	if(exp_enabled){
+		common_load('Expiration');
+		var exp = new Expiration(urlinfo.url, exp_minuts);
+		if(exp.check()) return;
+	}
+	common_load('Aset');
+	var url = urlinfo.url;
+	Aset_sync = true;
+	Aset_sync_name = Dorothy.matchFile + urlinfo.proxy;
+	Aset_wait = function(data){
+		if(data.match('<div class="err"><center>(.+?)</center>')){
+			println(RegExp.$1);
+			exit();
+		}
+	};
+	Aset_link = function(data){
+		if(data.match("var url2 = '([^']+)")){
+			Aset_link_str = RegExp.$1;
+			return true;
+		}
+		return false;
+	};
+	Aset();
+	if(exp_enabled && url != urlinfo.url) exp.update();
+}

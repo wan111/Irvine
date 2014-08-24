@@ -1,0 +1,71 @@
+//Dorothy2
+//caption=DOA
+//version=1.0
+//hint=DOA新規作成
+//match=
+//author=wan
+//path=system\new
+//end
+//===========================
+//
+//===========================
+function new_def(){
+	frm = new VCLForm(true); //trueを渡すとメインフォームとなります
+	frm.loadFromFile(dorothy2_system + 'Unit6.dfm');
+	frm.hint = 'DOA新規作成';
+	
+	frm.Edit1.Text = USER_NAME;
+
+	frm.OKBtn.onClick = function(){
+			var p_name = frm.Edit2.Text;
+			if(p_name == ''){
+				alert('ファイル名を入力して下さい。');
+				return;
+			}
+			p_name = p_name + '.dms';
+			if(new File(dorothy2_path + 'DOA\' + p_name).exists()){
+				alert('ファイルが既に在ります');
+				return;
+			}
+			var editor_name = Irvine.GetOptionData('general' ,'editor');
+			if(editor_name == ''){
+				editor_name = 'notepad.exe';
+			}
+			var s = new Strings();
+			s.add('//Dorothy2');
+			s.add('//caption=' + frm.Edit3.Text);
+			s.add('//version=');
+			s.add('//hint=' + frm.Edit4.Text);
+			s.add('//match=');
+			s.add('//author=' + frm.Edit1.Text);
+			s.add('//path=DOA');
+			s.add('//priority=	//設定していない場合は500になる');
+			s.add('//end');
+			s.add('function(){');
+			s.add('//コンストラクタ');
+			s.add('	');
+			s.add('//メイン');
+			s.add('this.main = function(url){');
+			s.add('	');
+			s.add('};');
+			s.add('');
+			s.add('');
+			s.add('//デストラクタ');
+			s.add('this._ = function(){');
+			s.add('	');
+			s.add('};');
+			s.add('}');
+			var ivp = new irvinePath;
+			var path = dorothy2_path + 'DOA\';
+			var d =  new Directory(path);
+			if(! d.exists()){
+				d.make();
+			}
+			s.saveToFile(path + p_name);
+			frm.close();
+			//run
+			Win32.shellExecute('open' , '"' + editor_name + '"' ,  '"' + path + p_name + '"');
+			return;
+	};
+	frm.showModal();
+}

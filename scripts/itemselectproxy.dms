@@ -1,0 +1,175 @@
+/*
+スクリプト初期化データ
+guid={D52B8F66-060D-45EA-85BE-3E2E82BBA624}
+caption=プロキシリストから選択しコメントに書き込む
+version=0.2
+hint=フォルダのプロキシリストからプロキシを選択しそれをアイテムのコメントに書き込む
+event=OnListMenuClick
+match=
+author=wan
+synchronize=0
+*/
+
+function OnListMenuClick(irvine,action){
+//キューリストメニューのクリックイベント
+//var filename = new File().extractPath(irvine.IniFilename);
+//ツール->プロキシリスト設定 の今現在のリストの取得方法が分からないので各フォルダのリストから取得
+//フォルダの場合はirvine.save()で各フォルダのhttpproxy.iniファイルを更新できるから今現在の状態を取得できる
+irvine.save();
+var qfolder = irvine.IniFilename.match(/^.+\\/) + 'queue' + irvine.CurrentQueueFolder;
+var proxy1 = new File(qfolder + '\httpproxy.ini');
+//var proxy2 = new File(qfolder + '\ftpproxy.ini');
+var ini = new Ini(irvine.ApplicationPath.match('^.+\\') + 'wan.ini');
+var proxy2 = new File(ini.read('itemproxy','file',''));
+
+
+try{
+	proxy1.open('r');
+	proxy2.open('r');
+}catch(e){
+	println(e);
+	proxy1.exists() ? '' : println('ファイルが見つからない>' + proxy1);
+	proxy2.exists() ? '' : println('ファイルが見つからない>' + proxy2);
+//	exit();
+}
+frm = new VCLForm(true);
+	frm.Position = 'poScreenCenter';
+	frm.width = 470;
+	frm.height = 420;
+	frm.Caption = 'Proxy';
+	frm.BorderStyle = 'bsDialog';
+	
+	Label1 = new VCLLabel(frm);
+	Label1.left = 10;
+	Label1.top = 15;
+	Label1.caption = 'HTTP';
+	
+	Label2 = new VCLLabel(frm);
+	Label2.left = 235;
+	Label2.top = 15;
+//	Label2.Caption = 'FTP';
+	Label2.Caption = 'File';
+	
+	Edit1 = new VCLEdit(frm);
+	Edit1.left = 260;
+	Edit1.top = 8;
+	Edit1.width = 180;
+	Edit1.TabOrder = 4;
+	Edit1.text = proxy2;
+	
+	Btn1 = new VCLButton(frm);
+	Btn1.left = 440;
+	Btn1.top = 8;
+	Btn1.width = 20;
+	Btn1.height = 20;
+	Btn1.Caption = '...';
+	Btn1.TabOrder = 5;
+	
+	ListView1 = new VCLListBox(frm);
+	ListView1.left = 5;
+	ListView1.top = 30;
+	ListView1.width = 225;
+	ListView1.height = 320;
+	ListView1.TabOrder = 0;
+	
+	ListView2 = new VCLListBox(frm);
+	ListView2.left = 235;
+	ListView2.top = 30;
+	ListView2.width = 225;
+	ListView2.height = 320;
+	ListView2.TabOrder = 1;
+	
+	OKBtn = new VCLButton(frm);
+	OKBtn.left = 280;
+	OKBtn.top = 356;
+	OKBtn.Caption = 'OK(&O)';
+	OKBtn.TabOrder = 2;
+	
+	CancelBtn = new VCLButton(frm);
+	CancelBtn.left = 380;
+	CancelBtn.top = 356;
+	CancelBtn.Caption = 'キャンセル(&C)';
+	CancelBtn.TabOrder = 3;
+	
+	if(proxy1 != '') while(!proxy1.eof()) ListView1.Items.add(proxy1.readln());
+	if(proxy2 != '') while(!proxy2.eof()) if(/^([^\s\t]+)/.test(proxy2.readln()))ListView2.Items.add(RegExp.$1);
+	
+	ListView1.onClick = function(){
+		ListView2.ItemIndex = -1;
+	};
+	ListView2.onClick = function(){
+		ListView1.ItemIndex = -1;
+	};
+	
+	Btn1.onClick = function(){
+		d = new Dialog('テキストファイル (*.txt)|*.txt','すべてのファイル (*.*)|*.*');
+		if(!(proxy2.filename = d.openFile('proxyリストファイルを選択'))) return;;
+		try{
+			proxy2.open('r');
+		}catch(e){
+			alert(e);
+			return;
+		}
+		Edit1.text = proxy2.filename;
+		ListView2.Items.clear();
+		while(!proxy2.eof()) if(/^([^\s\t]+)/.test(proxy2.readln()))ListView2.Items.add(RegExp.$1);
+	};
+	
+	var item = new IrvineItem;
+	OKBtn.onClick = function(){
+		if((index = ListView1.ItemIndex) != -1){
+			try{
+				for(var i = 0; i < irvine.ItemCount; i++){
+					if (irvine.GetItemSelected(i)){
+						item.data = irvine.GetItemData(i);
+						item.comment = ListView1.Items[index];
+						irvine.SetItemData(i, item.data);
+						irvine.ProgressBarStepBy(1);
+					}
+				}
+			}
+			finally{
+				irvine.EndProgressBar();
+				irvine.Invalidate();
+			}
+		}else if((index = ListView2.ItemIndex) != -1){
+			//alert('FTPプロキシの設定は未完成');
+			try{
+				for(var i = 0; i < irvine.ItemCount; i++){
+					if (irvine.GetItemSelected(i)){
+						item.data = irvine.GetItemData(i);
+						item.comment = ListView2.Items[index];
+						irvine.SetItemData(i, item.data);
+						irvine.ProgressBarStepBy(1);
+					}
+				}
+			}
+			finally{
+				irvine.EndProgressBar();
+				irvine.Invalidate();
+			}
+			
+		}
+		if(!irvine.IsBusy()){
+			ini.eraseSection('proxy');
+		}
+
+		ini.write('itemproxy','file',Edit1.text);
+		ini.update();
+		frm.close();
+	};
+	CancelBtn.onClick = function(){
+		frm.close();
+	};
+	
+	frm.showModal();
+	//eventLoop();
+	
+	action.shortcut=8272;
+}
+
+function OnMenuUpdate(irvine,action){
+//メニューの更新イベント
+	action.shortcut=8272;
+	action.enabled = (irvine.SelectedItemCount > 0);
+}

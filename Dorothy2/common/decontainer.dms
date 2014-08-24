@@ -1,0 +1,99 @@
+//Dorothy2
+//caption=decontainer
+//version=0.11
+//hint=Linkcontainer Formats decrypt
+//match=
+//author=wan
+//path=commom
+//priority=
+//end
+/*
+RSDF(Rapidshare Downloader Format)
+CCF(Cryptload Container Format)
+DLC(Download Link Container)
+
+nC decontainer v0.61 (c) netCoders.cc
+http://pansemuckl.netcoders.cc/nCdecontainer
+http://www.netcoders.cc/forum/showthread.php?405-Release-nCdecontainer-(DLC-CCF-RSDF-container-decrypter)
+*/
+function decontainer(data, filename, formats){
+	common_load('call');
+	var exepath = Dorothy.path + 'bin\nCdecontainer_console.exe';
+	var f_exe = new File(exepath);
+	if(!f_exe.exists()){
+		println(f_exe.filename + ' が見つからない');
+		println('nC decontainerが必要です');
+		println('nCdecontainer_console.exeをDorothy2\binフォルダに置いてください');
+		return false;
+	}
+
+	var mutex= new Mutex('decontainer');
+	if(mutex.existed) println('mutex 待機');
+	mutex.lock();
+
+	filename = filename || 'container';
+	var ext = '.dlc';
+	if(/^(dlc|ccf|rsdf)$/.test(formats)
+	|| /\.(dlc|ccf|rsdf)$/.test(filename)){
+		ext = '.' + (RegExp.$1).toLowerCase();
+	}
+	var dirpath = Dorothy.path + 'common\decontainer\';
+	var batpath = dirpath + 'nCdecontainer.bat';
+	var txtpath = dirpath + 'decontainer.txt';
+	var lcfpath = dirpath + filename;
+	
+	
+	var dir = new Directory(dirpath);
+	var f_txt = new File(txtpath);
+	var f_lcf = new File(lcfpath);
+	f_lcf.filename = lcfpath = f_lcf.changeExt(ext);
+	if(!dir.exists()) dir.make();
+	if(f_txt.exists()) f_txt.remove();
+	if(f_lcf.exists()) f_lcf.remove();
+
+	try{
+		f_lcf.open('w');
+		f_lcf.write(data.replace('\n',''));
+	}catch(e){
+		println('error> ' + e);
+		mutex.unlock();
+		return false;
+	}finally{
+		f_lcf.close();
+	}
+	
+	var ret = call(batpath, '"' + lcfpath + '"', dirpath, 1000);
+	
+	f_lcf.remove();
+	if(!ret){
+		mutex.unlock();
+		return false;
+	}
+	if(!f_txt.exists()){
+		println('エラー');
+		println(f_txt.filename + 'が作成されませんでした');
+		mutex.unlock();
+		return false;
+	}
+	
+	try{
+		f_txt.open('r');
+		var plaintext = [];
+		while(!f_txt.eof()){
+			var tmp = f_txt.readln();
+			if(tmp == '\n') continue;
+			plaintext.add(tmp);
+		}
+	}catch(e){
+		println('error> ' + e);
+		println(f_txt.filename + 'のオープンに失敗');
+		mutex.unlock();
+		return false;
+	}finally{
+		f_txt.close();
+		f_txt.remove();
+	}
+	
+	mutex.unlock();
+	return plaintext;
+}

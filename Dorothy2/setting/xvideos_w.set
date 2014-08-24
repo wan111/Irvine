@@ -1,0 +1,94 @@
+//Dorothy2
+//caption=xvideos_w用設定
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function(){
+	common_load('EZDialog');
+
+	var dir=new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+
+	var ini=new Ini(Dorothy.userIniPath);
+	
+	var v={};
+	v.savename=ini.read('FILENAME','savename','%TITLE%');
+	v.tag_max=ini.read('FILENAME', 'tag_max', 20);
+
+	//ダイアログ
+	var d=new EZDialog('xvideos_w');
+	
+	d.prototype.spinEdit=function(value, MinValue, MaxValue, width, fontName, fontSize){
+		var tmp=new VCLSpinEdit(this.p);
+		if(isUndefined(value)||isNull(value)){
+			value=0;
+		}
+		if(!isUndefined(MinValue)&&!isNull(MinValue)){
+			tmp.MinValue=MinValue;
+		}
+		if(!isUndefined(MaxValue)&&!isNull(MaxValue)){
+			tmp.MaxValue=MaxValue;
+		}
+		if(!isUndefined(width)&&!isNull(width)){
+			tmp.width=width;
+		}
+		if(!isUndefined(fontName)&&!isNull(fontName)){
+			tmp.font.name=this.fontEx(fontName);
+		}
+		if(!isUndefined(fontSize)&&!isNull(fontSize)){
+			tmp.font.size=fontSize;
+		}
+		tmp.Value=value;
+		tmp.top=this.top;
+		tmp.left=this.left+this.marginLeft;
+		s=tmp.left+tmp.width;
+		if(s>p.width){
+			p.width=s+marginRight;
+		}
+		if(this.maxWidth<p.width){
+			this.maxWidth=p.width;
+		}
+		this.lf(tmp);
+		return tmp;
+	};
+
+	
+	var width = d.sWidth('%TITLE% %NAME% %DURATION% %VIDEO_ID% %TAGS% %MODELS%');
+	var group1 = d.group('保存ファイル名(拡張子不要)');
+	var label1 = d.label('%TITLE%------タイトル', null, null, 'g');
+	var lavel2 = d.label('%NAME%-------投稿者', null, null, 'g');
+	var lavel3 = d.label('%DURATION%---再生時間', null, null, 'g');
+	var lavel4 = d.label('%VIDEO_ID%---動画ID', null, null, 'g');
+	var lavel5 = d.label('%TAGS%-------タグ', null, null, 'g');
+	var lavel6 = d.label('%MODELS%-----モデル', null, null, 'g');
+	var savename = d.edit(v.savename, width);
+	d.groupEnd(group1);
+	
+	var group2 = d.group('');
+	d.contOn();
+	var lavel7 = d.label('タグ最大数', null, null, 'g');
+	d.heightSpace(-5);
+	var tag_max = d.spinEdit(v.tag_max, 0);
+	d.contOff();
+	d.groupEnd(group2);
+	
+	var ok=d.ok_cancel();
+	
+	if(1!=d.showModal()){
+		return;
+	}
+
+	//設定ファイル更新
+	ini.write('FILENAME', 'savename', savename.Text);
+	ini.write('FILENAME', 'tag_max', tag_max.Value);
+	ini.update();
+
+	return;
+
+}

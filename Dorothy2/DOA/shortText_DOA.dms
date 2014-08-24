@@ -1,0 +1,50 @@
+//Dorothy2
+//caption=shorText.com
+//version=0.11
+//hint=
+//match=http://short[tT]ext.com/\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	var http = download(url);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error: ' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('<div align="(justify|left)">(.+?)</div>')){
+		var data = RegExp.$2;
+		var urls = data.match(/href='[^']+'/g);
+		if(!urls){
+			DOA.status = DOA_OK;
+			DOA.comment = 'URLリンクは一つもありません';
+			return;
+		}
+		for(var i = 0 ; i < urls.length; i++){
+			urls[i].match(/href='([^']+)/);
+			DOA_item_add(RegExp.$1.fromUTF8toSJIS());
+		}
+		DOA.status = DOA_LS;
+		DOA.comment = urls.length + ' 個のリンク';
+		return;
+	}
+	if(http.data.match(/<span id="lblSysErrors"[^>]*>(<[^>]+>)?([^<]+)/)){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$2;
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

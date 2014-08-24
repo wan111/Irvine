@@ -1,0 +1,98 @@
+//Dorothy2
+//caption=DataFile.com
+//version=0.12
+//hint=
+//match=https?://(www\.)?datafile.com/d/\w+
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('Expiration');
+	var exp=new Expiration();
+	if(exp.check())return;
+
+	common_load('download', 'post', 'l_sleep','reCaptcha', 'utf8', 'character_references', 'fileSave');
+	
+	var reCaptchaKey = '6LdWgNgSAAAAACXqFKE69ttVU-CfV-IruHtDKCUf';
+
+	urlinfo.url.match('(https?://(www\.)?)datafile.com/d/(\w+)');
+	var fileid = RegExp.$3;
+	var url = new URL(RegExp.$1 + 'datafile.com/d/' + fileid);
+	
+	var myHeader={};
+	myHeader.Cookie=new Cookie();
+	
+	var http = download(url.url, true, myHeader);
+	if(http.responseHeader.code != 200){
+		return retry('error>' + http.responseHeader.code);
+	}
+	myHeader.Cookie.parse('',http.responseHeader.cookie.data);
+	
+	if(http.data.match('(ErrorCode\s*\d+: [^<]+)\s*<')){
+		println('error> ' + RegExp.$1);
+		exit();
+	}
+	if(http.data.match('<div class="only-premium"[^>]*>\s*<div>(.+?)</div>')){
+		var tmp = RegExp.$1.replace(/<[^>]+>/g, ' ');
+		println(tmp);
+		exit();
+	}
+	
+	var wait = 0, filename = '', size = '';
+	if(http.data.match(/contdownTimer\('(\d+)'/)){
+		wait = RegExp.$1;
+	}
+	if(http.data.match('<div class="file-name">([^<]+)')){
+		filename = RegExp.$1;
+		filename = new Utf8(filename).decodeCharRef().toSJIS();
+	}
+	if(http.data.match('<div class="file-size">Filesize:\s*<[^>]+>([^<]+)')){
+		size = RegExp.$1;
+	}
+	
+	println('filename: ' + filename);
+	println('filesize: ' + size);
+	println('wait ' + wait + ' sec');
+	l_sleep(wait * 1000);
+
+	var ret=reCaptcha(reCaptchaKey);
+	if(ret.error){
+		println('error reCaptcha');
+		exit();
+	}
+
+	var post_data = 'doaction=getFileDownloadLink' + 
+		'&recaptcha_challenge_field=' + ret.textarea +
+		'&recaptcha_response_field=' +  ret.recaptcha_response_field +
+		'&fileid=' + fileid;
+	var post_url = url.expand('/files/ajax.html');
+	println('post_url>' + post_url);
+	println('post_data>' + post_data);
+	
+	http = post(post_url, post_data, false, myHeader);
+	if(http.responseHeader.code != 200){
+		return retry('error> post ' + http.responseHeader.code);
+	}
+	println(http.data);
+	if(http.data.match('"success":0')){
+		if(http.data.match('"msg":"([^"]+)')){
+			println('error> ' + RegExp.$1.replace(/<[^>]+>/g, ' '));
+		}
+		exit();
+	}
+	if(!http.data.match('"link":"([^"]+)')){
+		println('link‚ªŒ©‚Â‚©‚ç‚È‚¢');
+		fileSave('datafile_error.html', http.data);
+		exit();
+	}
+	var url2 = new URL(RegExp.$1.replace('\\/','g','/'));
+	
+	if(!filename.match('\.\.\.$')){ //ƒtƒ@ƒCƒ‹–¼‚ªÈ—ª‚³‚ê‚Ä‚¢‚é‚©
+		Dorothy.fileName = character_references(filename);
+	}
+	urlinfo.url = url2.url;
+	headers.host = url2.host;
+	
+	exp.update();
+}

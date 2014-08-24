@@ -1,0 +1,35 @@
+//Dorothy2
+//caption=URX.NU
+//version=0.1
+//hint=
+//match=http://urx.nu/\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('http');
+//メイン
+this.main = function(url){
+	var http = new Http();
+	http.head(url);
+	if(typeof http.responseHeader.location == 'undefined'){
+		DOA.comment = DOA_NG;
+		DOA.status = http.responseHeader.code;
+		return;
+	}
+	if(http.responseHeader.location){
+		DOA.status = DOA_LK;
+		DOA.link = http.responseHeader.location;
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
+}

@@ -1,0 +1,22 @@
+//Dorothy2
+//caption=xerver.co
+//version=0.1
+//hint=
+//match=http://xerver.co
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('Aset');
+	
+	Aset_link = function(data){
+		if(data.match("<a class=\"btn btn-primary btn-block\" href=\"([^\"]+)\"[^>]*>CLICK HERE TO DOWNLOAD</a>")){
+			Aset_link_str = RegExp.$1;
+			return true;
+		}
+		return false;
+	};
+	
+	Aset();
+}

@@ -1,0 +1,85 @@
+//Dorothy2
+//caption=uploaded.to
+//version=0.12
+//hint=
+//match=http://uploaded\.(to|net)/(file|folder|list)/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	this.DOA_item_add2 = function(url,name,size){
+		a = frmDOA.ListView1.Items.add();
+		a.Caption = url;
+		a.url = url;
+		a.irvItem = -1;
+		a.doa_status = '';
+		a.doa_link   = '';
+		a.doa_name   = name;
+		DOA.urls.add(url);
+		a.SubItems.add('');
+		a.SubItems.add(size);
+		a.SubItems.add(name);
+		a.SubItems.add('');
+	};
+	common_load('download','character_references');
+//メイン
+this.main = function(url){
+	var url = new URL(urlinfo.url);
+	http = download(url.url,true,{'Cookie': ''});
+	if(http.responseHeader.code != 200){
+		if(http.data.match(/<h1>([^<]+)<br \/><small class="cL">([^<]+)<\/small/)){
+			DOA.status = DOA_NG;
+			DOA.comment = RegExp.$2 + ' ' + RegExp.$1;
+			return;
+		}
+		DOA.status = DOA_BS;
+		DOA.comment = 'error-> ' + http.responseHeader.code;
+		return;
+	}
+	if(url.url.match('http://uploaded\.(to|net)/(folder|list)/([^/]+)')){
+		var id = RegExp.$3;
+		DOA.status = DOA_LS;
+		var s = new Strings;
+		if(/plain\/?$/.test(url.url)){
+			s.text = http.data;
+			http = download('http://uploaded.to/folder/' + id,true);
+		}else{
+			http2 = download('http://uploaded.to/list/' + id + '/plain',true);
+			s.text = http2.data;
+		}
+		for(i in s){
+			files = new URL(s[i]).filename;
+			DOA_item_add2(s[i],decodeURI(files).fromUTF8toSJIS(),'');
+		}
+		if(http.data.match(/<span title=[^>]+>(\(\d+\)).+?">([^<]+)/)){
+			DOA.status_str = 'Folders' + RegExp.$1;
+			DOA.name = RegExp.$2;
+		}
+		/*遅い
+		if(DOA.name=='') return;
+		var size = http.data.match(/<small class="cL"[^>]+>([^<]+)</g);
+		for(i in s){
+			files = new URL(s[i]).filename;
+			DOA_item_add2(s[i],decodeURI(files).fromUTF8toSJIS(),size[i].match(/">([^<]+)</)?RegExp.$1:'');
+		}
+		*/
+		return;
+	}
+	if(http.data.match(/id="filename">([^<]+).+?">([^<]+)<\/small/)){
+		DOA.status = DOA_OK;
+		DOA.size = RegExp.$2;
+		DOA.name = character_references(RegExp.$1.fromUTF8toSJIS());
+		return;
+	}
+
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

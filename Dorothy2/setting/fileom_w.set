@@ -1,0 +1,96 @@
+//Dorothy2
+//caption=FileOm.com—pÝ’è
+//version=0.2
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function(){
+	common_load('EZDialog');
+	
+	var dir = new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+	var ini = new Ini(Dorothy.userIniPath);
+	var conf = {
+		enabled: ini.read('exp_setting', 'enabled', true),
+		minuts: ini.read('exp_setting', 'minuts', 60),
+		resume: ini.read('exp_setting', 'resume', false),
+		resume_minuts: ini.read('exp_setting', 'resume_minuts', 60),
+		proxy_match: ini.read('exp_setting', 'proxy_match', false)
+	};
+	var exp_set = file_load(dorothy2_setting + 'Expiration_w.set');
+
+	var ez = new EZDialog('FileOm.com', 0, 0);
+	ez.prototype.spinEdit=function(value, MinValue, MaxValue, width, fontName, fontSize){
+		var tmp=new VCLSpinEdit(this.p);
+		if(isUndefined(value)||isNull(value)){
+			value=0;
+		}
+		if(!isUndefined(MinValue)&&!isNull(MinValue)){
+			tmp.MinValue=MinValue;
+		}
+		if(!isUndefined(MaxValue)&&!isNull(MaxValue)){
+			tmp.MaxValue=MaxValue;
+		}
+		if(!isUndefined(width)&&!isNull(width)){
+			tmp.width=width;
+		}
+		if(!isUndefined(fontName)&&!isNull(fontName)){
+			tmp.font.name=this.fontEx(fontName);
+		}
+		if(!isUndefined(fontSize)&&!isNull(fontSize)){
+			tmp.font.size=fontSize;
+		}
+		tmp.Value=value;
+		tmp.top=this.top;
+		tmp.left=this.left+this.marginLeft;
+		s=tmp.left+tmp.width;
+		if(s>p.width){
+			p.width=s+marginRight;
+		}
+		if(this.maxWidth<p.width){
+			this.maxWidth=p.width;
+		}
+		this.lf(tmp);
+		return tmp;
+	};
+	var group1 = ez.group('Expiration');
+	var check1 = ez.checkBox('Œp‘±î•ñ‚ðŽg—p‚·‚é', conf.enabled);
+	
+	ez.contOn();
+	var label1 = ez.label('—LŒøŠúŒÀ(•ª)', null, null, 'g');
+	label1.top += 5;
+	var spin1 = ez.spinEdit(conf.minuts, 0, null);
+	ez.contOff();
+	
+	
+	var b1 = ez.button('Œp‘±î•ñ‚ð‘Síœ');
+	var b2 = ez.button('Œp‘±î•ñ‚ð‘I‘ð‚µ‚Äíœ');
+	ez.groupEnd(group1);
+	
+	b1.onClick = function(){
+		b1.enabled = false;
+		try{
+			ini.eraseSection('Expiration');
+			ini.eraseSection('Expiration2');
+			ini.eraseSection('Expiration3');
+			ini.eraseSection('Expiration4');
+		}catch(){}
+	};
+	b2.onClick = function(){
+		eval(exp_set)(ini);
+	};
+	var ok_cancel=ez.ok_cancel();
+	var ret=ez.showModal();
+	if(ret!=1){
+		return;
+	}
+	
+	ini.write('exp_setting', 'enabled', check1.checked);
+	ini.write('exp_setting', 'minuts', spin1.Value);
+	ini.update();
+}

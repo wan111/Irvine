@@ -1,0 +1,220 @@
+//Dorothy2
+//caption=JSON
+//version=0.11
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+
+/*
+JSON形式の文字列をオブジェクトに変換する 失敗した場合はfalseを返す
+text: オブジェクトに変換するJSON形式の文字列 改行されているものはJSON文字列と見なしません
+esc: trueならエスケープ文字を元の文字に変換します
+     falseなら '\u[4桁の16進数]'→'&#x[4桁の16進数];' '\/'→'/' と変換して他のエスケープ文字は変換しません
+      (Dmonkeyでは"\/"や"\u[16進数]"はエスケープ文字ではないため消えてしまう)
+     デフォルトはtrue
+*/
+function parseJSON(text, esc){
+	if(!text || !(typeof text == 'string' || nameOf(text) == 'String')) return false;
+	esc = typeof esc == 'boolean' ? esc : true;
+
+	//rentan氏のutf8.dmsから拝借
+	var fromUnicode = function (u) {
+		if (u <= 0x7f) {
+			return String.fromCharCode (u);
+		}
+		if (u <= 0x7ff) {
+			var n1 = u >> 6;
+			var n2 = u & 0x3f;
+			return String.fromCharCode (n1 + 0xc0, n2 + 0x80);
+		}
+		if (u <= 0xffff) {
+			var n1 = u >> 12;
+			var n2 = (u >> 6) & 0x3f;
+			var n3 = u & 0x3f;
+			return String.fromCharCode (n1 + 0xe0, n2 + 0x80, n3 + 0x80);
+		}
+		if (u <= 0x1fffff) {
+			var n1 = u >> 18;
+			var n2 = (u >> 12) & 0x3f;
+			var n3 = (u >> 6) & 0x3f;
+			var n4 = u & 0x3f;
+			return String.fromCharCode (n1 + 0xf0, n2 + 0x80, n3 + 0x80, n4 + 0x80);
+		};
+
+		return '';
+	};
+
+	var fromEscape = function(s){
+		switch(typeof s){
+			case 'string':
+				s = s.replace(/&#x([\da-fA-F]{4});/g, function(a, b){return fromUnicode('0x' + b);});
+				break;
+			case 'object':
+				switch(nameOf(s)){
+					case 'Object':
+						for(var key in s){
+							s[key] = fromEscape(s[key]);
+						}
+						break;
+					case 'Array':
+						for(var i = 0; i < s.length; i++){
+							s[i] = fromEscape(s[i]);
+						}
+						break;
+				}
+				break;
+		}
+		return s;
+	};
+
+	//json2.js https://github.com/douglascrockford/JSON-js から拝借
+	var reg_remaining = /^[\],:{}\s]*$/;
+	var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
+	var reg_tokens = /"[^"\\\n\r]*"|true|false|null|-?\d+(\.\d*)?([eE][+\-]?\d+)?/g;
+	var reg_brackets = /(^|:|,)(\s*\[)+/g;
+
+	if(reg_remaining.test(text.replace(reg_escape, '@')
+	  .replace(reg_tokens, ']')
+	  .replace(reg_brackets, ''))){
+
+		//Dmonkeyでは"\/"や"\u[16進数]"はエスケープ文字ではないため消えてしまうので置換
+		text = text.replace(/\\(\/)/g, '$1');
+		//text = text.replace(/(\\*)\\(u[\da-f]{4})/g, function(a, b, c){return (b.length % 2 == 0) ? b + '\\' + c: a;});
+		text = text.replace(/(\\*)\\u([\da-fA-F]{4})/g, function(a, b, c){return (b.length % 2 == 0) ? b + '&#x'+c + ';': a;});
+
+		var r = eval('(' + text + ')');
+		return esc ? fromEscape(r) : r;
+	}
+	return false;
+},
+/*
+オブジェクトをJSON文字列に変換する
+obj: 文字列に変換するオブジェクト
+esc: trueなら", \, /, \b, \f, \n, \r, \tをエスケープ文字に変換します
+     ASCII範囲外の文字は \u[4桁の16進数] に変換する UTF-8以外の文字列を渡すと正常に変換できません
+     デフォルトはfalse
+indent: インデントに使用する文字 指定した場合は自動で改行します
+key_quot: オブジェクトのキーを囲む文字("key":value) 2文字で指定してください デフォルトは("")  例. (「」)
+str_quot: 文字列の値を囲む文字 文字列以外の数値等には使用しません 2文字で指定してください デフォルトは("")
+colon: オブジェクト({key:value})のコロンを別の文字にしたい場合に指定
+comma: オブジェクトと配列([0,1,2])の区切り文字のコンマを別の文字にしたい場合に指定
+*/
+function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
+	var control_char = {
+		0x0a: "\\n",
+		0x0d: "\\r",
+		0x0c: "\\f",
+		0x09: "\\t",
+		0x09: "\\b"
+	};
+	var toEscape = function(s){
+		if(!s) return s;
+		/*
+		s = s.replace(/(\\*)([\\"\/])([nrftb]|)/g, function(m, a, b, c){
+			return (a.length % 2 == 0) ? (b == "\\" ? (c ? m : a + "\\\\") : a + "\\" + b) : m;
+		});
+		*/
+		s = s.replace(/[\/"\\]/, '\\$0');
+		s = s.replace(/[\n\r\f\t\b]/g, function(m){
+			return control_char[m.charCodeAt(0)];
+		});
+
+		if(/^[\s -~]+$/.test(s)) return s;
+		//s = s.toUTF8();
+
+		//rentan氏のutf8.dmsから拝借
+		var sb = new StringBuffer(s);
+		var sb_len = sb.length;
+		var len = 0;
+		var result = '';
+		var n1, n2, n3, n4;
+		for(var i = 0; i < sb_len; i += len){
+			n1 = sb.charCodeAt(i);
+			if (n1 <= 0x7f) {
+				len = 1;
+				result += sb[i];
+				continue;
+			}
+			else if (n1 <= 0xc1) {	// 0x80-0xc1 不正なコード
+				len = 1;
+				continue;
+			}
+			else if (n1 <= 0xdf) {
+				len = 2;
+				n1 = n1 & 0x1f;
+				n2 = sb.charCodeAt (i + 1) & 0x3f;
+				unicode = (n1 << 6) + n2;
+			}
+			else if (n1 <= 0xef) {
+				len = 3;
+				n1 = n1 & 0x0f;
+				n2 = sb.charCodeAt (i + 1) & 0x3f;
+				n3 = sb.charCodeAt (i + 2) & 0x3f;
+				unicode = (n1 << 12) + (n2 << 6) + n3;
+			}
+			else if (n1 <= 0xf7) {
+				len = 4;
+				n1 = n1 & 0x07;
+				n2 = sb.charCodeAt (i + 1) & 0x3f;
+				n3 = sb.charCodeAt (i + 2) & 0x3f;
+				n4 = sb.charCodeAt (i + 3) & 0x3f;
+				unicode = (n1 << 18) + (n2 << 12) + (n3 << 6) + n4;
+			}
+			else {			// 0xf8-0xff 不正なコード
+				len = 1;
+				continue;
+			}
+			result += format('\u%.4x', parseInt(unicode));
+		}
+		return result;
+	};
+	var toStr = function(value, space){
+		switch(typeof value){
+			case 'string':
+				var tmp = esc ? toEscape(value) : value;
+				return s_quot[0] + tmp + s_quot[1];
+			case 'number':
+			case 'boolean':
+				return value.toString();
+			case 'null':
+				return 'null';
+			case 'object':
+				switch(nameOf(value)){
+					case 'Object':
+						var s = [], sp = space + indent;
+						for(var key in value){
+							s.add(k_quot[0] + key + k_quot[1] + colon + toStr(value[key], sp));
+						}
+						sp = n + sp;
+						return '{' + sp + s.join(comma + sp) + n + space + '}';
+					case 'Array':
+						var s = [], sp = space + indent;
+						for(var i = 0; i < value.length; i++){
+							s.add(toStr(value[i], sp));
+						}
+						sp = n + sp;
+						return '[' + sp + s.join(comma + sp) + n + space + ']';
+					case 'String':
+					case 'Date':
+						var tmp = esc ? toEscape(value) : value;
+						return s_quot[0] + tmp + s_quot[1];
+				}
+		}
+	};
+	var n = '', 
+	    k_quot = typeof key_quot.length != 'undefined' ? (key_quot.length == 2 ? [key_quot[0], key_quot[1]] : ['', '']) : ['"', '"'],
+	    s_quot = typeof str_quot.length != 'undefined' ? (str_quot.length == 2 ? [str_quot[0], str_quot[1]] : ['', '']) : ['"', '"']; 
+	esc = esc || false;
+	colon = typeof colon == 'string' ? colon : ':';
+	comma = typeof comma == 'string' ? comma : ',';
+
+	if(typeof indent == 'string' || nameOf(indent) == 'String'){
+		n = "\n";
+	}else{
+		indent = '';
+	}
+
+	return toStr(obj, '');
+};

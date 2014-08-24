@@ -1,0 +1,120 @@
+//Dorothy2
+//caption=asfile.com
+//version=0.15
+//hint=
+//match=^http://(www\.)?asfile.com/([a-zA-Z]{2}/free-download/)?file/
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+
+	var ini=new Ini(Dorothy.path+'user\asfile_w\asfile_w.ini');
+	var wait_skip=parseInt(ini.read('GENERAL','wait_skip',300));
+	var cookie_retry=parseInt(ini.read('GENERAL','cookie_retry',1));
+
+
+	common_load('http', 'post','fileSave','l_sleep');
+	var url=new URL(urlinfo.url);
+	var myHeader={};
+	myHeader.Cookie=new Cookie();
+
+	if(!url.url.match('^http://(www\.)?asfile.com/([a-zA-Z]{2}/free-download/)?file/(\w+)')){
+		println('未対応のアドレス-->' + RegExp.$0);
+		exit();
+	}
+	var file_id = RegExp.$3;
+	url.url = 'http://asfile.com/file/' + file_id;
+	
+	//var http = download(url.url, true, myHeader);
+	var http = new Http({autoRedirect: true});
+	http.get(url.url);
+	if(http.responseHeader.code != 200){
+		if(http.data.match('<h2>Page not found</h2>')){
+			println('Page not found');
+			exit();
+		}
+		println('error:' + http.responseHeader.code);
+		return retry();
+	}
+	if(http.data.match('>File is deleted<')){
+		println('File is deleted');
+		exit();
+	}
+	if(http.data.match('>File does not exist<')){
+		println('File does not exist');
+		exit();
+	}
+	if(http.data.match('This file is available only to premium users\s*</p>')){
+		println('This file is available only to premium users');
+		exit();
+	}
+	http.data.match('Download:</div><div class=.+?><strong>([^<]+)</strong>.+?File size:</div><div class=.+?>([^<]+)</div>');
+	var filename = RegExp.$1;
+	var size = RegExp.$2;
+
+	url.url = 'http://asfile.com/en/free-download/file/' + file_id;
+	http.get(url.url);
+
+	if(http.data.indexOf('This file TEMPORARY unavailable for download due technical problem. Please, try to download later.') != -1){
+		pritln('This file TEMPORARY unavailable for download due technical problem. Please, try to download later.');
+		exit();
+	}
+	
+	if(!http.data.match(/var showLink = function\(\) \{\s+\$.post\('([^']+)/)){
+		return retry('error: post_urlが見つからない');
+	}
+	var post_url = url.expand(RegExp.$1);
+	
+	if(!http.data.match(/hash: '(.+?)',\s+path: '(.+?)',\s+storage: '(.+?)',\s+name: '(.+?)'/)){
+		return retry('error: POSTするデータが見つからない');
+	}
+	var hash = RegExp.$1;
+	var path = RegExp.$2;
+	var storage = RegExp.$3;
+	var name = RegExp.$4;
+	var post_data = 'hash=' + hash + '&path=' + path + '&storage=' + storage + '&name=' + name;
+	
+	if(!http.data.match('var timer = (\d+)')){
+		fileSave('asfile_wait_error.html', http.data);
+		return retry('error: 待機時間が不明');
+	}
+	var wait = parseInt(RegExp.$1);
+	println('filename-->' + filename);
+	println('size-->' + size);
+	println('wait=' + wait + ' sec');
+	if(urlinfo.proxy != ''){
+		if(wait > wait_skip) return retry('proxyであり' + wait_skip + '秒以上のwaitのためスキップ');
+	}
+	l_sleep((wait)*1000);
+
+	println('cookie>' + myHeader.Cookie.data);
+	println('post_url>' + post_url);
+	println('post_data>' + post_data);
+	
+	http.post(post_url, post_data);
+	if(http.responseHeader.code != 200) return retry('error_post:' + http.responseHeader.code);
+	if(!http.data.match(/"url":"([^"]+)/)){
+		var a = '';
+		if(http.data.match(/"wait":"([^"]+)/)) a = 'wait2=' + RegExp.$1;
+		else if(http.data.match(/"sizeLimit":"([^"]+)/)) a= 'sizeLimit: ' + RegExp.$2;
+		//else a = 'Link not available';
+		if(a != ''){
+			println(a);
+			return retry();
+		}else{
+			println('error: ダウンロードリンクが見つからない');
+//			fileSave('asfile_post_error.html', http.data);
+			exit();
+		}
+	}
+	
+	var url2 = new URL(RegExp.$1.replace(/\\/g,''));
+	urlinfo.url = url2.url;
+	headers.host = url2.host;
+	if(headers.hasKey('Range')){
+		headers.removeKey('Range');
+	}
+
+	//Dorothy.fileName = url2.filename;
+}

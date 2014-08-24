@@ -1,0 +1,41 @@
+//Dorothy2
+//caption=letitbit.net
+//version=0.1
+//hint=
+//match=http://letitbit.net/download/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download','character_references');
+//メイン
+this.main = function(url){
+	var http = download(urlinfo.url, true, {'Cookie':'lang=en'});
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('file-info-name">([^<]+).+?"file-info-size">\[([^\]]+)')){
+		DOA.status = DOA_OK;
+		DOA.size = RegExp.$2;
+		DOA.name = character_references(RegExp.$1.fromUTF8toSJIS());
+		return;
+	}
+	if(http.data.match('>File not found<')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File not found';
+		return;
+	}
+	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

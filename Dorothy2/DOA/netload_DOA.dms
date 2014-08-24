@@ -1,0 +1,51 @@
+//Dorothy2
+//caption=netload.in
+//version=0.1
+//hint=
+//match=^http://(www\.)?netload\.in/\w+(/.*)?
+//author=wan
+//path=DOA
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	if(!/htm$/.test(urlinfo.url)){
+		urlinfo.url.match('http://(www\.)?netload\.in/(\w+(/.+)?)');
+		DOA.status = DOA_LK;
+		DOA.link = 'http://www.netload.in/' + RegExp.$2 + '.htm';
+		return;
+	}
+	var http = download(urlinfo.url,true);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error>' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match(/<div class="dl_first_filename">\s*([^<]+)[^>]+>, ([^<]+)/)){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1.fromUTF8toSJIS();
+		DOA.size = RegExp.$2;
+		return;
+	}
+	if(http.data.indexOf('This file is only for Premium Users!') != -1){
+		DOA.status = DOA_OK;
+		DOA.status_str = 'Premium Only';
+		DOA.comment = 'This file is only for Premium Users!';
+		return;
+	}
+	if(http.data.match('<h1[^>]*>Error.+?</h2>\s*(.+?)</div>')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1.replace(/<[^>]+>/g,'').fromUTF8toSJIS();
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

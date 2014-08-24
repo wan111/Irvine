@@ -1,0 +1,56 @@
+//Dorothy2
+//caption=shareflare.net
+//version=0.1
+//hint=
+//match=http://(\w+\.)?shareflare.net/download/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	//item = {folder: ''};
+	//var irv = new ActiveXObject('Irvine.Api');
+	//folderdata.Folder = irv.FolderData['queue', 'folder'];
+	common_load('http');
+//メイン
+this.main = function(url){
+	var http = new Http({autoRedirect: true});
+	http.get(url);
+	if(http.responseHeader.code != 200){
+		if(http.responseHeader.code == 404 && />404 Not Found</.test(http.data)){
+			DOA.status = DOA_NG;
+			DOA.comment = '404 Not Found';
+			return;
+		}
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	if(/>File: <span>([^<]+)<\/span> \[<span>([^<]+)</.test(http.data)){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		DOA.size = RegExp.$2;
+		return;
+	}
+	if(/>File not found</.test(http.data)){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File not found';
+		return;
+	}
+	if(/<span class="style7">File not found,deleted for abuse or something like this....<br \/>/.test(http.data)){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File not found,deleted for abuse or something like this....';
+		return;
+	}
+	DOA.status = DOA_UK;
+	//http.capture();
+	return;
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
+}

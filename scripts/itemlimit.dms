@@ -1,0 +1,430 @@
+/*
+スクリプト初期化データ
+guid={04F17090-A8A4-4DF0-93C7-F8ABF29B6459}
+caption=アイテムごとに制限を設定する
+version=0.2
+hint=アイテムごとに同時DL数,リトライ数,同一プロキシの制限をする
+event=OnHttpRequest
+match=
+author=wan
+synchronize=0
+*/
+
+function OnHttpRequest(urlinfo,headers,item,folderdata,optiondata){
+/*
+  HTTP(S)リクエストイベント
+  ※synchronize=1 以外の場合にIrvine.Api/UrlManager/Folder/Itemを使用しないでください
+  ※ダイアログを呼びださないでください
+*/
+	function itemLimit(item_url, item_proxy){
+		var ini_load = function(url){
+			var limit_ini = new LimitIni();
+			var sec = '';
+			if(url){
+				var secs = limit_ini.readSections();
+				for(var i in secs){
+					if(limit_ini.read(secs[i], 'check', false)==true){
+						var tmp = limit_ini.read(secs[i], 'matchUrl', '');
+						if(url.match(tmp)){
+							sec = secs[i];
+							break;
+						}
+					}
+				}
+			}
+			//matchしなかった場合はdefaultセクションを読み込む。それもなかったら失敗させてdefault値を使う
+			sec = sec || 'default';
+			var limit = {
+				section        : sec,
+				matchUrl       : limit_ini.read(sec, 'matchUrl'       , ''),              //正規表現  URL
+				tryConnectCount: limit_ini.read(sec, 'tryConnectCount', '0,0').split(','),//数値  リトライ回数の上限(通常,プロキシ)
+				downloadCount  : limit_ini.read(sec, 'downloadCount'  , '0,0').split(','),//数値  同時DL数の上限(通常,プロキシ) 0はDL停止
+				useRtrylimit   : limit_ini.read(sec, 'useRtrylimit'   , false)==true,          //true or false  リトライ回数制限を使うか
+				useDlimit      : limit_ini.read(sec, 'useDlimit'      , false)==true,           //true or false  同時DL数制限を使うか
+				dlimitFlag     : limit_ini.read(sec, 'dlimitFlag'     , 0x11),            //bit flag DLIMIT  上限に達した時の処理
+				canUseProxy    : limit_ini.read(sec, 'canUseProxy'    , true)==true,            //true or false  プロキシの使用を許可するか 禁止の場合は直接接続する
+				sameProxyFlag  : limit_ini.read(sec, 'sameProxyFlag'  , 0x111)            //bit flag SAMEPROXY  同一プロキシ(使用中プロキシ)を使用するか
+			};
+			return limit;
+		};
+		//リトライ回数の制限
+		var Rtrylimit = function(){
+			var retryCount = alive.list[alive.currentId].retryCount;
+			//tryConnectCountの値0,1はIrvineの設定と同じくリトライしない
+			if(retryCount >= limit.tryConnectCount[isProxy]){
+				println('リトライ回数が設定された上限に達しました');
+				stop_item();
+			}
+		};
+		//同時DL数の制限
+		var Dlimit = function(){
+			if(limit.downloadCount[isProxy] == 0){
+				println('DL禁止');
+				stop_item();
+			}
+			var IDs = [];
+			var dlcount = 0;
+			//同時DL数を調べる 同じmatchUrlにマッチするアイテムがいくつあるか
+			for(var id in alive.list){
+				if(id == alive.currentId) continue;
+				if(alive.list[id].url.match(limit.matchUrl)){
+					if(isRetry && !alive.check(id)) continue;
+					if(isProxy){
+						if(alive.list[id].proxy != ''){
+							dlcount++;
+							IDs.add(id);
+						}
+					}else{
+						dlcount++;
+						IDs.add(id);
+					}
+				}
+			}
+			if(isProxy) println('ダウンロード数(プロキシ):' + (dlcount+1));
+			else println('ダウンロード数:' + (dlcount+1));
+			
+			if(isRetry) return;
+			if(dlcount >= limit.downloadCount[isProxy]){
+				println('同時DL数が設定された上限に達しました');
+				if(!isProxy){
+					if(limit.dlimitFlag & DLIMIT_STOP){
+						stop_item();
+					}else if(limit.dlimitFlag & DLIMIT_WAIT){
+						wait_dlimit(IDs, limit.downloadCount[isProxy]);
+					}else{
+						println('dlimit エラー');
+						stop_item();
+					}
+				}else{
+					if(limit.dlimitFlag & DLIMIT_STOP_PROXY){
+						stop_item();
+					}else if(limit.dlimitFlag & DLIMIT_WAIT_PROXY){
+						wait_dlimit(IDs, limit.downloadCount[isProxy]);
+					}else{
+						println('dlimit_proxy エラー');
+						stop_item();
+					}
+				}
+			}
+		};
+		//同一プロキシ(使用中プロキシ)の制限
+		var sameProxy = function(){
+			var proxy = item_proxy;
+			var match_only = limit.sameProxyFlag & SAMEPROXY_MATCHONLY? true: false;
+			var noPort = limit.sameProxyFlag & SAMEPROXY_REMOVEPORT? true: false;
+			if(noPort) proxy = removePort(proxy);
+			var IDs = [];
+			
+			if(limit.sameProxyFlag & SAMEPROXY_USE){
+				if(!match_only) return;
+				for(var id in alive.list){
+					if(id == alive.currentId) continue;
+					var alive_proxy = noPort? removePort(alive.list[id].proxy): alive.list[id].proxy;
+					if(proxy == alive_proxy && !alive.list[id].url.match(limit.matchUrl)){
+						if(isRetry && !alive.check(id)) continue;
+						IDs.add(id);
+					}
+				}
+			}else{
+				for(var id in alive.list){
+					if(id == alive.currentId) continue;
+					var alive_proxy = noPort? removePort(alive.list[id].proxy): alive.list[id].proxy;
+					if(proxy == alive_proxy){
+						if(isRetry && !alive.check(id)) continue;
+						if(match_only && !alive.list[id].url.match(limit.matchUrl)){
+							continue;
+						}
+						IDs.add(id);
+					}
+				}
+			}
+			//同一プロキシがあった時の処理
+			if(IDs.length > 0){
+				println('このプロキシは使用中です ' + proxy);
+				if(folderdata.RandomHttpProxy){
+					if((limit.sameProxyFlag & SAMEPROXY_RETRY_RANDOM) == SAMEPROXY_RETRY_RANDOM){
+						retry_item();
+					}else if(limit.sameProxyFlag & SAMEPROXY_STOP_RANDOM){
+						stop_item();
+					}else if(limit.sameProxyFlag & SAMEPROXY_WAIT_RANDOM){
+						wait_proxy(IDs, proxy, noPort);
+					}else if(limit.sameProxyFlag & SAMEPROXY_DIRECT_RANDOM){
+						direct();
+					}else{
+						println('sameproxy_random エラー');
+						stop_item();
+					}
+				}else{
+					if((limit.sameProxyFlag & SAMEPROXY_RETRY) == SAMEPROXY_RETRY){
+						retry_item();
+					}else if(limit.sameProxyFlag & SAMEPROXY_STOP){
+						stop_item();
+					}else if(limit.sameProxyFlag & SAMEPROXY_WAIT){
+						wait_proxy(IDs, proxy, noPort);
+					}else if(limit.sameProxyFlag & SAMEPROXY_DIRECT){
+						direct();
+					}else{
+						println('sameproxy エラー');
+						stop_item();
+					}
+				}
+			}
+		};
+		var removePort = function(proxy){
+			return proxy.slice(0, proxy.lastIndexOf(':'));
+		};
+		var wait_dlimit = function(IDs, limit_dlcount){
+			wait_flag = true;
+			for(var i=0; i < IDs.length; i++) println(IDs[i] + ': ' + alive.list[IDs[i]].url);
+			println('上記の実行中のアイテム数が'+ (limit_dlcount-1) + '個以下になるまで待機します');
+			var dlcount = IDs.length;
+			
+			alive.save(alive.currentId);
+			mutex.unlock();
+			while(dlcount >= limit_dlcount){
+				sleep(3 * 1000);
+				for(var i=0; i < IDs.length; i++){
+					if(!alive.check(IDs[i])){
+						IDs.delete(i);
+						dlcount--;
+						i--;
+					}
+				}
+			}
+			mutex.lock();
+			alive.reload();
+		};
+		var wait_proxy = function(IDs, proxy, noPort){
+			wait_flag = true;
+			for(var i=0; i < IDs.length; i++){
+				println(IDs[i] + ': ' + alive.list[IDs[i]].url);
+			}
+			println('上記アイテムのプロキシ(' + proxy + ')の使用が終わるまで待機します');
+			
+			alive.save(alive.currentId);
+			mutex.unlock();
+			while(IDs.length > 0){
+				sleep(5 * 1000);
+				//alive.reload();
+				var ini = new ThreadIni();
+				for(var i=0; i < IDs.length; i++){
+					//var alive_proxy = '';
+					//if(alive.list.hasKey(IDs[i])) alive_proxy = noPort? removePort(alive.list[IDs[i]].proxy): alive.list[IDs[i]].proxy;
+					var alive_proxy = noPort? removePort(ini.read(IDs[i], 'proxy', '')): ini.read(IDs[i], 'proxy', '');
+					if(!alive.check(IDs[i]) || alive_proxy != proxy){
+						IDs.delete(i);
+						i--;
+					}
+				}
+			}
+			mutex.lock();
+			alive.reload();
+		};
+		var retry_item = function(){
+			println('リトライします');
+			urlinfo.url = '';
+			urlinfo.proxy = '';
+		};
+		var stop_item = function(){
+			alive.erase(alive.currentId);
+			println('停止します');
+			mutex.unlock();
+			exit();
+		};
+		var direct = function(){
+			println('直接接続に切り替え');
+			isProxy = 0;
+			urlinfo.proxy = '';
+			item_proxy = '';
+			alive.list[alive.currentId].proxy = '';
+		};
+		//----------------------------------------------------------------------------
+		var mutex = new Mutex('itemlimit');
+		if(mutex.existed) println('待機');
+		mutex.lock();
+		
+		item_url = item_url || urlinfo.url;
+		item_proxy = typeof item_proxy == 'undefined'? urlinfo.proxy: item_proxy;
+		
+		if(item_url == '') return;
+		
+		var isRetry = false;
+		var wait_flag = false;
+		
+		var limit = ini_load(item_url);
+		var alive = new AliveItem(item_url, item_proxy);
+		alive.load();
+		
+		println('アイテム制限');
+		//println('設定: ' + limit.section);
+		
+		var localhostFlag = true; //localhost(127.0.0.1)はプロキシと見なさない プロキシとしての制限をしない
+
+		var isProxy = item_proxy? 1: 0;
+		if(localhostFlag && /127\.0\.0\.1:|localhost:/.test(item_proxy)) isProxy = 0;
+		if(isProxy && !limit.canUseProxy){
+			println('プロキシの使用禁止');
+			direct();
+		}
+
+		for(var i in limit) println(i + ': ' + limit[i]);//println(PadRight(i, 12, '-') + '> ' + limit[i]);
+		/*
+		println(limit.useRtrylimit? 'リトライ回数の上限: ' + limit.tryConnectCount[isProxy]: 'リトライ回数制限なし');
+		if(limit.useDlimit){
+			println('同時DL数の上限: ' + limit.downloadCount[isProxy]);
+			if((!isProxy && limit.dlimitFlag & DLIMIT_STOP) || (isProxy && limit.dlimitFlag & DLIMIT_STOP_PROXY)){
+				println('上限に達した場合 停止');
+			}else if((!isProxy && limit.dlimitFlag & DLIMIT_WAIT) || (isProxy && limit.dlimitFlag & DLIMIT_WAIT_PROXY)){
+				println('上限に達した場合 待機');
+			}
+		}else{
+			println('同時DL数制限なし');
+		}
+		if(limit.sameProxyFlag & SAMEPROXY_MATCHONLY) println(limit.sameProxyFlag & SAMEPROXY_USE? '使用中のプロキシでも使用する(同じMatchのみ)': '使用中のプロキシは使用しない(同じMatchのみ)');
+		else println(limit.sameProxyFlag & SAMEPROXY_USE? '使用中のプロキシでも使用する': '使用中のプロキシは使用しない');
+		*/
+
+		println('リトライ回数: ' + alive.list[alive.currentId].retryCount);
+		//リトライ回数の制限 初回のみリスト全て,リトライ時は必要な時に個別に生存確認をする
+		if(alive.list[alive.currentId].retryCount > 0){
+			isRetry = true;
+			if(limit.useRtrylimit){
+				Rtrylimit();
+			}
+		}else{
+			alive.check();
+		}
+		do{
+			wait_flag = false;
+			//同一プロキシ(使用中プロキシ)の制限
+			if(isProxy) sameProxy();
+			//同時DL数の制限
+			if(limit.useDlimit && urlinfo.url != '') Dlimit();
+			break;
+		}while(wait_flag);
+		
+		alive.save(alive.currentId);
+		mutex.unlock();
+	}
+
+	function LimitIni(){
+		this.ini = new Ini(irvDirPath() + '\itemlimit.ini');
+		this.read = function(section, key, dflt){
+			return this.ini.read(section, key, dflt);
+		};
+		this.readSection = function(section){
+			return this.ini.readSection(section);
+		};
+		this.readSections = function(){
+			return this.ini.readSections();
+		};
+		this.write = function(section, key, value){
+			return this.ini.write(section, key, value);
+		};
+		this.deleteKey = function(section, key){
+			return this.ini.deleteKey(section, key);
+		};
+		this.eraseSection = function(section){
+			return this.ini.eraseSection(section);
+		};
+		this.sectionExists = function(section){
+			return this.ini.sectionExists(section);
+		};
+		this.update = function(){
+			return this.ini.update();
+		};
+	}
+/*	
+	function GetTextExtent(s){
+		if(typeof s == 'undefined' || s == '') return;
+		s = new StringBuffer(s);
+		
+		var hDC=dcall.GetDC(hw);
+		h2=dcall.SelectObject(hDC,hFont);
+		var size=new Struct('w:l','h:l');
+		dcall.GetTextExtentPoint32(hDC,s,s.length,size);
+		dcall.ReleaseDC(hw,hDC);
+		dcall.DeleteObject(hFont);
+		return size.w;
+	}
+	
+	function PadRight(s, n, c){
+		if(typeof s == 'undefined' || s == '') return;
+		if(n <= 0) return;
+		
+		c = c || ' ';
+		c_width = GetTextExtent(c);
+		s_width = GetTextExtent(s);
+		//n = (n * c_width) - s_width;
+		//for(var i=0; i <= n; i += c_width) s += c;
+		s += c.multiply(Math.round((n * c_width - s_width) / c_width));
+		return s;
+	}
+*/
+	//===================================================================================
+	//直接編集しやすく分かりやすいように連続した値で桁で分ける
+	//同時DL数上限に達した時の処理
+	var DLIMIT_STOP       = 0x01; //0000 0001 停止
+	var DLIMIT_WAIT       = 0x02; //0000 0010 待機
+	var DLIMIT_STOP_PROXY = 0x10; //0001 0000 停止(プロキシ時)
+	var DLIMIT_WAIT_PROXY = 0x20; //0010 0000 待機(プロキシ時)
+	//var DLIMIT_STOP_PROXY = 0x04; //0100 アイテム停止(プロキシ時)
+	//var DLIMIT_WAIT_PROXY = 0x08; //1000 待機(プロキシ時)
+
+	//同一プロキシ(使用中プロキシ)の使用
+	var SAMEPROXY_USE           = 0x100; //0001 0000 0000 同一プロキシの使用を許可
+	var SAMEPROXY_MATCHONLY     = 0x200; //0010 0000 0000 同じmatchのみ許可,禁止
+	var SAMEPROXY_REMOVEPORT    = 0x400; //0100 0000 0000 ポート番号が違っても同一とみなす
+	
+	//許可しない場合の処理
+	var SAMEPROXY_STOP          = 0x01; //0000 0001 停止
+	var SAMEPROXY_WAIT          = 0x02; //0000 0010 待機
+	var SAMEPROXY_RETRY         = 0x03; //0000 0011 リトライ
+	var SAMEPROXY_DIRECT        = 0x04; //0000 0100 直接接続
+	var SAMEPROXY_STOP_RANDOM   = 0x10; //0001 0000 停止(ランダムプロキシ時)
+	var SAMEPROXY_WAIT_RANDOM   = 0x20; //0010 0000 待機(ランダムプロキシ時)
+	var SAMEPROXY_RETRY_RANDOM  = 0x30; //0011 0000 リトライ(ランダムプロキシ時)
+	var SAMEPROXY_DIRECT_RANDOM = 0x40; //0100 0000 直接接続(ランダムプロキシ時)
+/*	
+	var dcall = new DynaCall;
+	dcall.register('user32.dll','FindWindowEx','f=s','i=hhss','r=h');
+	dcall.register('user32.dll','GetDC','f=s','i=h','r=h');
+	dcall.register('user32.dll','ReleaseDC','f=s','i=hh','r=l');
+	dcall.register('gdi32.dll','GetTextExtentPoint32','f=s','i=hsls','r=b');
+	dcall.register('gdi32.dll','CreateFont','f=s','i=llllllllllllls','r=h');
+	dcall.register('gdi32.dll','SelectObject','f=s','i=hh','r=h');
+	dcall.register('gdi32.dll','DeleteObject','f=s','i=h','r=b');
+	
+	var hW1=mainFormHandle;
+	var hw=dcall.FindWindowEx(hW1,null,null,'pnlAllClient');
+	hw=dcall.FindWindowEx(hw,null,null,'pnlTop');
+	hw=dcall.FindWindowEx(hw,null,null,'pnlLog');
+	hw=dcall.FindWindowEx(hw,null,'TWallPaperListView',null);
+	
+	var hFont=dcall.CreateFont(
+		12,// int フォントの高さ
+		8, // int 平均文字幅
+		0, // int 文字送り方向の角度
+		0, // int ベースラインの角度
+		0, // int フォントの太さ
+		0, // DWORD 斜体にするかどうか
+		0, // DWORD 下線を付けるかどうか
+		0, // DWORD 取り消し線を付けるかどうか
+		1, // DWORD 文字セットの識別子
+		0, // DWORD 出力精度
+		0, // DWORD クリッピング精度
+		0, // DWORD 出力品質
+		0, // DWORD ピッチとファミリ
+		"MS UI Gothic\0"
+	);
+*/	
+	//バグ対策
+	if(urlinfo.proxy == '' && !folderdata.RandomHttpProxy && folderdata.UseHttpProxy){
+		urlinfo.proxy = folderdata.HttpProxy;
+	}
+
+	itemLimit(item.url, urlinfo.proxy);
+	
+	return true;
+}
+import Thread.*;

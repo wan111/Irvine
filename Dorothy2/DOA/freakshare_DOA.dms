@@ -1,0 +1,62 @@
+//Dorothy2
+//caption=FreakShare
+//version=0.1
+//hint=
+//match=http://freakshare.com/files/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	
+	var url = new URL(urlinfo.url);
+	var myHeader={};
+	myHeader.Cookie=new Cookie();
+	
+	var http = download(url.url, false, myHeader);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error> ' + http.responseHeader.code;
+		return;
+	}
+	
+	myHeader.Cookie.parse('',http.responseHeader.cookie.data);
+	
+	
+	if(http.data.match('<h1 class[^>]+>(.+?)\s-\s([^-]+)</h1>')){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		DOA.size = RegExp.$2;
+		return;
+	}
+
+	//英語に変更
+	http = download('http://freakshare.com/index.php?language=EN',true,myHeader);
+	myHeader.Cookie.parse('',http.responseHeader.cookie.data);
+	//たまに何故かトップページに飛ばされることがあるためresponseHeader.locationは使わない
+	http = download(url.url,false,myHeader);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error> ' + http.responseHeader.code;
+		return;
+	}
+	
+	if(http.data.match('<h1 style=[^>]+>Error</h1>\s+<div[^>]+>([^<]+)')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

@@ -1,0 +1,94 @@
+//Dorothy2
+//caption=countdown
+//version=1.03
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+
+//count=msec
+//interval=表示を更新する間隔,中断を受け付ける間隔(msec)
+//name=countの左側に表示する名前
+function countdown(time, interval, name){
+	var notice = function(msec){
+		var sec = Math.floor(msec/1000);
+		var min = Math.floor(sec/60);
+		var hour = Math.floor(min/60);
+		sec %= 60;
+		min %= 60;
+		//msec %= 1000;
+		//var s = msec? sec + '.' + msec + '秒': sec + '秒';
+		var s = sec + '秒';
+		if(hour) s = hour + '時間' + min + '分' + s;
+		else s = min? min + '分' + s: s;
+		return s;
+	};
+	
+	name = isUndefined(name) || name=='' ? '' : name + ':';
+	var end_time = new Date().getTime() + time;
+	interval = interval || 1000;
+	
+	var mutex;
+	for(var mutex_count=1; mutex_count<100; mutex_count++){
+		mutex = new Mutex('countdown' + mutex_count);
+		if(!mutex.existed) break;
+		mutex = null;
+	}
+	
+	common_load('user32','gdi32');
+	var u=new user32();
+	var g=new gdi32();
+	var hW1=mainFormHandle;
+	var h=u.FindWindowEx(hW1,null,null,'pnlAllClient');
+	h=u.FindWindowEx(h,null,null,'pnlTop');
+	h=u.FindWindowEx(h,null,null,'pnlLog');
+	h=u.FindWindowEx(h,null,'TWallPaperListView',null);
+	var hDC=u.GetDC(h);
+	var hFont=g.CreateFont(
+		12, // int フォントの高さ
+		6, // int 平均文字幅
+		0, // int 文字送り方向の角度
+		0, // int ベースラインの角度
+		0, // int フォントの太さ
+		0, // DWORD 斜体にするかどうか
+		0, // DWORD 下線を付けるかどうか
+		0, // DWORD 取り消し線を付けるかどうか
+		1, // DWORD 文字セットの識別子
+		0, // DWORD 出力精度
+		0, // DWORD クリッピング精度
+		0, // DWORD 出力品質
+		0, // DWORD ピッチとファミリ
+		//"ＭＳ Ｐ明朝\0" // LPCTSTR フォント名
+		"MS UI Gothic\0"
+	);
+	var h2=g.SelectObject(hDC,hFont);
+	var s_win=new Struct('left:l','top:l','right:l','bottom:l');
+	var s_txt=new Struct('w:l','h:l');
+	u.dll.register('user32.dll', 'InvalidateRect', 'f=s', 'i=hsb', 'r=b');
+	
+	var count;
+	var str = new StringBuffer();
+	while((count = end_time - new Date().getTime()) > interval){
+		str.text = name + notice(count);
+		if(mutex_count > 1 && !(new Mutex('countdown' + (mutex_count-1)).existed)){
+			mutex_count--;
+			mutex = new Mutex('countdown' + mutex_count);
+			u.dll.InvalidateRect(h, s_win, true);
+		}
+		g.GetTextExtentPoint32(hDC, str, str.length, s_txt);
+		if(s_win.left != (s_win.right - s_txt.w)) u.dll.InvalidateRect(h, s_win, true);
+		u.GetClientRect(h, s_win);
+		s_win.left = s_win.right - s_txt.w;
+		s_win.top = s_txt.h + (s_txt.h * mutex_count);
+		s_win.bottom = s_win.top + s_txt.h;
+		g.TextOut(hDC, s_win.left, s_win.top, str, str.length+1);
+		sleep(interval);
+	}
+	str.text = name + notice(count);
+	g.TextOut(hDC, s_win.right - s_txt.w, s_txt.h+(s_txt.h*mutex_count), str, str.length+1);
+	sleep(count);
+	
+	var r=u.ReleaseDC(h,hDC);
+	g.DeleteObject(hFont);
+}

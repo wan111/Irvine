@@ -1,0 +1,153 @@
+説明
+	Vimeoから動画をダウンロードします
+	設定によりDLする動画の画質と保存ファイル名を指定できます
+
+対応URL
+	・http://vimeo.com/[数字]
+		通常の動画URL
+	
+	・http://vimeo.com/channels/staffpicks/[数字]
+		公式スタッフが選んだ動画
+	
+	・http://vimeo.com/channels/[チャンネル名]/[数字]
+		チャンネルから動画を選んだ場合
+	
+	・http://vimeo.com/groups/[グループ名]/videos/[数字]
+		グループから動画を選んだ場合
+	
+	・http://vimeo.com/[ユーザーURL]/[動画名?]
+		http://vimeo.com/\d+ にリダイレクトされる
+
+未対応URL
+	・オンデマンド
+	   http://vimeo.com/channels/staffpicks/ondemand
+	   http://vimeo.com/ondemand
+	・動画の一覧ページ
+	・埋め込み動画URL
+
+仕様
+	・Private VideoとなりDLできないものは/channels/staffpicks/ からDLできないか試行します
+	  また http://vimeo.com/channels/[チャンネル名]/[数字] のURLから再生できるものもあるようですが
+	  チャンネル名を取得できないため未対応です
+	・HLSの動画には未対応です
+設定
+	・保存ファイル名
+		動画の保存ファイル名を指定します
+
+		%TITLE%---------タイトル
+		%FILENAME%------動画URLのファイル名
+		%ID%------------動画ID
+		%WIDTH%---------幅
+		%HEIGHT%--------高さ
+		%DURATION%------再生時間
+		%CODEC%---------コーデック
+		%QUALITY%-------画質
+		%BITRATE%-------ビットレート
+		%TAGS%----------タグ
+		%UPLOAD_DATE%---投稿日時
+		%USER_NAME%-----投稿者
+		%USER_ID%-------投稿者のID
+		%USER_URL%------投稿者のユーザーURL
+		%ACCOUNT_TYPE%--投稿者のアカウントタイプ
+		
+		例: (vimeo) [%USER_NAME%(%USER_URL%)] %TITLE% (%ID%)(%CODEC% %WIDTH%x%HEIGHT%)
+	
+	・画質設定
+		DLしたい動画を指定します
+		指定された優先順位で動画を探します 見つからなかった場合は何もDLしません
+		
+		A: H264 HD
+		B: H264 SD
+		C: H264 mobile
+		D: VP8 HD
+		E: VP8 SD
+		F: VP8 mobile
+		G: VP6 HD
+		H: VP6 SD
+		I: VP6 mobile
+		
+		例: ADGBEHCFI
+	
+	・条件による選択
+		チェックを入れると指定された条件でDLする動画を選択します
+		
+		条件文: キー名 演算子 値;
+		演算子: ==, !=, <, <=, >, >=
+		
+		キー名      値
+		  key:      画質設定A～I
+		  codec:    h264, vp8, vp6
+		  quality:  hd, sd, mobile
+		  ext:      .mp4, .webm, .flv
+		  url:      動画本体のURL
+		  filename: 動画URLのファイル名
+		  width:    動画の縦サイズ
+		  height:   動画の横サイズ
+		  bitrate:  動画のビットレート
+		
+		キー名==max; キー名==min; とした場合は最大値,最小値を選択
+		条件は左から順に行われ最後に優先順位によって選択されます
+		
+		例えば
+		条件をquality==hd; width==max;
+		優先順位をABCDEFGHIと指定し
+		動画が
+		(1) h264 hd 1920x1080
+		(2) h264 hd 1280x720
+		(3) h264 mobile 480x360
+		(4) vp8 hd 1920x1080 
+		とあった場合には
+		まず(1), (2), (4) が選択され
+		次に(1), (4) が選択され
+		最後に優先順位によって(1)が選択されます
+		
+		例: codec==h264; width>=1280; bitrate==max;
+
+変更履歴
+	0.20 - 2013/11/06
+		・http://vimeo.com/channels/[チャンネル名]/[数字] にて指定された動画がDLされない問題を修正
+		   uploade_dateが指定された動画以外のものになる問題を修正
+		・simpleApi_videoでエラーになっても停止しないように変更(Private VideoはsimpleApi_videoでは404になる)
+		・条件による選択に!=を追加
+		・HLSのURLを表示するようにした
+		   vimeoでのHLSの動画は今の所通常の動画と同じみたい
+		   ただ通常の動画でh264,vp8等と複数ある場合でvp8の方が画質が良くてもHLSではh264のみでそのvp8に相当する画質の動画は無いみたい
+		・細かいバグ修正
+	0.19 - 2013/11/02
+		・%USER_URL%の先頭の/を削除するか選べるようにした
+		・DLする動画を優先順位だけでなく条件を指定して選択できるようにした
+	0.18 - 2013/10/31
+		・Vimeoのサイトの仕様変更に対応
+		   保存ファイル名の%WIDTH% %HEIGHT%が各動画ごとに取得できるようになったため復活させた
+		   保存ファイル名に新たに%BITRATE% %TAGS% %UPLOADE_DATE% %ACCOUNT_TYPE%を追加した
+		・動画やユーザーの情報をVimeoのSimple Apiを使って取得するようにした
+		・拡張子は取得せずに各画質別にすでに分かっているものをあらかじめ設定しておくことにした
+		・http://vimeo.com/channels/[チャンネル名]/[数字] に対応
+		・http://vimeo.com/groups/[グループ名]/videos/[数字] に対応
+		・新しい画質の動画が見つかったら表示するようにした
+		・JSON文字列をjson.dmsを使用して解析するようにした
+		・文字参照をデコードするように変更した
+	0.16 - 2013/05/20
+		・URLの最後に#等が付いているURLにも対応するようにした
+		   感謝 http://toro.2ch.net/test/read.cgi/win/1348568425/734
+		・UTF-8の変換をrentan氏のutf8.dmsを使うようにした
+		   文字参照をデコードしないように変更した
+		・ファイル名に使えない文字の変換にchangeFileNameからcharacter_referencesを使うように変更した
+	0.15 - 2013/03/14
+		・Private VideoとなりDLできないものは/channels/staffpicks/からDLできないか試行するようにした
+		   感謝 http://toro.2ch.net/test/read.cgi/win/1348568425/590
+	0.14 - 2013/03/07
+		・数値文字参照をデコードするようにした
+	0.13 - 2013/02/08
+		・保存ファイル名のファイル名に使えない文字を変換するようにした
+	0.12 - 2012/11/24
+		・拡張子を動画URLから取得するようにした
+		・DLする動画の優先順位をコーデックと画質から選べるようにした
+		   H264,VP8,VP6 HD SD MOBILE
+		・画質が変わった時の解像度がわからなかったため%WIDTH% %HEIGHT%は無効にした
+	0.11 - 2012/11/21
+		・http://vimeo.com/channels/staffpicks/[数字] に対応
+		・http://vimeo.com/[ユーザーURL]/[動画名?] に対応
+		・保存ファイル名に%USER_URL%を追加
+	0.1 - 2012/11/20
+		初版

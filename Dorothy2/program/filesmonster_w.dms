@@ -1,0 +1,295 @@
+//Dorothy2
+//caption=FilesMonster.com
+//version=0.11
+//hint=http://filesmonster.com/download.php\?id=[\w\-]+
+//match=http://filesmonster.com/(download.php\?id=[\w\-]+(=.+)?|dl/[\w\-]+/free/2/[\w\-\.]+/)
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('download','post','fileSave','additem','reCaptcha','l_sleep','saveFolder'/*,'dummy_url','postDownloadFile'*/,'utf8');
+	var ini=new Ini(Dorothy.userIniPath);
+	var dltype = ini.read('GENERAL','dltype',0);
+	var postdl = ini.read('GENERAL','postdl',0);
+	var wait_skip = ini.read('GENERAL','wait_skip',5);
+	var folder = item.folder ? item.folder : '';
+
+	var proxy = (urlinfo.proxy != '' && folderdata.RandomHttpProxy==true) ? true : false;
+	
+
+	var myHeader = {};
+	myHeader.Cookie = new Cookie;
+	
+	var reCaptchaKey = '6LdilAkAAAAAAInzwBEI_82EA_NWn4cFVpCk7nnW';
+	
+	var url = new URL(urlinfo.url);
+	var title,filename,size;
+	
+	if(!url.url.match('http://filesmonster.com/dl/[\w\-]+/free/2/[\w\-\.]+/')){
+		var dlfile;
+		if(url.url.match('http://filesmonster.com/download.php\?id=([\w\-]+)(=(.+))?')){
+			var id = RegExp.$1;
+			url.url = 'http://filesmonster.com/download.php?id=' + id;
+			dlfile = RegExp.$3? RegExp.$3: '';
+		}
+
+		var http = download(url.url, false, myHeader);
+		if(http.responseHeader.code != 200){
+			if(http.data.indexOf('>File not found<') != -1){
+				println('File not found');
+				exit();
+			}
+			if(http.data.indexOf('>The link could not be decoded<') != -1){
+				println('error> The link could not be decoded');
+				exit();
+			}
+			println('error1> ' + http.responseHeader.code);
+			return retry();
+		}
+		myHeader.Cookie.parse('', http.responseHeader.cookie.data);
+		
+		if(http.data.match('Title:</td>\s*<td>([^<]+)')) title = new Utf8(RegExp.$1).decodeCharRef().toSJIS();
+		if(http.data.match('File name:</td>\s*<td>([^<]+)')) filename = new Utf8(RegExp.$1).decodeCharRef().toSJIS();
+		if(http.data.match('File size:</td>\s*<td>([^<]+)')) size = RegExp.$1;
+		
+		println('title: ' + title);
+		println('filename: ' + filename);
+		println('size: ' + size);
+		
+		if(http.data.match('<div id="error"[^>]*>\s*<span class="em">(.+?)</span>')){
+			var tmp = RegExp.$1.replace('<[^>]+>','g',''), tmp2;
+			println(tmp.fromUTF8toSJIS());
+			if(tmp.match('"([^"]+)" will be available for download in (\d+) min.+?download in (\d+) min')){
+				var wait=0,wait1=RegExp.$2,wait2=RegExp.$3;
+				if(title){
+					tmp2 = new Utf8(RegExp.$1.replace('\.+$', '')).decodeCharRef().toSJIS();
+					if(title.indexOf(tmp2) != -1) wait= wait1;
+					else wait = wait2;
+				}else{
+					wait = wait1;
+				}
+				println('wait ' + wait + 'min');
+				if(proxy && wait > wait_skip) return retry('proxyであり' + wait_skip + '分以上のwaitのためスキップ');
+				l_sleep(wait * 60 * 1000);
+				if(proxy){
+					reset();
+					Dorothy.continue = true;
+					return;
+				}
+				return retry();
+			}
+		}
+		
+		if(!http.data.match(/<form id='slowdownload' method="post"\s*action="([^"]+)/)){
+			return retry('error2> post urlが見つかりません');
+		}
+		var post_url = url.expand(RegExp.$1);
+		
+		http = post(post_url, '', false, myHeader);
+		if(http.responseHeader.code != 200){
+			return retry('error3> ' + http.responseHeader.code);
+		}
+		myHeader.Cookie.parse('', http.responseHeader.cookie.data);
+		
+		if(!http.data.match(/(reserve_ticket\(|rftUrl = )'([^']+)/)){
+			//fileSave('fm_error4.html', http.data);
+			return retry('error4> rftUrlが見つからない');
+		}
+		var url2 = url.expand(RegExp.$2);
+		
+		http = download(url2, false, myHeader);
+		if(http.responseHeader.code != 200){
+			return retry('error5> ' + http.responseHeader.code);
+		}
+		myHeader.Cookie.parse('', http.responseHeader.cookie.data);
+
+		var dlcode = http.data.match('\{"dlcode":"([^"]+)","name":"[^"]+","size":"?\d+"?,"cutted_name":"[^"]+"\}', 'g');
+		if(dlcode == null){
+			//fileSave('fm_error6.html', http.data);
+			return retry('error6> dlcodeが見つからない');
+		}
+		var url3;
+		if(dlcode.length == 1){
+			url3 = url.expand('/dl/' + id + '/free/2/' + RegExp.$1 + '/');
+		}else{
+			if(!dlfile){
+				var ini = { Mode: 'AddQueueItem'};
+				var additem = new AddItem (ini);
+				var list = [],tmp,tmp2;
+				for(var i in dlcode){
+					dlcode[i].match('dlcode":"([^"]+)","name":"([^"]+)');
+					tmp = RegExp.$1;
+					tmp2 = RegExp.$2;
+					if(dltype == 0){
+						list.add({ Url: url.url + '=' + (new MD5().calc(tmp2)), Filename: (new Utf8(tmp2).unescape().decodeCharRef().toSJIS()), Folder: folder, Comment: urlinfo.proxy});
+					}else{
+						list.add({ Url: url.expand('/dl/' + id + '/free/2/' + tmp + '/'), Filename: (new Utf8(tmp2).unescape().decodeCharRef().toSJIS()), Folder: folder, Cookie: myHeader.Cookie.data, Comment: urlinfo.proxy});
+					}
+				}
+				additem.send (list) || exit ();
+				dummy_url();
+				Dorothy.fileName = 'remove';
+				return;
+			}else{
+				for(var i in dlcode){
+					//if(dlcode[i].match('dlcode":"([^"]+)","name":"' + dlfile)){
+					if(dlcode[i].match('dlcode":"([^"]+)","name":"([^"]+)')){
+						if(dlfile == new MD5().calc(RegExp.$2)){
+							url3 = url.expand('/dl/' + id + '/free/2/' + RegExp.$1 + '/');
+							break;
+						}
+					}
+				}
+				if(!url3){
+					println('error7> ' + dlfile + 'が見つかりませんでした');
+					exit();
+				}
+			}
+		}
+	}else{
+		var url3 = url.url;
+		myHeader.Cookie.parse('', item.cookie);
+	}
+	
+	http = post(url3, '', false, myHeader);
+	if(http.responseHeader.code != 200){
+		return retry('error8> ' + http.responseHeader.code);
+	}
+	myHeader.Cookie.parse('',http.responseHeader.cookie.data);
+	
+	if(http.data.match('<p class="error">(.+?)</p>')){
+		var tmp = RegExp.$1.replace('<[^>]+>','g',''), tmp2;
+		println(tmp.fromUTF8toSJIS());
+		if(tmp.match('"([^"]+)" will be available for download in (\d+) min.+?download in (\d+) min')){
+			var wait=0, wait1=RegExp.$2, wait2=RegExp.$3;
+			if(title){
+				tmp2 = new Utf8(RegExp.$1.replace('\.+$', '')).decodeCharRef().toSJIS();
+				if(title.indexOf(tmp2) != -1) wait= wait1;
+				else wait = wait2;
+			}else{
+				wait = wait1;
+			}
+			println('wait ' + wait + 'min');
+			if(proxy && wait > wait_skip) return retry('proxyであり' + wait_skip + '分以上のwaitのためスキップ');
+			l_sleep(wait * 60 * 1000);
+			if(proxy){
+				reset();
+				Dorothy.continue = true;
+				return;
+			}
+			return retry();
+		}
+	}
+
+	var ret = reCaptcha(reCaptchaKey);
+	post_data = 'recaptcha_response_field=manual_challenge&recaptcha_challenge_field=' + ret.textarea;
+	println('post_url> ' + url3);
+	println('post_data> ' + post_data);
+
+	http = post(url3, post_data, false, myHeader);
+	if(http.responseHeader.code != 200){
+		return retry('error9> ' + http.responseHeader.code);
+	}
+	myHeader.Cookie.parse('',http.responseHeader.cookie.data);
+
+/*	
+	var wait;
+	if(http.data.match(/Please wait\s*<span id='sec'>(\d+)<\/span>\s*seconds/)){
+		wait = RegExp.$1;
+	}
+	println('wait ' + wait + ' sec');
+	l_sleep(wait * 1000);
+*/
+
+	if(!http.data.match(/get_link\('([^']+)/)){
+		//fileSave('fm_error10.html',http.data);
+		return retry('error10> get_linkが見つからない');
+	}
+	var url4 = url.expand(RegExp.$1);
+
+	http = download(url4, false, myHeader);
+	if(http.responseHeader.code != 200){
+		return retry('error11> ' + http.responseHeader.code);
+	}
+	myHeader.Cookie.parse('',http.responseHeader.cookie.data);
+	if(http.data.match('"error":"(([^"]+\\")*[^"]+)')){
+		var tmp = RegExp.$1.replace('<a href=\\"([^"]+)\\"[^>]*>([^<]+)<\\/a>','g','$2 $1 ');
+		tmp = tmp.replace('\\"','g','"');
+		tmp = tmp.replace('\\n','g',"\n");
+		tmp = tmp.replace('\\t','g',' ');
+		tmp = tmp.replace('<[^>]+>','g','');
+		tmp = tmp.replace('\\/','g','/');
+		println('error_msg> ' + tmp.fromUTF8toSJIS());
+		fileSave('fm_error.html', http.data);
+		exit();
+	}
+	if(!http.data.match('"url":"([^"]+)')){
+		fileSave('fm_error12.html', http.data);
+		println('error12> urlが見つかりません');
+		exit();
+	}
+	var url5 = new URL(RegExp.$1.replace('\\/','g','/'));
+	urlinfo.url = url5.url;
+	headers.host = url5.host;
+
+	/*
+	if(!http.data.match('"url":"([^"]+)","file_request":"([^"]+)"')){
+		fileSave('filesmonster.html', http.data);
+		return retry('error12> urlが見つかりません');
+	}
+	post_data = 'X-File-Request=' + RegExp.$2;
+	var postdl_url = new URL(RegExp.$1.replace('\\/','g','/'));
+	
+
+	if(item.filename){
+		filename = item.filename;
+	}else{
+		if(!filename) filename = postdl_url.filename;
+	}
+	
+	var f = new File(folder + '\' + filename);
+	for(var i=1; f.exists(); i++){
+		f.filename = f.extractPath() + f.changeExt('') + '(' + i + ')' + f.extractExt();
+	}
+	if(postdl==1){
+		//  /Default/Dorothy2/filesmonster_wに新たにアイテムを登録しフォルダーのPOSTを設定する
+		//一回ごとにPOSTを設定するので連続で登録して後でまとめてDLするとかはできない
+		var qfolder = '/Default/Dorothy2/filesmonster';
+		common_load ('call');
+		var ini = { Mode: 'AddQueueItem', Queue: qfolder};
+		var additem = new AddItem (ini);
+		var list = [ { Url: postdl_url.url, Filename: f.extractName(), Folder: folder, Cookie: myHeader.Cookie.data, Comment: urlinfo.proxy } ];
+		additem.send (list) || exit ();
+		var sl = new Strings ();
+		sl.add("var qfolder = '/Default/Dorothy2/filesmonster';");
+		sl.add("var folder = new ActiveXObject('Irvine.Folder');");
+		sl.add('folder.Path = qfolder;');
+		sl.add("folder.Data('http','httpmethod') = 2;");
+		sl.add("folder.Data('http','post') = '" + post_data.fromUTF8toSJIS() + "';");
+		sl.add ('// EOF');
+		var dir=new Directory(Dorothy.userPath);
+		if(!dir.exists()){
+			dir.make();
+		}
+	
+		var jsfile = dir.path + 'filesmonster.js.tmp';
+		sl.saveToFile (jsfile);
+		//Win32.winExec('cscript.exe //E:JScript "' + jsfile + '"');
+		var cmd = '//E:JScript "' + jsfile + '"';
+		var r = call ('wscript', cmd, folderdata.Folder, 100);
+		(new File (jsfile)).remove ();
+		println(qfolder + 'にPOSTを設定しアイテムを登録しました');
+	}else{
+		//スクリプトでダウンロード
+		var http = new HTTP;
+		http.timeout = folderdata.HttpTimeout;
+		var ret = postDownloadFile(http, postdl_url.url, post_data, f.extractName());
+		if(ret == false){
+			return retry('error---> post');
+		}
+	}
+	dummy_url();
+	Dorothy.fileName = 'remove';
+	*/
+}

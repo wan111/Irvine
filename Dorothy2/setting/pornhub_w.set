@@ -1,0 +1,63 @@
+//Dorothy2
+//caption=PornHub.com用設定
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function (){
+	common_load('EZDialog');
+
+	var dir=new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+
+	var ini=new Ini(Dorothy.userIniPath);
+	
+	var v={};
+	v.savename=ini.read('GENERAL','savename','%TITLE%');
+	v.priority = ini.read('GENERAL','priority','');
+
+	//ダイアログ
+	var d=new EZDialog('pornhub_w');
+	var width = d.sWidth('%TITLE% %USER_URL% %USER_NAME% %VIDEO_ID% %QUALITY% %FILENAME%');
+	var group1 = d.group('保存ファイル名(拡張子不要)');
+	var label1 = d.label('%TITLE%------タイトル', null, null, 'g');
+	var lavel2 = d.label('%USER_URL%---投稿者のユーザーURL', null, null, 'g');
+	var lavel3 = d.label('%USER_NAME%--投稿者', null, null, 'g');
+	var lavel4 = d.label('%VIDEO_ID%---動画ID', null, null, 'g');
+	var lavel5 = d.label('%QUALITY%----解像度', null, null, 'g');
+	var lavel6 = d.label('%FILENAME%---URLのファイル名', null, null, 'g');
+	var savename = d.edit(v.savename, width);
+	d.groupEnd(group1);
+
+	var group2 = d.group('画質設定');
+	var keys = ini.readSection('qualities');
+	keys.sort();
+	var width2 = d.sWidth('ABCDEFG');
+	var labels = [];
+	for(var i=0; i < keys.length; i++){
+		var quality = ini.read('qualities', keys[i], '');
+		labels[i] = d.label(keys[i] + ': ' + quality, null, null, 'g');
+	}
+
+	var priority = d.label_edit('優先順位', v.priority, null, width2);
+	d.groupEnd(group2);
+	
+	var ok=d.ok_cancel();
+	
+	if(1!=d.showModal()){
+		return;
+	}
+
+	//設定ファイル更新
+	ini.write('GENERAL', 'savename', savename.Text);
+	ini.write('GENERAL', 'priority', priority.edit.Text);
+	ini.update();
+
+	return;
+
+}

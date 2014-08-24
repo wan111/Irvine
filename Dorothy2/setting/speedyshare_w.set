@@ -1,0 +1,40 @@
+//Dorothy2
+//caption=SpeedyShare.com—pİ’è
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function(){
+	common_load('EZDialog');
+	
+	var dir = new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+	var ini = new Ini(Dorothy.userIniPath);
+
+	var ez = new EZDialog('SpeedyShare.com', 0, 0);
+	var w1 = ez.sWidth('Œp‘±î•ñíœ   ');
+	var b1 = ez.button('Œp‘±î•ñíœ', w1);
+	b1.onClick = function(){
+		b1.enabled = false;
+		try{
+			ini.eraseSection('Expiration');
+			ini.eraseSection('Expiration2');
+			ini.eraseSection('Expiration3');
+			ini.eraseSection('Expiration4');
+		}catch(){}
+	};
+	
+	var ok_cancel=ez.ok_cancel();
+	var ret=ez.showModal();
+	if(ret!=1){
+		return;
+	}
+	
+	ini.update();
+
+}

@@ -1,0 +1,221 @@
+/*
+caption=実行中アイテムの生存確認
+version=0.3
+hint=iniファイルにアイテムの情報を保存し,それとスレッドIDを使用して実行中か確認する
+author=wan
+*/
+
+function Thread(){
+	this.STILL_ACTIVE = 0x103;
+	
+	this.SYNCHRONIZE = 0x100000;
+	this.STANDARD_RIGHTS_REQUIRED    = 0xF0000;
+	
+	this.THREAD_ALL_ACCESS           = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3FF;
+	
+	this.dcall = new DynaCall;
+	this.dcall.register('kernel32.dll','GetCurrentThreadId','f=s','r=u');
+	this.dcall.register('kernel32.dll','OpenThread','f=s','i=ubu','r=h');
+	this.dcall.register('kernel32.dll','GetExitCodeThread','f=s','i=hs','r=b');
+	this.dcall.register('kernel32','CloseHandle','f=s','i=h','r=b');
+	
+	this.GetCurrentThreadId = function(){
+		return this.dcall.GetCurrentThreadId();
+	};
+	this.Exists = function(ThreadId){
+		var Handle = this.dcall.OpenThread(this.THREAD_ALL_ACCESS, false, ThreadId);
+		var code=new Struct('r:u');
+		this.dcall.GetExitCodeThread(Handle, code);
+		this.dcall.CloseHandle(Handle);
+		if(code.r == this.STILL_ACTIVE) return true;
+		return false;
+	};
+}
+/*
+function getThreadList(){
+	var currentId = new Thread().GetCurrentThreadId();
+	var thread_ini = new ThreadIni();
+	var ThreadIDs = thread_ini.readSections();
+	var ThreadList = {};
+	for(var i in ThreadIDs){
+		ThreadList[ThreadIDs[i]] = {
+			url       :thread_ini.read(ThreadIDs[i], 'url', ''),
+			proxy     :thread_ini.read(ThreadIDs[i], 'proxy', ''),
+			retryCount:thread_ini.read(ThreadIDs[i], 'retryCount', 0)
+		};
+	}
+	if(thread_ini.sectionExists(currentId) && ThreadList[currentId].url == item.url){
+		ThreadList[currentId].retryCount += 1;
+	}else{
+		ThreadList[currentId] = {url: item.url, proxy: urlinfo.proxy, retryCount: 0};
+	}
+	return ThreadList;
+}
+
+functio saveThreadList(list,id){
+	var thread_ini = new ThreadIni();
+	if(typeof id == 'undefined' || id == ''){
+		//リストの内容を全て書き込む
+		for(var sec in list){
+			for(var key in list[sec]){
+				thread_ini.write(sec, key, list[sec][key]);
+			}
+		}
+	}else{
+		//指定されたidのみ書き込む
+		for(var key in list[id]){
+			thread_ini.write(id, key, list[id][key]);
+		}
+	}
+	thread_ini.update();
+}
+
+function checkThreadList(list, id){
+	var thread_ini = new ThreadIni();
+	var Thread = new Thread();
+	if(typeof id == 'undefined' || id == ''){
+		for(var i in list){
+			if(!Thread.Exists(i)){
+				list.removeKey(i);
+				thread_ini.eraseSection(i);
+			}
+		}
+	}else{
+		if(!Thread.Exists(i)){
+			list.removeKey(i);
+			thread_ini.eraseSection(i);
+		}
+	}
+	thread_ini.update();
+	return list;
+}*/
+
+function AliveItem(url, proxy){
+	//url = url || urlinfo.url;
+	//proxy = proxy || urlinfo.proxy;
+	this.ini = new ThreadIni();
+	this.Thread = new Thread();
+	this.currentId = this.Thread.GetCurrentThreadId();
+	this.oldUrl = this.ini.read(currentId, 'url', '');
+	this.oldProxy = this.ini.read(currentId, 'proxy', '');
+	this.list = {};
+	this.list[currentId] = {url: url, proxy: proxy, retryCount:0};
+	//リトライか確認
+	if(this.ini.sectionExists(currentId) && oldUrl == url){
+		this.list[currentId].retryCount = ++this.ini.read(currentId, 'retryCount', 0);
+	}
+	this.load_flag = false;
+	
+	//iniからスレッドリストを読み込み
+	this.load = function(){
+		var tmp = this.list[currentId];
+		this.list = {};
+		var ThreadIDs = this.ini.readSections();
+		for(var i in ThreadIDs){
+			list[ThreadIDs[i]] = {
+				url       :this.ini.read(ThreadIDs[i], 'url', ''),
+				proxy     :this.ini.read(ThreadIDs[i], 'proxy', ''),
+				retryCount:parseInt(this.ini.read(ThreadIDs[i], 'retryCount', 0))
+			};
+		}
+		this.list[currentId] = tmp;
+		this.load_flag = true;
+	};
+	this.reload = function(){
+		this.ini = new ThreadIni();
+		this.load();
+	};
+	this.save = function(id){
+		var mutex = new Mutex('threadini');
+		mutex.lock();
+		if(typeof id == 'undefined' || id == ''){
+			//リストの内容全て
+			for(var sec in this.list){
+				for(var key in this.list[sec]){
+					this.ini.write(sec, key, this.list[sec][key]);
+				}
+			}
+		}else{
+			//指定されたスレッドIDのみ
+			for(var key in this.list[id]){
+				this.ini.write(id, key, this.list[id][key]);
+			}
+		}
+		this.ini.update();
+		mutex.unlock();
+	};
+	//生存確認
+	this.check = function(id){
+		var mutex = new Mutex('threadini');
+		mutex.lock();
+		var flag = true;
+		if(typeof id == 'undefined' || id == ''){
+			//リスト全ての生存確認をする
+			this.reload();
+			for(var i in this.list){
+				if(!this.Thread.Exists(i)){
+					this.list.removeKey(i);
+					this.ini.eraseSection(i);
+					flag = false;
+					this.ini.update();
+				}
+			}
+		}else{
+			//指定されたスレッドIDのみ生存確認をする
+			if(!this.Thread.Exists(id)){
+				this.reload();
+				this.list.removeKey(id);
+				this.ini.eraseSection(id);
+				flag = false;
+				this.ini.update();
+			}
+		}
+		mutex.unlock();
+		return flag;
+	};
+	this.erase = function(id){
+		var mutex = new Mutex('threadini');
+		mutex.lock();
+		if(typeof id == 'undefined' || id == '') return;
+		this.ini.eraseSection(id);
+		this.ini.update();
+		mutex.unlock();
+	};
+}
+
+function ThreadIni(){
+	var mutex = new Mutex('threadini');
+	mutex.lock();
+	this.ini = new Ini(irvDirPath() + '\thread.ini');
+	mutex.unlock();
+	this.read = function(section, key, dflt){
+		return this.ini.read(section, key, dflt);
+	};
+	this.readSection = function(section){
+		return this.ini.readSection(section);
+	};
+	this.readSections = function(){
+		return this.ini.readSections();
+	};
+	this.write = function(section, key, value){
+		return this.ini.write(section, key, value);
+	};
+	this.deleteKey = function(section, key){
+		return this.ini.deleteKey(section, key);
+	};
+	this.eraseSection = function(section){
+		return this.ini.eraseSection(section);
+	};
+	this.sectionExists = function(section){
+		return this.ini.sectionExists(section);
+	};
+	this.update = function(){
+		return this.ini.update();
+	};
+}
+
+function irvDirPath(){
+	var reg = new RegIni('\software\wildforce\irvine');
+	var irvpath = reg.read('path','application','');
+	return irvpath.slice(0,irvpath.lastIndexOf('\'));
+}

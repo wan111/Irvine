@@ -1,0 +1,46 @@
+//Dorothy2
+//caption=decontainer
+//version=0.1
+//hint=Linkcontainer Formats decrypt
+//match=\.(dlc|ccf|rsdf)$
+//author=wan
+//path=DOA
+//priority=400
+//end
+function(){
+//コンストラクタ
+	common_load('download', 'decontainer');
+//メイン
+this.main = function(url){
+	var url = new URL(url);
+	var http = download(url.url,false);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	DOA.comment = 'Linkcontainer decrypt';
+	var plaintext = decontainer(http.data, url.filename);
+	if(plaintext == false){
+		DOA.status = DOA_NG;
+		var f = new File(Dorothy.path + 'bin\nCdecontainer_console.exe');
+		if(!f.exists()) DOA.comment = 'nCdecontainer_console.exeをDorothy2\binフォルダに置いてください';
+		return;
+	}
+	if(plaintext != ''){
+		for(i in plaintext){
+			DOA_item_add(plaintext[i]);
+		}
+		DOA.status = DOA_LS;
+		return;
+	}
+	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

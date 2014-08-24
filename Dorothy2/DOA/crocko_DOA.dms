@@ -1,0 +1,110 @@
+//Dorothy2
+//caption=Crocko.com
+//version=0.11
+//hint=
+//match=^http://(www\.)?(easy-share|crocko)\.com/([a-z]+?/)?[A-Z0-9]+\d
+//author=wan
+//path=DOA
+//priority=600
+//end
+
+/*
+Typical URLs that are recognized as file URLs include:
+	http://www.crocko.com/408AD49786984E409102E2804AC34E0D/
+	http://www.crocko.com/408AD49786984E409102E2804AC34E0D/filename.zip
+Web folder URLs will appear as:
+	http://www.crocko.com/f/FFB21C649EF842F7BB0EF96F24EC076C/foldername
+Web folders that show all files for a user will appear as: 
+	http://www.crocko.com/o/FFB21C649EF842F7BB0EF96F24EC076C
+?
+ http://www.crocko.com/s/
+*/
+
+function(){
+//コンストラクタ
+	this.DOA_item_add2 = function(url,name,size){
+		a = frmDOA.ListView1.Items.add();
+		a.Caption = url;
+		a.url = url;
+		a.irvItem = -1;
+		a.doa_status = '';
+		a.doa_link   = '';
+		a.doa_name   = name;
+		DOA.urls.add(url);
+		a.SubItems.add('');
+		a.SubItems.add(size);
+		a.SubItems.add(name);
+		a.SubItems.add('');
+	};
+	common_load('http');
+//メイン
+this.main = function(url){
+	//var http = download(urlinfo.url,true,{'Cookie':'language=en'});
+	var http = new Http({ autoRedirect: true, verbose: 0 });
+	http.requestHeader.cookie = 'language=en';
+	http.get(urlinfo.url);
+	if(http.responseHeader.code!=200){
+		if(http.data.match(/<h4>([^<]+)<\/h4>/)){
+			DOA.status = DOA_NG;
+			DOA.comment = RegExp.$1.fromUTF8toSJIS();
+			return;
+		}
+		DOA.status = DOA_BS;
+		DOA.comment = 'error-> ' + http.responseHeader.code;
+		return;
+	}
+	//ファイルが存在する場合
+	if(http.data.match(/Download:\s+<strong>([^<]+)<.+?inner">([^<]+)<\/span/)){
+		DOA.name = RegExp.$1.fromUTF8toSJIS();
+		DOA.size = RegExp.$2.fromUTF8toSJIS();
+		if(!DOA.name && http.data.match('adsterra_custom_params = {keyword:"([^"]+)')){
+			DOA.name = RegExp.$1.fromUTF8toSJIS();
+		}
+		DOA.status = DOA_OK;
+		if(http.data.match('You need Premium membership to download this file.')){
+			DOA.status_str = 'Premium_Only';
+		}
+		return;
+	}
+	if(http.data.match(/myProgressBar\.err\('File not found/)){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File not found';
+		return;
+	}
+	//Errorの場合
+	if(http.data.match(/<h4>([^<]+)<\/h4>/)){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1.fromUTF8toSJIS();
+		return;
+	}
+	//フォルダーの場合
+	if(urlinfo.url.match(/http:\/\/(www\.)?crocko\.com\/[of]\//)){
+		DOA.status = DOA_LS;
+		DOA.status_str = 'Folder';
+		if(http.data.match('No files in this folder')){
+			DOA.comment = RegExp.$0;
+			return;
+		}else{
+			http.data.match(/<h1>([^<]+)<.+?descr">([^<]+)/);
+			DOA.comment = RegExp.$1 + " " + RegExp.$2;
+			//DOA画面にアイテムを追加
+			http.data.replace(/<td class="first">.+?<a href="([^"]+).+?<\/tr>/g,function(m,n){
+				if(m.match(/<div class=[^>]+>([^<]+)<\/div><\/td><td>([^<]+)/)){
+					DOA_item_add2(n,RegExp.$1,RegExp.$2 + ' byte');
+				}else{
+					DOA_item_add2(n,'Folder','');
+				}
+			});
+			return;
+		}
+	}
+
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

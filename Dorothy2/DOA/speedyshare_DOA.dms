@@ -1,0 +1,59 @@
+//Dorothy2
+//caption=SpeedyShare.com
+//version=0.11
+//hint=
+//match=http://(www\.)?speedy(\.sh|share\.com|live\.net)/(live/|files/)?\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('http');
+//メイン
+this.main = function(url){
+	var http = new Http({autoRedirect: true});
+	var url = new URL(url);
+	if(url.url.match('speedy(\.sh|share\.com|live\.net)/live/([^/]+)/')){
+		var location = http.headLocation(url.url);
+		if(!location){
+			DOA.status = DOA_UK;
+			DOA.comment = 'error>' + http.responseHeader.code;
+		}
+		DOA.status = DOA_LK;
+		DOA.link = location;
+		return;
+	}
+	http.requestHeader.Cookie = 'trans=en';
+	http.get(url.url);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error: ' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.indexOf('align=center>File not found.') != -1){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File not found';
+		return;
+	}
+	if(http.data.indexOf('This file can only be downloaded with SpeedyShare Premium. Get Premium Now!</a>') != -1){
+		DOA.status = DOA_NG;
+		DOA.comment = 'Premium Only!';
+		return;
+	}
+	if(http.data.match('a class=downloadfilename[^>]+>([^<]+).+class=sizetagtext>([^<]+)')){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		DOA.size = RegExp.$2;
+		return;
+	}
+	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

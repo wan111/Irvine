@@ -1,0 +1,41 @@
+//Dorothy2
+//caption=asfile.com用設定
+//version=0
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function (){
+	common_load('EZDialog');
+
+	var dir=new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+
+	var ini=new Ini(Dorothy.userIniPath);
+	
+	var v={};
+	v.wait_skip=ini.read('GENERAL','wait_skip',300);
+	v.cookie_retry=ini.read('GENERAL','cookie_retry',1);
+
+	//ダイアログ
+	var d=new EZDialog('asfile_w');
+	var wait_skip=d.label_edit('プロキシ時この秒数以上の待ち時間はスキップする',v.wait_skip);
+	var cookie_retry=d.label_edit('Cookieが取得できない時のリトライ回数',v.cookie_retry);
+	var ok=d.ok_cancel();
+	
+	if(1!=d.showModal()){
+		return;
+	}
+
+	//設定ファイル更新
+	ini.write('GENERAL','wait_skip',wait_skip.edit.text);
+	ini.write('GENERAL','cookie_retry',cookie_retry.edit.text);
+	ini.update();
+
+	return;
+
+}

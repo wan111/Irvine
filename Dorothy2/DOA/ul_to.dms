@@ -1,0 +1,31 @@
+//Dorothy2
+//caption=ul.to
+//version=0.12
+//hint=
+//match=http://ul.to/
+//author=xor, wan
+//path=DOA
+//priority=600
+//end
+function(){
+	common_load('http');
+this.main = function(url){
+	println('ul.to');
+	var url=new URL(url);
+	var http=new Http();
+	http.head(url.url);
+	if(typeof http.responseHeader.location == 'undefined' || http.responseHeader.location == ''){
+		DOA.status  = DOA_BS;
+		DOA.comment = 'error--->' + http.responseHeader.code;
+		return;
+	}
+	var url2= new URL(http.responseHeader.location);
+	println(url2.url);
+
+	DOA.status = DOA_LINK;
+	DOA.link   = url2.url;
+};
+
+this._ = function(){
+};
+}

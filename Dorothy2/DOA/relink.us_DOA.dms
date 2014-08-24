@@ -1,0 +1,131 @@
+//Dorothy2
+//caption=Relink.us
+//version=0.11
+//hint=
+//match=http://(www.)?relink.us/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	this.DOA_item_add2 = function(url,name,size){
+		a = frmDOA.ListView1.Items.add();
+		a.Caption = url;
+		a.url = url;
+		a.irvItem = -1;
+		a.doa_status = '';
+		a.doa_link   = '';
+		a.doa_name   = name;
+		DOA.urls.add(url);
+		a.SubItems.add('');
+		a.SubItems.add(size);
+		a.SubItems.add(name);
+		a.SubItems.add('');
+	};
+
+	common_load('decontainer', 'http');
+//メイン
+this.main = function(url){
+	var url = new URL(url);
+	var http = new Http({autoRedirect: true});
+	http.get(url);
+	
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	url.url = http.previousUrl;
+	if(!url.url.match('^http://(www.)?relink.us/')){
+		DOA.status = DOA_NG;
+		return;
+	}
+	//DLC
+	if(http.data.match('<a href="([^"]+)" class="dlc_button"')){
+		DOA.status = DOA_LS;
+		url.url = url.expand(RegExp.$1);
+		if(http.data.match('<th>Title</th><td>([^<]+)')){
+			DOA.comment = RegExp.$1.fromUTF8toSJIS();
+		}
+		http.autoRedirect = false;
+		http.get(url.url);
+		if(http.responseHeader.code != 200){
+			DOA.status = DOA_BS;
+			return;
+		}
+		var ret = decontainer(http.data);
+		if(ret){
+			DOA.status_str = 'DLC(' + ret.length + ')';
+			for(var i = 0; i < ret.length; i++){
+				DOA_item_add(ret[i]);
+			}
+		}
+		return;
+	}
+	/*
+	if(http.data.match('<table class="sortable">.+?</table>')){
+		var tmp = RegExp.$0;
+
+		DOA.status = DOA_LS;
+		if(http.data.match('<table style="float:left; margin-right:10px;">(.+?)</table>')){
+			RegExp.$1.match('</tr>\s*<tr>(\s*<td id="centerthis">)([^<]+)</td>\1.+?</td>\1([^<]+)</td>\1(\d+)');
+			//DOA.status_str = 'LINKS(' + RegExp.$4 + ')';
+			DOA.comment = RegExp.$2 + ' ' + RegExp.$3;
+		}
+		var list = [];
+		tmp.replace(/<td>([^<]+)<\/td>\s*<td>([^<]+)<\/td>\s*<td><[^>]+getFile\('([^']+)/g, function(m,name,size,url){
+			list.add({url: 'http://www.relink.us/frame.php?' + url, name: name.fromUTF8toSJIS(), size: size});
+		});
+		for(var i = 0; i < list.length; i++){
+			http.get(list[i].url);
+			if(http.responseHeader.code != 200){
+				DOA.status = DOA_BS;
+				DOA.comment = http.responseHeader.code;
+				return;
+			}
+			
+			if(http.data.match('<input type="image" src="([^"]+/circlecaptcha.php\?id=[^"]+)" style=')){
+				println('ccap');
+				var imgurl = 'http://www.relink.us/' + RegExp.$1;
+				var cid = http.data.match('<input type="hidden" name="cid" value="([^"]+)')? RegExp.$1: '';
+				var lid = http.data.match('<input type="hidden" name="lid" value="([^"]+)')? RegExp.$1: '';
+				if(!(cid && lid)){
+					DOA.status = DOA_ER;
+					DOA.comment = '仕様変更?';
+					return;
+				}
+				http.get(imgurl);
+				if(http.responseHeader.code != 200){
+					DOA.comment = DOA_BS;
+					DOA.comment = http.responseHeader.code;
+					return;
+				}
+				var ret = inputCaptcha(http.data, 30, 30, 'killme', 'circlecaptcha.jpg');//Captcha.hta改造
+				if(!ret.match('x=(\d+);y=(\d+)')){
+					DOA.status = DOA_ER;
+					DOA.comment = 'circlecaptcha_error';
+					return;
+				}
+				var postdata = 'lid=' + lid + '&cid=' + cid + '&button.x=' + RegExp.$1 + '&button.y=' + RegExp.$2;
+				http.post('http://www.relink.us/frame.php', postdata);
+			}
+			if(!http.data.match('<iframe name="Container"[^>]+src="([^"]+)"></iframe>')){
+				DOA.status = DOA_ER;
+				DOA.comment = '仕様変更?';
+				return;
+			}
+			DOA_item_add2(RegExp.$1.fromUTF8toSJIS(), list[i].name, list[i].size);
+		}
+		return;
+	}
+	*/
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

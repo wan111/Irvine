@@ -1,0 +1,48 @@
+//Dorothy2
+//caption=FilePost.com
+//version=0.12
+//hint=
+//match=^https?://(filepost\.com/files|fp\.io)/\w{8,}
+//author=wan
+//path=DOA
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	if (urlinfo.url.match ('^http://fp\.io/')) {
+		urlinfo.url = urlinfo.url.replace ('^http://fp\.io','http://filepost\.com/files');
+	}
+	var http = download(urlinfo.url);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error> ' + http.responseHeader.code;
+		return;
+	}
+	//if(http.data.match(/title>FilePost.com: Download ([^<]+) - fast/)){
+	if(http.data.match(/<h1 title="([^"]+).+<li><span>Size:<\/span> ([^<]+)/)){
+		DOA.name = RegExp.$1.fromUTF8toSJIS();
+		//http.data.match(/<li><span>Size:<\/span> ([^<]+?)<\/li>/);
+		DOA.size = RegExp.$2;
+		DOA.status = DOA_OK;
+			if(/Files over 1024MB can be downloaded by premium<br\/ >members only\./.test(http.data)){
+				DOA.status_str = 'Premium Only';
+			}
+		return;
+	}
+	if(/<h1.*?>File not found<\/h1>/.test(http.data)){
+		DOA.status = DOA_NG;
+		DOA.comment= 'File not found';
+		return;
+	}
+
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

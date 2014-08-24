@@ -1,0 +1,55 @@
+//Dorothy2
+//caption=FilesMonster.com用設定
+//version=0
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function (){
+	common_load('EZDialog');
+
+	var dir=new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+
+	var ini=new Ini(Dorothy.userIniPath);
+	
+	var v={};
+	v.postdl=ini.read('GENERAL','postdl',0);
+	v.dltype=ini.read('GENERAL','dltype',0);
+	v.wait_skip=ini.read('GENERAL','wait_skip',5);
+
+	//ダイアログ
+	var d=new EZDialog('FilesMonster.com');
+	var postdl=d.radioGroup('POST DLの方法'
+				,['scriptでダウンロード','フォルダにPOSTを設定してアイテムを追加']
+				,1
+				,v.postdl);
+	var dltype=d.radioGroup('ファイルが分割されURLが複数の場合'
+				,['元URLに=filenameを追加し登録 元URLからfilenameのURLを取得しDL','各URLを直接登録してDL(期限有,IP変更不可)']
+				,1
+				,v.dltype);
+	d.contOn();
+	var wait_skip=d.label_edit('Proxy接続時',v.wait_skip, null, d.sWidth('9999'));
+	d.heightSpace(5);
+	d.widthSpace(-7);
+	var label1 = d.label('分以上のwaitをスキップする', null, null, 'g');
+	d.contOff();
+
+	var ok=d.ok_cancel();
+	
+	if(1!=d.showModal()){
+		return;
+	}
+
+	//設定ファイル更新
+	ini.write('GENERAL','postdl',postdl.itemIndex);
+	ini.write('GENERAL','dltype',dltype.itemIndex);
+	ini.write('GENERAL','wait_skip',wait_skip.edit.text);
+	ini.update();
+
+	return;
+}

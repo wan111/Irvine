@@ -1,0 +1,56 @@
+//Dorothy2
+//caption=DEPOSIT files
+//version=0.13
+//hint=
+//match=http://(www\.)?(depositfiles\.(com|org)|dfiles\.(ru|eu))/([^/]+/)?files/
+//author=xor, wan(0.13)
+//path=DOA
+//end
+function(){
+	common_load('download','post','utf8');
+
+this.main=function(url){
+	if(urlinfo.url.match('http://(www\.)?(depositfiles\.(com|org)|dfiles\.(ru|eu))/([^/]+/)?files/(\w+)')){
+		urlinfo.url = 'http://depositfiles.com/files/' + RegExp.$6;
+	}
+	var url = new URL(urlinfo.url);
+	
+	var http = download(url.url,true,{'Cookie':'lang_current=en'});
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		return;
+	}
+	if(http.data.match('Such file does not exist or it has been removed for infringement of copyrights')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$0;
+		return;
+	}
+	if(http.data.match('This file does not exist, the access to the following file is limited or it has been removed due to infringement of copyright.')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$0;;
+		return;
+	}
+	var postData='gateway_result=1';
+	var http2 = post(url.url, postData, false, {'Cookie':'lang_current=en'});
+	if(http2.data.match('id="no_download_message">([^<]+)')){
+		DOA.comment = RegExp.$1.trim();
+		DOA.status = DOA_NG;
+		return;
+	}
+	if(http.data.match(/<script type="text\/javascript">eval\( unescape\('([^']+).+File size: <b>([^<]+)/)){
+		var tmp = RegExp.$1;
+		var size = new Utf8(RegExp.$2).decodeCharRef().toSJIS(); //文字実体参照-->SJIS
+		tmp = tmp.replace('%u','g',';&#x')+';';
+		tmp = new Utf8(tmp).decodeCharRef().decodeCharRef().toSJIS(); //数値文字参照-->文字実体参照-->SJIS
+		if(tmp.match('File name: <b title="([^"]+)">')){
+			DOA.status = DOA_OK;
+			DOA.name = RegExp.$1.trim();
+			DOA.size = size;
+			return;
+		}
+	}
+	DOA.status = DOA_UK;
+};
+this._=function(){
+};
+}

@@ -1,0 +1,79 @@
+//Dorothy2
+//caption=Share-Online.biz
+//version=0.1
+//hint=
+//match=http://www.share-online.biz/(download.php\?id=|dl/)
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+
+	//http://www.share-online.biz/linkcheckapi/
+
+	common_load('post');
+	
+	this.urls = [];
+	this.status = [];
+	this.name = [];
+	this.size = [];
+	this.busy = '';
+	var linkcheck = 'http://api.share-online.biz/linkcheck.php';
+	
+	for(var i in DOA.urls){
+		if(DOA.urls[i].match('http://www.share-online.biz/(download.php\?id=|dl/)')){
+			this.urls.add(DOA.urls[i]);
+		}
+	}
+	
+	var post_data = 'links=' + urls.join("\n");
+	
+	var http = post(linkcheck, post_data, false);
+	if(http.responseHeader.code == 200){
+		var data = new Strings(http.data);
+		
+		for(var i in data){
+			var a = data[i].split(';');
+			this.status.add(a[1]);
+			this.name.add(a[2]);
+			this.size.add(a[3]? a[3]: '');
+		}
+	}else{
+		this.busy = http.responseHeader.code;
+	}
+
+//メイン
+this.main = function(url){
+	if(busy != ''){
+		DOA.status = DOA_BS;
+		DOA.comment = busy;
+		return;
+	}
+	for(var i in urls){
+		if(url == urls[i]){
+			if(status[i] == "OK"){
+				DOA.status = DOA_OK;
+				DOA.name = name[i];
+				DOA.size = (size[i]/1048576-0.005).toFixed(2) + 'MB';
+				return;
+			}else if(status[i].match('DELETED|NOTFOUND')){
+				DOA.status = DOA_NG;
+				DOA.comment = status[i];
+				return;
+			}else{
+				DOA.status = DOA_UK;
+				return;
+			}
+		}
+	}
+	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

@@ -1,0 +1,48 @@
+//Dorothy2
+//caption=FilesMonster.com
+//version=0.1
+//hint=
+//match=http://filesmonster.com/download.php\?id=[\w\-]+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download', 'utf8');
+//メイン
+this.main = function(url){
+	url = url.match('http://filesmonster.com/download.php\?id=[\w\-]+');
+	var http = download(url, false);
+	if(http.responseHeader.code != 200){
+		if(http.data.indexOf('>File not found<') != -1){
+			DOA.status = DOA_NG;
+			DOA.comment = 'File not found';
+			return;
+		}
+		if(http.data.indexOf('>The link could not be decoded<') != -1){
+			DOA.status = DOA_NG;
+			DOA.comment = 'The link could not be decoded';
+			return;
+		}
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('File name:</td>\s*<td>([^<]+)')){
+		DOA.status = DOA_OK;
+		DOA.name = new Utf8(RegExp.$1).decodeCharRef().toSJIS();
+		if(http.data.match('File size:</td>\s*<td>([^<]+)')){
+			DOA.size = RegExp.$1;
+		}
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
+}

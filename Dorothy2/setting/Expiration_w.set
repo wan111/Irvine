@@ -1,0 +1,214 @@
+//Dorothy2
+//caption=Expiration用設定
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function(ini){
+	var F = "
+	object Form1: TForm1
+	  Position = poScreenCenter
+	  Width = 676
+	  Height = 350
+	  Caption = 'Expiration'
+	  Color = clBtnFace
+	  Font.Charset = SHIFTJIS_CHARSET
+	  Font.Color = clWindowText
+	  Font.Height = -12
+	  Font.Name = 'ＭＳ Ｐゴシック'
+	  Font.Style = []
+	  OldCreateOrder = False
+	  DesignSize = (
+	    676
+	    350)
+	  PixelsPerInch = 96
+	  TextHeight = 12
+	  Menu = MainMenu1
+	  object MainMenu1: TMainMenu
+	    Left = 32
+	    Top = 8
+	    object Edit1: TMenuItem
+	      Caption = '編集(&E)'
+	      object EditSellectAll: TMenuItem
+	        Caption = 'すべて選択(&A)'
+	        Enabled = True
+	      end
+	      object EditDelete: TmenuItem
+	        Caption = '削除(&D)'
+	        Enabled = False
+	      end
+	    end
+	  end
+	  object ListView1: TListView
+	    Left = 0
+	    Top = 0
+	    Width = 667
+	    Height = 254
+	    Anchors = [akLeft, akTop, akRight, akBottom]
+	    Checkboxes = False
+	    Columns = <
+	      item
+	        Width = 170
+	        Caption = 'baseUrl'
+	      end
+	      item
+	        Width = 116
+	        Caption = 'date'
+	      end
+	      item
+	        Width = 150
+	        Caption = 'url'
+	      end
+	      item
+	        Width = 80
+	        Caption = 'proxy'
+	      end
+	      item
+	        Width = 140
+	        Caption = 'name'
+	      end>
+	    MultiSelect = True
+	    ReadOnly = True
+	    RowSelect = True
+	    PopupMenu = PopupMenu1
+	    TabOrder = 0
+	    ViewStyle = vsReport
+	  end
+	  object PopupMenu1: TPopupMenu
+	    object PopDelete: TMenuItem
+	      Caption = '削除(&D)'
+	      Enabled = False
+	    end
+	  end
+	  object OKBtn: TButton
+	    Left = 470
+	    Top = 264
+	    Width = 75
+	    Height = 25
+	    Caption = 'OK'
+	    Default = False
+	    Anchors = [akBottom, akRight]
+	    ModalResult = 1
+	    TabOrder = 1
+	  end
+	  object CancelBtn: TButton
+	    Left = 550
+	    Top = 264
+	    Width = 75
+	    Height = 25
+	    Anchors = [akBottom, akRight]
+	    Cancel = True
+	    Caption = 'キャンセル'
+	    ModalResult = 2
+	    TabOrder = 2
+	  end
+	end
+	";
+
+	var expfrm = new VCLForm;
+	expfrm.loadFromText(F);
+	
+	expfrm.ListView1.Items.Focused = true;
+
+	var item_add = function(caption, date, url, proxy, name){
+		var a = expfrm.ListView1.Items.add();
+		a.Caption = caption;
+		a.date = date;
+		a.url = url;
+		a.proxy = proxy;
+		a.name = name;
+		
+		a.SubItems.add(new Date(date).toString());
+		a.SubItems.add(a.url);
+		a.SubItems.add(a.proxy);
+		a.SubItems.add(a.name);
+	};
+	//選択されているアイテムを削除
+	var item_delete = function(){
+		while(expfrm.ListView1.SelCount > 0){
+			expfrm.ListView1.Selected.delete();
+		}
+		expfrm.ListView1.update();
+	};
+	
+	var item_selectall = function(){
+		for(var i in expfrm.ListView1.Items) expfrm.ListView1.Items[i].Selected = true;
+	};
+	
+	expfrm.ListView1.onKeyDown = function(Sender, Key, Shift){
+		//Delete
+		if(Key == 46){
+			while(expfrm.ListView1.SelCount > 0){
+				item_delete();
+			}
+		}
+		//Ctrl + A
+		if(Key == 65 && Shift == 'ssCtrl'){
+			item_selectall();
+		}
+	};
+	
+	expfrm.ListView1.onSelectItem = function(){
+		if(expfrm.ListView1.SelCount > 0){
+			expfrm.EditDelete.Enabled = true;
+			expfrm.PopDelete.Enabled = true;
+		}else{
+			expfrm.PopDelete.Enabled = false;
+			expfrm.EditDelete.Enabled = false;
+		}
+	};
+	/*
+	expfrm.ListView1.onChange = function(Sender, Item, Change){
+		
+	};
+	expfrm.ListView1.onColumnClick = function(Sender, Column){
+		
+	};
+	*/
+	expfrm.EditDelete.onClick = expfrm.PopDelete.onClick = item_delete;
+	expfrm.EditSellectAll.onClick = item_selectall;
+	
+	expfrm.OKBtn.onClick = function(){
+		if(item_count > expfrm.ListView1.Items.Count){
+			ini.eraseSection('Expiration');
+			ini.eraseSection('Expiration2');
+			ini.eraseSection('Expiration3');
+			ini.eraseSection('Expiration4');
+			for(var i in expfrm.ListView1.Items){
+				var baseUrl = expfrm.ListView1.Items[i].Caption;
+				ini.write('Expiration', baseUrl, expfrm.ListView1.Items[i].date);
+				ini.write('Expiration2', baseUrl, expfrm.ListView1.Items[i].url);
+				ini.write('Expiration3', baseUrl, expfrm.ListView1.Items[i].proxy);
+				ini.write('Expiration4', baseUrl, expfrm.ListView1.Items[i].name);
+			}
+			//ini.update();
+		}
+	};
+	
+	expfrm.CancelBtn.onClick = function(){
+		expfrm.close();
+	};
+
+
+//-----------------------------------------------------------------------
+
+	if(nameOf(ini) != 'Ini') ini = new Ini(Dorothy.userIniPath);
+	var keys = ini.readSection('Expiration');
+	var item_count = 0;
+	for(var i in keys){
+		item_count++;
+		item_add(
+			keys[i],
+			ini.read('Expiration', keys[i], ''),
+			ini.read('Expiration2', keys[i], ''),
+			ini.read('Expiration3', keys[i], ''),
+			ini.read('Expiration4', keys[i], '')
+		);
+	}
+	
+	expfrm.showModal();
+
+}

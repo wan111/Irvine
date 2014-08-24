@@ -1,0 +1,41 @@
+//Dorothy2
+//caption=secureupload.eu
+//version=0.1
+//hint=
+//match=http://www.secureupload.eu/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	var url = new URL(urlinfo.url);
+	var http = download(urlinfo.url, false);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('<h3>Downloading (.+?) \(([0-9\.]+\s?[a-zA-Z]+)\)</h3>')){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		DOA.size = RegExp.$2;
+		return;
+	}
+	if(http.data.match('<h3>File Not Found</h3>')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File Not Found';
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

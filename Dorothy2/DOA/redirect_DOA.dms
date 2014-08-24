@@ -1,0 +1,57 @@
+//Dorothy2
+//caption=URL転送サービス
+//version=0.6
+//hint=
+//match=^https?://((adf\.ly|bit\.ly|extlink\.blogsys\.jp|fc2\.in|goo\.gl|ilix\.in|ime\.nu|j\.mp|jbbs\.livedoor\.jp|jump\.2ch\.net|lix\.in|ow\.ly|p\.tl|pinktower\.com|t\.co|tinyurl\.com|tobeto\.be|wk\.tk|ws1\.y-bbs\.net)/.|[0-9a-zA-Z]+\.(allanalpass\.com|amy\.gs|any\.gs|baberepublic\.com|cash4files\.com|deb\.gs|drstickyfingers\.com|dyo\.gs|fapoff\.com|filesonthe\.net|freean\.us|freegaysitepass\.com|galleries\.bz|goneviral\.com|hornywood\.tv|linkbabes\.com|linkbucks\.com|linkgalleries\.net|linkseer\.net|megaline\.co|miniurls\.co|picbucks\.com|picturesetc\.net|placepictures\.com|poontown\.net|qqc\.co|qvvo\.com|realfiles\.net|rqq\.co|seriousdeals\.net|seriousfiles\.com|seriousurls\.com|sexpalace\.gs|theseblogs\.com|thesefiles\.com|theseforums\.com|thosegalleries\.com|tinybucks\.net|tinylinks\.co|tnabucks\.com|tubeviral\.com|uberpicz\.com|ubervidz\.com|ubucks\.net|ugalleries\.net|ultrafiles\.net|urlbeat\.net|urlpulse\.net|whackyvidz\.com|youfap\.me|yyv\.co|zff\.co|zxxo\.net)([/?#].*)?$)
+//author=wan
+//path=DOA
+//priority=600
+//end
+function(){
+	//rentan氏のredirect.dmsを使用
+	item = new IrvineItem();
+	folderdata.HttpMethod = parseInt (Irvine.FolderData['http' ,'httpmethod']);
+	folderdata.Folder = folderdata.folder = Irvine.FolderData ['queue', 'folder'];
+	Dorothy.temp = dorothy2_temp;
+	//DOAバージョンチェック無効化
+	Util = {fatal: function(){}};
+	common_load('rutil_dorothy2r');
+
+	var data = file_load('program\redirect.dms');
+	//互換性維持のためにDOAの処理をこちらで行うように変更
+	data = data.replace('//-+ メイン処理 -.+') + '}';
+	eval(data)();
+	this.urlRedirector = new UrlRedirector ();
+
+this.main = function (url) {
+	var ur = this.urlRedirector;
+	var r = ur.resolveAll (url);
+	
+	if (r == ur.OK) {
+		if(ur.urls.length == 1){
+			DOA.status = DOA_LK;
+			DOA.link = ur.urls[0];
+		}else{
+			DOA.status = DOA_LS;
+			for(var i = 0; i < ur.urls.length; i++){
+				DOA_item_add (ur.urls [i]);
+			}
+		}
+	}
+	else if (r == ur.RETRY) {
+		DOA.status = DOA_BS;
+	}
+	else if (r == ur.MIS) {
+		DOA.status = DOA_UK;
+	}
+	else {  // ur.NG .UNKNOWN .EXIT
+		DOA.status = DOA_NG;
+		DOA.comment = ur.comment;
+	}
+};
+
+this._ = function () {
+	this.urlRedirector = null;
+};
+
+}

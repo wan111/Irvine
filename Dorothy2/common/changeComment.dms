@@ -1,0 +1,50 @@
+//Dorothy2
+//caption=changeComment
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+function changeComment(comment, qfolder, url){
+	common_load('call', 'rutil');
+	url = url || item.url;
+	qfolder = qfolder || Util.get_option ('queue');
+	if(!qfolder){
+		println('changeComment: キューフォルダが指定されていません');
+		return false;
+	}
+	var js = Dorothy.temp + 'changeComment.tmp';
+	var sl = new Strings();
+	sl.add("function setComment(comment, qfolder, index){");
+	sl.add("	item.data = irv.GetItemData(index);");
+	sl.add("	item.comment = comment;");
+	sl.add("	irv.SetItemData(index, item.data);");
+	sl.add("}");
+	sl.add("function getIndex(url){");
+	sl.add("	for(var i = 0; i < irv.ItemCount; i++){");
+	sl.add("		item.data = irv.GetItemData(i);");
+	sl.add("		if(url == item.url) return i;");
+	sl.add("	}");
+	sl.add("	return false;");
+	sl.add("}");
+	sl.add("var irv = new ActiveXObject('Irvine.Api');");
+	sl.add("var item = new ActiveXObject('Irvine.Item');");
+	sl.add("var comment = '" + comment + "';");
+	sl.add("var qfolder = '" + qfolder + "';");
+	sl.add("var url = '" + url + "';");
+	sl.add("var currentQfolder = irv.CurrentQueueFolder;");
+	sl.add("irv.CurrentQueueFolder = qfolder;");
+	sl.add("var index = getIndex(url);");
+	sl.add("if(index === false){");
+	sl.add('	WScript.Echo("アイテムが見つからない\n" + qfolder + "\n" + url);');
+	sl.add("	WScript.Quit();");
+	sl.add("}");
+	sl.add("setComment(comment, qfolder, index);");
+	sl.add("irv.CurrentQueueFolder = currentQfolder");
+	sl.add("irv.invalidate();");
+	sl.saveToFile(js);
+	call('wscript', '//E:JScript "' + js + '"', Dorothy.temp, 1000);
+	new File(js).remove();
+	item.comment = comment;
+};

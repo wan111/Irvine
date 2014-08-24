@@ -1,0 +1,79 @@
+//Dorothy2
+//caption=lumfile.com
+//version=0.1
+//hint=
+//match=http://lumfile.com/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download','post');
+	
+	this.urls = [];
+	this.status = [];
+	this.busy = '';
+	var linkcheck = 'http://lumfile.com/checkfiles.html';
+	
+	for(var i in DOA.urls){
+		if(DOA.urls[i].match('http://lumfile.com/')){
+			this.urls.add(DOA.urls[i]);
+		}
+	}
+	
+	var post_data = 'op=checkfiles' + '&list=' + urls.join("\n");
+	
+	var http = post(linkcheck, post_data, false);
+	if(http.responseHeader.code == 200){
+		http.data.replace(/<td>[^<]+<\/td><td style=[^>]+>([^<]+)<\/td>/g, function(m,n){
+			status.add(n);
+		});
+	}else{
+		this.busy = http.responseHeader.code;
+	}
+
+//メイン
+this.main = function(url){
+	for(var i in urls){
+		if(url == urls[i]){
+			if(status[i] != 'Found'){
+				DOA.status = DOA_NG;
+				DOA.comment = status[i];
+				return;
+			}else break;
+		}
+	}
+	
+	var http = download(url);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error: ' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match(/<h2 class="file">File: <span>([^<]*) <\/span>\[([^\]]*)/)){
+		/*if(RegExp.$1 == '' && RegExp.$2 == ''){
+			DOA.status = DOA_NG;
+			//DOA.comment = 'File Not Found';
+			return;
+		}*/
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1.fromUTF8toSJIS();
+		DOA.size = RegExp.$2;
+		return;
+	}
+/*	if(http.data.match('<b>File Not Found</b>')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File Not Found';
+		return;
+	}
+*/	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

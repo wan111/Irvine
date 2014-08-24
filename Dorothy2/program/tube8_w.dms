@@ -1,0 +1,188 @@
+//Dorothy2
+//caption=Tube8
+//version=0.13
+//hint=http://www.tube8.com/
+//match=http://www.tube8.com/
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('download', 'character_references', 'utf8');
+	
+	var ini = new Ini(Dorothy.userIniPath);
+	var savename = ini.read('GENERAL','savename','%TITLE%');
+	var priority = ini.read('GENERAL','priority','');
+	
+	var keys = ini.readSection('qualities');
+	var qualities = {};
+	for(var i=0; i < keys.length; i++){
+		var value = ini.read('qualities', keys[i], '');
+		qualities[keys[i]] = value;
+	}
+	
+/*	qualities['A'] = '720p';
+	qualities['B'] = '480p';
+	qualities['C'] = '240p';
+	qualities['D'] = '180p';
+*/	
+	var http = download(urlinfo.url, true);
+	if(http.responseHeader.code != 200){
+		println('error> ' + http.responseHeader.code);
+		if(http.responseHeader.code == 404 && http.data.match('>Page Not Found: 404 Error.<')){
+			println('Page Not Found: 404 Error.');
+			exit();
+		}
+		exit();
+	}
+	
+	var add_quality = function(q){
+		println('ini‚ÉV‚µ‚¢quality:' + q + '‚ð’Ç‰Á');
+		q.sort();
+		var mutex = new Mutex('tube8_w_ini');
+		mutex.lock();
+		var ini = new Ini(Dorothy.userIniPath);
+		var keys = ini.readSection('qualities');
+		keys.sort();
+		var cc = keys != '' ? keys[keys.length-1].charCodeAt(0) + 1 : 0x41;
+		for(var i=0; i < q.length; i++) ini.write('qualities', String.fromCharCode(cc + i), q[i]);
+		ini.update();
+		mutex.unlock();
+		exit();
+	};
+	var decrypt = function(ciphertext, password, nBits){
+		println('Aes decrypt');
+		println('ciphertext: ' + ciphertext);
+		println('password; ' + password);
+		common_load('Aes');
+		var plaintext = Aes.Ctr.decrypt(ciphertext, password, nBits);
+		if(plaintext == ''){
+			println('error> Aes decrypt');
+			exit();
+		}
+		return plaintext;
+	};
+	
+	if(http.data.match('flashvars = {([^\}]+)')){
+		var flashvars = RegExp.$1;
+		var encrypted = false;
+		if(flashvars.match('"encrypted":true')) encrypted = true;
+		if(!flashvars.match('"video_title":"([^"]*)')){
+			println('video_title‚ªŒ©‚Â‚©‚ç‚È‚¢');
+			exit();
+		}
+		var video_title = RegExp.$1.split('\+');
+		video_title = decodeURI(video_title.join(' '));
+		
+		var video_url = '', quality = '', vqualities = [], urls = {}, qflag = false;
+		flashvars.replace(/"quality_(\d+[a-z])":"([^"]+)/gi, function(m, vquality, vurl){
+			vquality = vquality.toLowerCase();
+			vqualities.add(vquality);
+			urls[vquality] = {url: decodeURI(vurl), encrypted: encrypted};
+		});
+		if(flashvars.match('"video_url":"([^"]+)')){
+			var tmp = (decodeURI(RegExp.$1)).replace(/\\/g,'');
+			video_url = encrypted ? decrypt(tmp, video_title, 256) : tmp;
+			if(!video_url.match('^.+/(\d+[PpIi])_[^/]+$')){
+				println('quality‚ªŽæ“¾‚Å‚«‚È‚¢');
+				exit();
+			}
+			quality = RegExp.$1.toLowerCase();
+			vqualities.add(quality);
+			urls[quality] = {url: video_url, encrypted: false};
+		}
+		if(vqualities.length==0){
+			println('video_url‚ªŒ©‚Â‚©‚ç‚È‚¢');
+			exit();
+		}
+		println('DL‚Å‚«‚équality: ' + vqualities);
+		//---------------------------------------
+		var q = [];
+		var s = '';
+		for(var j in qualities) s += qualities[j];
+		for(var i=0; i < vqualities.length; i++){
+			if(s.indexOf(vqualities[i]) == -1){
+				q.add(vqualities[i]);
+			}
+		}
+		if(q != '') add_quality(q);
+		//---------------------------------------
+		for(var i=0; i < priority.length; i++){
+			if(typeof qualities[priority[i]] != 'undefined'){
+				quality = qualities[priority[i]];
+				if(typeof urls[quality] != 'undefined'){
+					qflag = true;
+					video_url = urls[quality].url;
+					break;
+				}
+			}
+		}
+		if(qflag){
+			video_url = (video_url).replace(/\\/g, '');
+			println('quality: ' + quality);
+			if(urls[quality].encrypted) video_url = decrypt(video_url, video_title, 256);
+			println('video_url: ' + video_url);
+		}else{
+			println('Žw’è‚³‚ê‚½quality:' + priority + '‚Ì“®‰æ‚ÍŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½');
+			for(var i in qualities) println(i + ': ' + qualities[i]);
+			exit();
+		}
+	}else{
+		println('error---> flashvars‚ªŒ©‚Â‚©‚ç‚È‚¢');
+		exit();
+	}
+	//if(video_title == ''){
+		if(!http.data.match('videotitle\s*="([^"]+)"')){
+			println('videotitle‚ªŒ©‚Â‚©‚ç‚È‚¢');
+			exit();
+		}
+		video_title = RegExp.$1;
+	//}
+	var url = new URL(video_url);
+	var tmp = url.filename.split('\.');
+	var filename = tmp[0];
+	var ext = '.' + tmp[1];
+
+	var videoId = http.data.match('videoId\s*=\s*(\d+)') ? RegExp.$1 : (urlinfo.url.match('(\d+)/?$'), RegExp.$1);
+	var category = http.data.match('categoryName\s*=\s*"([^"]+)') ? RegExp.$1 : '';
+	var user_name = 'unknown', user_id='', pornstars='', duration='';
+	if(http.data.match(/Submitted by:<\/strong> <a href="([^"]+)"[^>]+Click Username'\);">([^<]+)/)){
+		user_name = RegExp.$2;
+		user_id = (RegExp.$1.match('user/(\d+)'), RegExp.$1);
+	}
+	if(http.data.match('<b>Pornstars:</b>\s*(\w+)\s*</span>')) pornstars = RegExp.$1;
+	
+	var title = '';
+	if(http.data.match('<div class="title-wrapper">\s*<h1 class="main-title main-sprite-img">([^<]+)</h1>')){
+		title = RegExp.$1;
+	}else if(http.data.match('videotitle\s*=\s*"([^"]+)')){
+		title = RegExp.$1;
+	}else if(http.data.match('Description:</strong>\s*([^<]+)')){
+		title = RegExp.$1;
+	}else{
+		title = decodeURI(video_title);
+		//println(title);
+		//exit();
+	}
+
+	if(http.data.match('<li><strong>Duration: </strong>([^<]+)</li>')) duration = RegExp.$1;
+
+
+	var list = [];
+	list['TITLE'] = new Utf8(title).toSJIS();
+	list['USER_ID'] = user_id;
+	list['USER_NAME'] = user_name;
+	list['DURATION'] = duration;
+	list['VIDEO_ID'] = videoId;
+	list['CATEGORY'] = category;
+	list['PORNSTARS'] = pornstars;
+	list['QUALITY'] = quality;
+	list['FILENAME'] = filename;
+
+	var p = list.getProperties().join("|").replace('\|length','');
+	savename = savename.replace('%(' + p + ')%', 'gi', function(m,n){return list[n.toUpperCase()];});
+
+	urlinfo.url = url.url;
+	headers.host = url.host;
+	Dorothy.fileName = character_references(savename) + ext;
+}

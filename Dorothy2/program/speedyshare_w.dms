@@ -1,0 +1,66 @@
+//Dorothy2
+//caption=SpeedyShare.com
+//version=0.11
+//hint=http://(www\.)?speedy(\.sh|share\.com|live\.net)/(live/|files/)?\w+
+//match=http://(www\.)?speedy(\.sh|share\.com|live\.net)/(live/|files/)?\w+
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('Expiration');
+	var ini = new Ini(Dorothy.userIniPath);
+	var exp = new Expiration();
+	if(exp.check()){
+		headers.Cookie = ini.read('Exp_header', 'Cookie', '');
+		return;
+	}
+	common_load('http','fileSave');
+	
+	var http = new Http({autoRedirect: true});
+	var url = new URL(urlinfo.url);
+	if(url.url.match('speedy(\.sh|share\.com|live\.net)/live/([^/]+)/')){
+		var location = http.headLocation(url.url);
+		if(!location){
+			println('error>' + http.responseHeader.code);
+			exit();
+		}
+		url.url = location;
+		urlinfo.url = url.url;
+		headers.Host = url.host;
+		Dorothy.continue = true;
+		return;
+	}
+	
+	http.requestHeader.Cookie = 'trans=en';
+	http.get(url.url);
+	if(http.responseHeader.code != 200){
+		return retry('error> ' + http.responseHeader.code);
+	}
+	
+	if(http.data.indexOf('align=center>File not found.') != -1){
+		println('File not found');
+		exit();
+	}
+	if(http.data.indexOf('This file can only be downloaded with SpeedyShare Premium. Get Premium Now!</a>') != -1){
+		println('Premium Only!');
+		exit();
+	}
+
+	if(!http.data.match(/a class=downloadfilename href='([^']+)/)) return retry('downloadfilename ‚ªŒ©‚Â‚©‚ç‚È‚¢');
+	
+	var location = http.headLocation(RegExp.$1);
+	if(!location){
+		println('error>' + http.responseHeader.code);
+		exit();
+	}
+
+	url.url = location;
+	urlinfo.url = url.url;
+	headers.Host = url.host;
+	headers.Cookie = http.requestHeader.Cookie;
+	
+	ini.write('Exp_header', 'Cookie', headers.Cookie);
+	ini.update();
+	exp.update();
+}

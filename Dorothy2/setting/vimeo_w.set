@@ -1,0 +1,166 @@
+//Dorothy2
+//caption=vimeo.com用設定
+//version=0.14
+//hint=
+//match=
+//author=wan
+//path=setting
+//priority=
+//end
+function (){
+	common_load('EZDialog');
+
+	var dir=new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+
+	var ini=new Ini(Dorothy.userIniPath);
+
+	var v={};
+	v.savename=ini.read('GENERAL','savename','%TITLE%');
+	v.priority = ini.read('GENERAL','priority','ADGBEHCFI');
+	v.tag_max = ini.read('GENERAL', 'tag_max', 10) | 0;
+	v.tag_delimiter = ini.read('GENERAL', 'tag_delimiter', ',').replace(/^"(.+)"$/, '$1');
+	v.remove_slash = ini.read('GENERAL', 'remove_slash', false) == true;
+	v.con_flag = ini.read('GENERAL', 'con_flag', false) == true;
+	v.conditinal = ini.read('GENERAL', 'conditional', '');
+
+	//ダイアログ
+	var d=new EZDialog('vimeo_w');
+	d.prototype.spinEdit=function(value, MinValue, MaxValue, width, fontName, fontSize){
+		var tmp=new VCLSpinEdit(this.p);
+		if(isUndefined(value)||isNull(value)){
+			value=0;
+		}
+		if(!isUndefined(MinValue)&&!isNull(MinValue)){
+			tmp.MinValue=MinValue;
+		}
+		if(!isUndefined(MaxValue)&&!isNull(MaxValue)){
+			tmp.MaxValue=MaxValue;
+		}
+		if(!isUndefined(width)&&!isNull(width)){
+			tmp.width=width;
+		}
+		if(!isUndefined(fontName)&&!isNull(fontName)){
+			tmp.font.name=this.fontEx(fontName);
+		}
+		if(!isUndefined(fontSize)&&!isNull(fontSize)){
+			tmp.font.size=fontSize;
+		}
+		tmp.Value=value;
+		tmp.top=this.top;
+		tmp.left=this.left+this.marginLeft;
+		s=tmp.left+tmp.width;
+		if(s>p.width){
+			p.width=s+marginRight;
+		}
+		if(this.maxWidth<p.width){
+			this.maxWidth=p.width;
+		}
+		this.lf(tmp);
+		return tmp;
+	};
+
+
+	var width = d.sWidth('%TITLE% %USER_ID% %USER_URL% %NAME% %WIDTH% %HEIGHT% %DURATION% %ID% %CODEC% %FILENAME%');
+	var group1 = d.group('保存ファイル名(拡張子不要)');
+	var label1 = d.label('%TITLE%---------タイトル', null, null,'g');
+	var label2 = d.label('%FILENAME%------動画URLのファイル名', null, null,'g');
+	var label3 = d.label('%ID%------------動画ID', null, null,'g');
+	var label4 = d.label('%WIDTH%---------幅', null, null,'g');
+	var label5 = d.label('%HEIGHT%--------高さ', null, null,'g');
+	var label6 = d.label('%DURATION%------再生時間', null, null,'g');
+	var label7 = d.label('%CODEC%---------コーデック', null, null,'g');
+	var label8 = d.label('%QUALITY%-------画質', null, null,'g');
+	var label9 = d.label('%BITRATE%-------ビットレート', null, null,'g');
+	d.contOn();
+	var label10 = d.label('%TAGS%----------タグ', null, null,'g');
+	d.widthSpace(10);
+	var tag_label = d.label('タグ最大数', null, null, 'g');
+	d.heightSpace(-5);
+	var tag_max = d.spinEdit(v.tag_max, 0, null, d.sWidth('AAAAAA'));
+	var tag_delimiter = d.label_edit('区切り文字', v.tag_delimiter, null, d.sWidth('AAAAAA'));
+	d.contOff();
+	var label11 = d.label('%UPLOAD_DATE%---投稿日時', null, null,'g');
+	var label12 = d.label('%USER_NAME%-----投稿者', null, null,'g');
+	var label13 = d.label('%USER_ID%-------投稿者のID', null, null,'g');
+	d.contOn();
+	var label14 = d.label('%USER_URL%------投稿者のユーザーURL', null, null,'g');
+	d.widthSpace(10);
+	var check1 = d.checkBox('先頭の/を削除', v.remove_slash);
+	d.contOff();
+	var label15 = d.label('%ACCOUNT_TYPE%--投稿者のアカウントタイプ', null, null,'g');
+	var savename = d.edit(v.savename, width);
+	d.groupEnd(group1);
+
+	var group2 = d.group('画質設定');
+	var group2_1 = d.group('');
+	var width2 = d.sWidth('ABCDEFGHI  ');
+	var label16 = d.label('A: H264 HD', null, null, 'g');
+	var label17 = d.label('B: H264 SD', null, null, 'g');
+	var label18 = d.label('C: H264 mobile', null, null, 'g');
+	var label19 = d.label('D: VP8 HD', null, null, 'g');
+	var label20 = d.label('E: VP8 SD', null, null, 'g');
+	var label21 = d.label('F: VP8 mobile', null, null, 'g');
+	var label22 = d.label('G: VP6 HD', null, null, 'g');
+	var label23 = d.label('H: VP6 SD', null, null, 'g');
+	var label24 = d.label('I: VP6 mobile', null, null, 'g');
+	var priority = d.label_edit('優先順位', v.priority, null, width2);
+	d.groupEnd(group2_1);
+	
+	//d.widthSpace(200);
+	//d.heightSpace(-200);
+	d.moveRightTop2(group2_1);
+	d.heightSpace(10);
+	var group2_2 = d.group('');
+	var keys = ['key', 'codec', 'quality', 'ext', 'url', 'filename', 'width', 'height', 'bitrate'];
+	var width3 = d.sWidth(keys.toString());
+	var check2 = d.checkBox('条件による選択', v.con_flag);
+	var label25 = d.label('条件文: キー名 演算子 値;', null, null, 'g');
+	var label26 = d.label('演算子: ==, !=, <, <=, >, >=', null, null, 'g');
+	var label27 = d.label('キー名        値');
+	var label28 = d.label('  key:      画質設定A～I', null, null, 'g');
+	var label29 = d.label('  codec:    h264, vp8, vp6', null, null, 'g');
+	var label30 = d.label('  quality:  hd, sd, mobile', null, null, 'g');
+	var label31 = d.label('  ext:      .mp4, .webm, .flv', null, null, 'g');
+	var label32 = d.label('  url:      動画本体のURL', null, null, 'g');
+	var label33 = d.label('  filename: 動画URLのファイル名', null, null, 'g');
+	var label34 = d.label('  width:    動画の横サイズ', null, null, 'g');
+	var label35 = d.label('  height:   動画の縦サイズ', null, null, 'g');
+	var label36 = d.label('  bitrate:  動画のビットレート', null, null, 'g');
+	var label37 = d.label('キー名==max; キー名==min; とした場合は最大値,最小値を選択', null, null, 'g');
+	var label38 = d.label('条件は左から順に行われ最後に優先順位によって選択される', null, null, 'g');
+	var label39 = d.label("例: codec==h264; width>=1280; bitrate==max;", null, null, 'g');
+	var conditional = d.label_edit('条件', v.conditinal, null, width3);
+	d.groupEnd(group2_2);
+	
+	d.groupEnd(group2);
+
+	var ok=d.ok_cancel();
+
+	if(1!=d.showModal()){
+		return;
+	}
+
+	//設定ファイル更新
+	ini.write('GENERAL', 'savename', savename.Text);
+	ini.write('GENERAL', 'priority', priority.edit.Text);
+	ini.write('GENERAL', 'tag_max', tag_max.Value);
+	ini.write('GENERAL', 'tag_delimiter', '"' + tag_delimiter.edit.Text + '"');
+	ini.write('GENERAL', 'remove_slash', check1.checked);
+	ini.write('GENERAL', 'con_flag' , check2.checked);
+	var txt = '';
+	var tmp = conditional.edit.Text.split(';');
+	for(var i = 0; i< tmp.length; i++){
+		if(tmp[i].match('^\s*(' + keys.join('|') + ')\s*(==|!=|<|<=|>|>=)\s*.+')){
+			txt += tmp[i].trim() + '; ';
+		}
+	}
+	ini.write('GENERAL', 'conditional', txt);
+	
+	ini.update();
+
+	return;
+
+}

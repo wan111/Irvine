@@ -1,0 +1,702 @@
+/*
+スクリプト初期化データ
+guid={205883A4-43A5-4969-A892-19E4EAF40268}
+caption=アイテムごとにプロキシを設定
+version=0.36
+hint=アイテムのコメントに"プロキシアドレス:ポート番号"でプロキシを使用。"proxy:開始行数"でフォルダのプロキシリストを順番に使用していく
+event=OnHttpRequest
+match=
+author=wan
+synchronize=0
+*/
+
+function OnHttpRequest(urlinfo,headers,item,folderdata,optiondata){
+/*
+  HTTP(S)リクエストイベント
+  ※synchronize=1 以外の場合にIrvine.Api/UrlManager/Folder/Itemを使用しないでください
+  ※ダイアログを呼びださないでください
+*/
+	var reg = new RegIni('\software\wildforce\irvine');
+	var irvpath = reg.read('path','Application','');
+	//var ini = new Ini(irvpath.match(/^.+\\/) + 'wan.ini');
+	var test2 = false;
+	function download(url,redirect,rHeader){
+		var http_ini=function(url){
+			var url2 = new URL(url);
+			if(url2.scheme == 'https'){
+				var http = new HTTPS;
+			}
+			else{
+				var http = new HTTP;
+			}
+			http.debug = false;
+			http.version = (folderdata.HttpVersion)? '1.1' : '1.0';
+			http.timeout = 10;//folderdata.HttpTimeout;
+			//folderdata.HttpTimeout = 10;
+			http.proxy = urlinfo.proxy;
+			http.requestHeader['User-Agent'] = headers['User-Agent'];
+			var cookie = new IrvineCookieManager;
+			http.requestHeader['Cookie'] = cookie.getCookie(url);
+			if(folderdata.UrlEncode){
+				url = decodeURI(url);
+				url = encodeURI(url);
+			}
+		
+			if(!isUndefined(redirect)){
+				http.autoRedirect = redirect;
+			}
+			else{
+				redirect=false;
+			}
+			if(!isUndefined(rHeader)){
+				var i;
+				for(i in rHeader){
+					if(nameOf(rHeader[i])=='Cookie'){
+						http.requestHeader[i]=rHeader[i].data;
+					}
+					else{
+						http.requestHeader[i] = rHeader[i];
+					}
+				}
+			}
+			return http;
+		};
+
+		var data = '';
+		var http=http_ini(url);
+		var url2=new URL(url);
+		var buf = new StringBuffer(1024);
+		var size = 0;
+		try {
+			for(var i=0; i<6; i++){
+				http.request('GET',url2);
+				http.response();
+				if((http.responseHeader.code == 301
+				    || http.responseHeader.code == 302
+				    || http.responseHeader.code == 303
+				   )&& redirect){
+					url2 = new URL(url2.expand(http.responseHeader.location));
+					http=http_ini(url2.url);
+					println('リダイレクト>' + url2.url);
+					continue;
+				}
+				
+				if(http.responseHeader.code.toString(10)[0] == '2'
+				|| http.responseHeader.code.toString(10)[0] == '4') {
+					if (http.responseHeader.hasKey('transfer-encoding')
+					 && http.responseHeader['transfer-encoding'] == 'chunked') {
+						buf = http.readln();
+						buf.toString().match(/(^[0-9a-f]+)/i);
+						if (buf.toString().match(/^([0-9a-f]+)/i) != null) {
+							size = parseInt('0x' + RegExp.$1);
+						}
+						while (size > 0) {
+							data += http.read(size);
+							http.readln();
+							buf = http.readln().trim();
+							if (buf.toString().match(/^([0-9a-f]+)/i) == null) {
+								//data = '';
+								break;
+							}
+							size = parseInt('0x' + RegExp.$1);
+						}
+					} else {
+						data = http.read();
+					}
+				}
+				break;
+			}
+		}
+		catch (e) {
+			println('ソケットエラー>' + e);
+			if(http.hasKey('responseHeader') && http.responseHeader.hasKey('code') && http.responseHeader.code == 404)data = http.read();
+		}
+		finally {
+			http.disconnect();
+		}
+		http['data'] = data;
+	
+		return http;
+	}
+
+	function check(proxy){
+		/*var mutex= new Mutex('proxy');
+		if(mutex.existed) println('mutex 待機');
+		mutex.lock();
+		*/
+		/*if(!irv.IsBusy()){
+			ini.eraseSection('proxy');
+			ini.write('proxy', item.url, proxy);
+			ini.update();
+			mutex.unlock();
+			return true;
+		}*/
+		if(test2){
+			mutex.lock();
+			var ini = new Ini(irvpath.match(/^.+\\/) + 'wan.ini');
+			keys = ini.readSection('test2');
+			if(keys.text.match('^' + proxy, 'm')){
+				mutex.unlock();
+				return false;
+			}
+			ini.write('test2', proxy, '');
+			ini.update();
+			mutex.unlock();
+			return true;
+		}else{
+			var host = proxy.replace('^([^:]+):\d+','$1');
+			var ini = new Ini(irvpath.match(/^.+\\/) + 'wan.ini');
+			var url = item.url.replace(/=/g,'_');
+			ini.deleteKey('proxy', url);
+			keys = ini.readSection('proxy');
+			for(var j in keys){
+				if(host == ini.read('proxy', keys[j], '').split(':')[0]){
+					println(host + ' このプロキシは使用中です');
+					//mutex.unlock();
+					return false;
+				}
+			}
+			ini.write('proxy', url, proxy);
+		}
+		ini.update();
+		//mutex.unlock();
+		return true;
+	}
+	
+	function file_save(interval){
+		println('ファイルに保存します');
+		if(test2){
+			mutex.lock();
+			try{
+				f.open('r');
+			}catch(e){
+				println(e);
+				f.close();
+				mutex.unlock();
+				exit();
+			}
+			var tmp = f.read();
+			f.close();
+			for(var i=j-interval; i<=j; i++){
+				tmp = tmp.replace('^' + list[i][0] + '.+?$','m',list[i].join("\t"));
+			}
+			
+		}
+		
+		var f2 = new File(file + '.tmp');
+		try{
+			f2.open('w');
+			//f2.writeln(list.join("\n").replace(/,/g,"\t"));
+			if(test2){
+				f2.write(tmp);
+			}else{
+				for(var i in list){
+					f2.writeln(list[i].join("\t"));
+				}
+			}
+			f.remove();
+			f2.renameTo(f2.changeExt(''));
+		}catch(e){
+			println(e);
+			f2.close();
+			exit();
+		}
+		f2.close();
+	}
+
+//proxy:カレントキューフォルダ:開始行数  アイテムのカレントキューフォルダのリストから取得する
+//proxy:開始行数 の場合はCurrentQueueFolderからリストを取得しコメントを proxy:CurrentQueueFolder:行数 に書き換える
+	if(item.comment.match('^proxy:((/[^:]+):)?(\d+)(:(\d+)-(\d+))?$')){
+		var n = parseInt(RegExp.$3);
+		if(RegExp.$4){
+			count = parseInt(RegExp.$5);//リトライした回数
+			retry = parseInt(RegExp.$6);//次のプロキシに変えずに同じプロキシでリトライする回数
+		}                               
+
+//		irv.save();
+//		var irv = new ActiveXObject('Irvine.Api');
+//		var qfolder = irv.FolderExists(RegExp.$2) ? RegExp.$2 : irv.CurrentQueueFolder;
+		var qfolder = '';
+		for(var i=0; true; i++){
+			if(typeof folderdata['comment_' + i] == "undefined"){
+				break;
+			}
+			if(/^queue\s?=\s?(\/Default.*)/.test(folderdata['comment_' + i])){
+				qfolder = RegExp.$1;
+				println('folderdata.comment_' + i + ' queue='+qfolder);
+				break;
+			}
+		}
+		if(qfolder == ''){
+			if(/^queue\s?=\s?(\/Default.*)/.test(folderdata.Post)){
+				qfolder = RegExp.$1;
+				println('folderdata.Post queue=' + qfolder);
+			}else{
+				qfolder = optiondata.CurrentQueue;
+				println('optiondata.CurrentQueue ' + qfolder);
+			}
+		}
+		var count, retry;
+
+		/*
+		irv.CurrentQueueFolder = qfolder;
+		var index;
+		for(var i = 0; i < irv.ItemCount; i++){
+			if(item.data == irv.GetItemData(i)){
+				index = i;
+				break;
+			}
+		}
+		if(!index){
+			println('エラー アイテムが見つからない');
+			exit();
+		}
+		*/
+		var item2 = new IrvineItem(item.data);
+		//item2.success = false;
+		//item2.error = false;
+		//item2.successDate = 0;
+		//item2.dlsize = 0;
+		//item2.comment = '';
+		item2.DownloadedFilename = '';
+//		var folder1 = irv.IniFilename.match(/^.+\\/) + 'queue' + qfolder;
+//		var httpproxy = new File(folder1 + '\httpproxy.ini');
+		var usrpath = reg.read('path','option','').match(/^.+\\/);
+		var folder1 = usrpath + 'queue' + qfolder;
+		var f = new File(folder1 + '\httpproxy.ini');
+		var proxys = [];
+		try{
+			f.open('r');
+			if(!f.length){
+				println('プロキシリストに何も書かれていない');
+				f.close();
+				exit();
+			}
+			while(!f.eof()) proxys.add(f.readln());
+			f.close();
+		}catch(e){
+			println(e);
+			if(!f.exists()) println('ファイルが見つからない>' + f.filename);
+			f.close();
+			exit();
+		}
+		if(proxys.length < n) n = 0;
+				
+		println('アイテムのプロキシを変更します');
+		println('old proxy> ' + urlinfo.proxy);
+		urlinfo.proxy = proxys[n];
+		println('new proxy> ' + urlinfo.proxy);
+		if(retry) println(n+1 + '行目 ' + count + '/' + retry);
+		else println(n+1 + '行目');
+		if(proxys.length == n && retry == count) n = 0;
+		if(retry){
+			if(retry > count){
+				count++;
+			}else{
+				count = 0;
+				n++;
+			}
+			item.comment = 'proxy:' + qfolder + ':' + n + ':' + count + '-' + retry;
+		}else{
+			item.comment = 'proxy:' + qfolder + ':' + (n+1);
+			
+		}
+		/*
+		irv.CurrentQueueFolder = qfolder;
+		irv.SetItemData(i,item.data);
+		irv.Invalidate();
+		*/
+
+		var mutex= new Mutex('itemproxy');
+		if(mutex.existed) println('mutex 待機');
+		mutex.lock();
+		
+
+		var sl = new Strings ();
+		sl.add("var qfolder = '" + qfolder + "';");
+		sl.add("var irv = new ActiveXObject('Irvine.Api');");
+		sl.add('irv.CurrentQueueFolder=qfolder;');
+		sl.add("var index = '';");
+		sl.add('for(var i = 0; i < irv.ItemCount; i++){');
+		sl.add("var item = new ActiveXObject('Irvine.Item');");
+		sl.add('item.data = irv.GetItemData(i);');
+		//sl.add('item.success = false;');
+		//sl.add('item.error = false;');
+		//sl.add('item.successDate = 0;');
+		//sl.add('item.dlsize = 0;');
+		sl.add("item.DownloadedFilename = '';");
+		//sl.add("item.comment = '';");
+		sl.add('	if("' + item2.data +'" == item.data){');
+		sl.add('		index = i;');
+		sl.add('		break;');
+		sl.add('	}');
+		sl.add('}');
+		sl.add("if(index == ''){");
+		sl.add("	WScript.Echo('エラー アイテムが見つからない');");
+		sl.add("	WScript.Echo('itemdata " + item2.data + "');");
+		sl.add("	WScript.Echo('getitemdata' + irv.GetItemData(i));");
+		sl.add('	WScript.sleep(10000);');
+		sl.add('	WScript.Quit();');
+		sl.add('}');
+		sl.add('irv.SetItemData(index,"' + item.data + '");');
+		sl.add('irv.Invalidate();');
+		var jsfile = folderdata.Folder + '\itemproxy.js.tmp';
+		sl.saveToFile (jsfile);
+		Win32.winExec('wscript //E:JScript "' + jsfile + '"');
+		sleep(1000);
+		//var cmd = '//E:JScript "' + jsfile + '"';
+		//var r = call ('wscript', cmd, folderdata.Folder, 100);
+		(new File (jsfile)).remove ();
+
+		if(!check(proxys[n])){
+			println('スキップします');
+			urlinfo.url = '';
+			urlinfo.proxy = '';
+			return false;
+		}
+		mutex.unlock();
+		return true;
+	}
+
+//proxyリストファイルから読み込み指定された方法でsortして一番上の行を使用する
+//proxy:auto	sortせず一番上を使用する 使用したものは最後の行に移動
+//proxy:auto(ip,type,country,reliability,speed,time,site,status);	左から順に指定されたものでsortする いくつでも可
+//proxy:auto(test)	プロキシの接続テストをする アイテムのURLはダウンロードしないでリトライし続ける sortせず一番上をテストする テストしたものは最後の行に移動
+//proxy:auto(test,) プロキシの接続テストをする アイテムのURLはダウンロードしないでリトライし続ける 指定されたものでsortしてテストする
+//sortはip,type,country,speed,time,siteは昇順 reliability,statusは降順
+//指定に関係なくproxyリストがNGだけの場合は使用日時の古い順にsortする
+	if(item.comment.match('^proxy:auto(\(([^\)]+)\))?$')){
+		var tmp = RegExp.$2;
+		var sort = [];
+		var test = false;
+		var test2 = false;
+		var flag = false;
+		if(tmp==''){
+			//sort[0] = 'speed';
+			//sort[1] = 'status';
+			flag = true;
+		}else if(tmp == 'test'){
+			test = true;
+			flag = true;
+			println('test開始');
+		}else if(tmp == 'test2'){
+			test2 = true;
+			println('test2開始');
+		}else{
+			sort = tmp.split(',');
+			if(sort[0] == 'test'){
+				test = true;
+				println('test開始');
+			}else if(sort[0] == 'test2'){
+				test2 = true;
+				println('test2開始');
+			}
+		}
+
+		var mutex= new Mutex('proxy');
+		if(mutex.existed) println('mutex 待機');
+		mutex.lock(); 
+
+		var ini = new Ini(irvpath.match(/^.+\\/) + 'wan.ini');
+		var file = ini.read('itemproxy','file','');
+		if(file == ''){
+			println('wan.iniにファイルのパスを記入してください');
+			println('[itemproxy] の file= にファイルのフルパスを記入');
+			return;
+		}
+		var save_interval = parseInt(ini.read('itemproxy','save_interval',10));
+		ini.write('itemproxy','save_interval',save_interval);
+		ini.update();
+
+		var f = new File(file);
+		try{
+			f.open('r');
+			if(!f.length){
+				println('プロキシリストに何も書かれていない');
+				f.close();
+				mutex.unlock();
+				exit();
+			}
+		}catch(e){
+			println(e);
+			println('ファイルのopenに失敗しました');
+			f.close();
+			mutex.unlock();
+			return;
+		}
+		//IPアドレス	type(匿名性)	国	信頼性・生存率(ok回数/total)	速度	使用日時	proxy取得元サイト	status
+		//ip	type	country	reliability	speed	time	site	status
+		var list = [];
+		var count = 0;
+		for(var line=0; !f.eof(); line++){
+			list.add(f.readln().split('\t'));
+			if(list[line][7] == 'OK') count++;
+		}
+		f.close();
+		var n;
+		for(var i in sort){
+			if(sort[i] == 'ip') n = 0;
+			else if(sort[i] == 'type') n= 1;
+			else if(sort[i] == 'country') n= 2;
+			else if(sort[i] == 'speed') n= 4;
+			else if(sort[i] == 'time') n= 5;
+			else if(sort[i] == 'site') n= 6;
+			else if(sort[i] == 'reliability'){
+				println('sort> ' + sort[i]);
+				list.sort(function(a,b){return a[3] < b[3];});
+				continue;
+			}else if(sort[i] == 'status'){
+				println('sort> ' + sort[i]);
+				list.sort(function(a,b){
+					a[7] = /OK|NG/i.test(a[7])? a[7]: 'UK';
+					b[7] = /OK|NG/i.test(b[7])? b[7]: 'UK';
+					return a[7] < b[7];
+				});
+				continue;
+			}else{
+				continue;
+			}
+			println('sort> ' + sort[i]);
+			list.sort(function(a,b){return a[n] > b[n];});
+		}
+//		var uk = list.toString().match(',UK','g');
+//		println('行数:' + line + ' OK:' + count + ' UK:' + uk.length + ' NG:' + (line-count-uk.length));
+		//NGだけなら使用日時が古い順にソート
+/*		if(list[0][7] && !test && !(i==0 && sort[0]=='time')){
+			if(list[0][7].match(/NG/i)){
+				list.sort(function(a,b){return a[5] > b[5];});
+				println('sort> time');
+			}
+		}
+*/		
+		if(test2) mutex.unlock();
+		var count2 = save_interval;
+		println('プロキシを変更します');
+		println('old proxy> ' + urlinfo.proxy);
+		for(var j=0; j<list.length; j++){
+			if(test2) println((j+1)+(line-list.length) + '/' + line);
+			urlinfo.proxy = list[j][0];
+			var skip = false;
+			if(check(urlinfo.proxy)){
+				println('new proxy> ' + list[j].join(' '));
+				var testflag = test || test2? true: false;
+				if(testflag){
+					var okcount = 0;
+					var total = 0;
+					if(list[j][3]){
+						list[j][3].match('\((\d+)/(\d+)\)');
+						var okcount = RegExp.$1? RegExp.$1: 0;
+						var total = RegExp.$2? RegExp.$2: 0;
+					}
+					
+					var tmp = list[j][7];
+					var url = new URL('http://www.google.co.jp/index.html');
+					//var url = new URL('http://www.google.com/index.html');
+					//var url = new URL('http://www.google.com/ncr');//リダイレクトなし
+					var cookie = new Cookie();
+					cookie.parse('','GoogleAccountsLocale_session=ja');
+					
+					for(var i=0; i<6; i++){
+						var date = new Date();
+						var http = download(url.url, false, {'Cookie':cookie});
+						if(/30[123]/.test(http.responseHeader.code.toString())){
+							println(http.responseHeader.code + '>' + http.responseHeader.location);
+							url.url = http.responseHeader.location;
+							cookie.parse(http.responseHeader.cookie.data);
+							continue;
+						}
+						break;
+					}
+					if(http.responseHeader.code == 200){
+						if(url.url.indexOf('google') == -1){
+							list[j][7] = 'NG:url';
+							if(tmp == 'OK') count--;
+							skip = true;
+						}else if(http.data.indexOf('google') == -1){
+							list[j][7] = 'NG:data';
+							if(tmp == 'OK') count--;
+							skip = true;
+						}else{
+							list[j][7] = 'OK';
+							if(tmp != 'OK') count++;
+							okcount++;
+						}
+					}else{
+						list[j][7] = 'NG:' + http.responseHeader.code;
+						if(tmp == 'OK') count--;
+						skip = true;
+					}
+/*					var http = new HTTP;
+					http.proxy = urlinfo.proxy;
+					http.debug = false;
+					http.version = (folderdata.HttpVersion)? '1.1' : '1.0';
+					//folderdata.HttpTimeout = 5;
+					http.timeout = 10;
+					http.autoRedirect = true;
+					for(var i in headers){
+						if(i == 'Range'){
+							headers[i] = '';
+						}else{
+							http.requestHeader[i] = headers[i];
+						}
+					}
+					http.requestHeader['Cookie'] = '';
+					http.requestHeader['Referer'] = '';
+					try{
+						for(var i=0; i<3; i++){
+							var date = new Date();
+							http.timeout = 10;
+							
+							http.request('GET',url.url);
+							http.response();
+							if(http.responseHeader.code.toString().match(/30[123]/)){
+								println(http.responseHeader.code);
+								url.url = url.expand(http.responseHeader.location);
+								println(url.url);
+								continue;
+							}
+							break;
+						}
+						if(http.responseHeader.code == 200){
+							var data = http.read();
+							if(url.url.indexOf('google') == -1){
+								list[j][7] = 'NG:url';
+								if(tmp == 'OK') count--;
+								skip = true;
+							}else if(data.indexOf('google') == -1){
+								list[j][7] = 'NG:data';
+								/*var f3 = new File(folderdata.folder + '\NG_data.html');
+								for(var i=0; i<1000 && f3.exists(); i++){
+									f3.filename = folderdata.folder + '\NG_data(' + i + ').html';
+								}
+								try{
+									f3.open('w');
+									f3.write(data);
+								}catch(e){
+									println(e);
+								}*/
+/*								if(tmp == 'OK') count--;
+								skip = true;
+							}else{
+								list[j][7] = 'OK';
+								if(tmp != list[j][7]) count++;
+								okcount++;
+							}
+						}else{
+							list[j][7] = 'NG:' + http.responseHeader.code;
+							if(tmp == 'OK') count--;
+							skip = true;
+						}
+					}catch(e){
+						println('エラー>' + e);
+						list[j][7] = 'NG:' + e;
+						if(tmp == 'OK') count--;
+						skip = true;
+					}finally{
+						http.disconnect();
+					}
+*/					
+					println(list[j][7]);
+					total++;
+					list[j][3] = ('00' + (okcount/total*100).toFixed(2)).slice(-6) + '(' + okcount + '/' + total + ')'; //reliability
+					list[j][4] = (new Date().getTime() - date.getTime())/1000; //speed
+					list[j][5] = date.toString(); //time
+				}
+			}else{
+				if(test2){
+					list.delete(j);
+					j--;
+					continue;
+				}else{
+					continue;
+					skip = true;
+					list[j][5] = new Date().toString(); //time
+				}
+			}
+			println('write>' + list[j].join(' '));
+			println('行数:' + line + ' OK:' + count);
+			if(test2){
+				if(j >= count2){
+					file_save(save_interval);
+					count2 += save_interval;
+					mutex.unlock();
+				}
+			}else{
+				if(!test && list[j][7] != 'OK' && j<=20){
+					continue;
+				}
+				break;
+			}
+		}
+		if(flag){
+			if(test){
+				list.add(list[0]);
+				list.delete(0);
+			}else{
+				for(var i=0; i<=j; i++){
+					list.add(list[i]);
+				}
+				for(var i=0; i<=j; i++){
+					list.delete(0);
+				}
+				if(j>=20 && count>0 && tmp != 'UK'){
+					println('20個連続でNGだったためstatusでソートします');
+					list.sort(function(a,b){
+						a[7] = /OK|NG/i.test(a[7])? a[7]: 'UK';
+						b[7] = /OK|NG/i.test(b[7])? b[7]: 'UK';
+						return a[7] < b[7];
+					});
+				}
+			}
+		}
+		j--;
+		if(test2){
+			if(j-(count2-save_interval) && j-count2 &&list.length) file_save(j-(count2-save_interval));
+		}else{
+			file_save();
+		}
+		mutex.unlock();
+		
+		//if(flag) println(list[list.length-1]);
+		//else println(list[0]);
+		if(test2){
+			println('test2終了');
+			exit();
+		}
+		if(test){
+			println('test終了');
+			urlinfo.url = '';
+			urlinfo.proxy = '';
+			return true;
+		}
+		if(!skip)	return true;
+		else{
+			urlinfo.url = '';
+			urlinfo.proxy = '';
+			println('スキップします');
+			return false;
+		}
+	}
+
+
+//プロキシアドレス:ポート番号 
+	if(item.comment.match('^([0-9A-Za-z-]{1,63}\.)+[0-9A-Za-z-]{1,6}:[0-9]{2,5}$')){
+		println('アイテムのプロキシを変更します');
+		println('old proxy> ' + urlinfo.proxy);
+		urlinfo.proxy = RegExp.$0;
+		println('new proxy> ' + urlinfo.proxy);
+
+		var mutex= new Mutex('itemproxy');
+		if(mutex.existed) println('mutex 待機');
+		mutex.lock();
+		
+
+		if(!check(urlinfo.proxy)){
+//			println('終了します');
+//			mutex.unlock();
+//			exit();
+		}
+		mutex.unlock();
+		return true;
+	}
+}

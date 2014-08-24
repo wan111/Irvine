@@ -1,0 +1,105 @@
+//Dorothy2
+//caption=Rapidgator.net
+//version=0.26
+//hint=
+//match=^http://((www\.)?rapidgator\.net|rg\.to)/(file|folder)/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	this.DOA_item_add2 = function(url,name,size){
+		a = frmDOA.ListView1.Items.add();
+		a.Caption = url;
+		a.url = url;
+		a.irvItem = -1;
+		a.doa_status = '';
+		a.doa_link   = '';
+		a.doa_name   = name;
+		DOA.urls.add(url);
+		a.SubItems.add('');
+		a.SubItems.add(size);
+		a.SubItems.add(name);
+		a.SubItems.add('');
+	};
+	Util = {fatal: function(){}};
+	common_load('rutil_dorothy2r', 'StringExtension2', 'http');
+//メイン
+this.main = function(url){
+	//var http = download(urlinfo.url,false,{'Cookie':'lang=en'});
+	var http = new Http({autoRedirect: false});
+	http.requestHeader['Cookie'] = 'lang=en';
+	if(url.match('http://rg\.to')){
+		var loc = http.headLocation(url);
+		if(!loc){
+			DOA.status = DOA_UK;
+			return;
+		}
+		DOA.status = DOA_LK;
+		DOA.link = loc;
+		return;
+	}
+	for(;;){
+		http.get(url);
+		switch(http.responseHeader.code){
+			case 301:
+			case 302:
+				if(http.location.indexOf('rapidgator.net/article/premium') != -1){
+					DOA.status = DOA_NG;
+					DOA.comment = '転送---> rapidgator.net/article/premium';
+					return;
+				}
+				if(http.location){
+					url = http.location;
+					continue;
+				}
+		}
+		break;
+	}
+	if(http.responseHeader.code != 200){
+		if(http.data.indexOf('E_FOLDERNOTFOUND') != -1){
+			DOA.status = DOA_NG;
+			DOA.comment = 'Folder Not Found';
+			return;
+		}
+		if(http.data.indexOf('File not found') != -1){
+			DOA.status = DOA_NG;
+			DOA.comment = 'File not found';
+			return;
+		}
+		DOA.status = DOA_BS;
+		DOA.comment = 'error> ' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('<a href="">\s+(.+?)\s+</a>.+File size:.+?>([^<]+)')){
+		DOA.status = DOA_OK;
+		if(http.data.indexOf('This file can be downloaded by premium only') != -1) DOA.comment = 'Premium Only';
+		DOA.size = RegExp.$2;
+		DOA.name = RegExp.$1.decodeCharRef8();
+		return;
+	}
+	if(/^http:\/\/(www\.)?rapidgator\.net\/folder/.test(urlinfo.url)){
+		DOA.status = DOA_LS;
+		DOA.name = http.data.match('<title>Download file (.+?)</title>') ? RegExp.$1 : '';
+		var count = 0;
+		http.data.replace(/<td><a href="\/(file\/[^"]+).+?select">([^<]+)/g,function(m,url,size){
+			url.match('/([^/]+)\.html$');
+			DOA_item_add2('http://rapidgator.net/' + url.fromUTF8toSJIS(),RegExp.$1.fromUTF8toSJIS(),size);
+			count += 1;
+		});
+		if(http.data.indexOf('<span class="empty">No results found.') != -1){
+			DOA.comment = 'No results found.';
+		}
+		DOA.status_str = 'Folder(' + count + ')';
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

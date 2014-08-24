@@ -1,0 +1,50 @@
+//Dorothy2
+//caption=ryushare.com
+//version=0.11
+//hint=
+//match=http://ryushare.com/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	var http = download(urlinfo.url.match('http://ryushare.com/\w+'));
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error> ' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('You have requested.+?http://ryushare.com/[^/]+/(.+?)</font> \(([^\)]+)')){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1.fromUTF8toSJIS();
+		DOA.size = RegExp.$2;
+		return;
+	}
+	if(http.data.indexOf('File Not Found') != -1){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File Not Found';
+		return;
+	}
+	if(http.data.match('<font class="err">([^<]+)')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+	if(http.data.match('<h3>(The file was removed by administrator)</h3')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

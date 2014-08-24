@@ -1,0 +1,28 @@
+/*
+スクリプト初期化データ
+guid={D5E5B640-FC53-4F01-94F6-2C36820D7E04}
+caption=拡張アイテム選択(選択範囲)
+version=0.1
+hint=選択範囲のみを対象にした拡張アイテム選択を実行する
+event=OnListMenuClick
+match=
+author=wan
+synchronize=0
+*/
+
+function OnListMenuClick(irvine,action){
+//キューリストメニューのクリックイベント
+	var index = [];
+	for(var i = 0; i < irvine.ItemCount; i++){
+		index.push(irvine.ItemSelected[i]);
+	}
+	irvine.ExecuteAction('actEditSelectItem');
+	for(var i = 0; i < irvine.ItemCount; i++){
+		irvine.ItemSelected[i] = index[i] & irvine.ItemSelected[i];
+	}
+}
+
+function OnMenuUpdate(irvine,action){
+//メニューの更新イベント
+	action.enabled = (irvine.SelectedItemCount > 0);
+}

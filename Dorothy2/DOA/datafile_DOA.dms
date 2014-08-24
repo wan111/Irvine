@@ -1,0 +1,49 @@
+//Dorothy2
+//caption=DataFile.com_DOA
+//version=0.11
+//hint=
+//match=https?://(www\.)?datafile.com/d/\w+
+//author=wan
+//path=DOA
+//priority=
+//end
+function(){
+//コンストラクタ
+	common_load('download', 'utf8');
+//メイン
+this.main = function(url){
+	urlinfo.url.match('(https?://(www\.)?)datafile.com/d/(\w+)');
+	var url = new URL(RegExp.$1 + 'datafile.com/d/' + RegExp.$3);
+	
+	var http = download(url.url, true);
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = http.responseHeader.code;
+		return;
+	}
+	
+	if(http.data.match('<div class="file-name">([^<]+)')){
+		DOA.status = DOA_OK;
+		DOA.name = new Utf8(RegExp.$1).decodeCharRef().toSJIS();
+		if(http.data.match('<div class="file-size">Filesize:\s*<[^>]+>([^<]+)')){
+			DOA.size = RegExp.$1;
+		}
+		if(http.data.match('<div class="only-premium"[^>]*>\s*<div>(.+?)</div>')){
+			DOA.status_str = 'Premium Only';
+		}
+		return;
+	}
+	if(http.data.match('(ErrorCode\s*\d+: [^<]+)\s*<')){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
+}

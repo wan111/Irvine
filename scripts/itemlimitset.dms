@@ -1,0 +1,671 @@
+/*
+スクリプト初期化データ
+guid={46F2C715-89E9-4428-9826-9AAEA3ADF485}
+caption=アイテム制限設定
+version=0.11
+hint=
+event=OnMainMenuClick
+match=
+author=wan
+synchronize=0
+*/
+
+function OnMainMenuClick(irvine,action){
+//メインメニューのクリックイベント
+	var F = "
+	object Form1: TForm1
+	  Position = poScreenCenter
+	  Width = 776
+	  Height = 506
+	  Caption = 'アイテム制限設定'
+	  Color = clBtnFace
+	  Font.Charset = SHIFTJIS_CHARSET
+	  Font.Color = clWindowText
+	  Font.Height = -12
+	  Font.Name = 'ＭＳ Ｐゴシック'
+	  Font.Style = []
+	  OldCreateOrder = False
+	  DesignSize = (
+	    643
+	    289)
+	  PixelsPerInch = 96
+	  TextHeight = 12
+	  Menu = MainMenu1
+	  object MainMenu1: TMainMenu
+	    Left = 32
+	    Top = 8
+	    object Edit1: TMenuItem
+	      Caption = '編集(&E)'
+	      object EditSetting: TMenuItem
+	        Caption = '設定(&S)'
+	        Enabled = False
+	      end
+	      object EditAdd: TmenuItem
+	        Caption = '追加(&A)'
+	      end
+	      object EditDelete: TmenuItem
+	        Caption = '削除(&D)'
+	        Enabled = False
+	      end
+	    end
+	  end
+	  object ListView1: TListView
+	    Left = 0
+	    Top = 0
+	    Width = 767
+	    Height = 410
+	    Anchors = [akLeft, akTop, akRight, akBottom]
+	    Checkboxes = True
+	    Columns = <
+	      item
+	        Width = 150
+	        Caption = 'キャプション'
+	      end
+	      item
+	        AutoSize = True
+	        Caption = 'matchUrl'
+	      end
+	      item
+	        Width = 65
+	        Caption = 'リトライ数'
+	      end
+	      item
+	        Width = 45
+	        Caption = 'DL数'
+	      end
+	      item
+	        Width = 45
+	        Caption = 'dFlag'
+	      end
+	      item
+	        Width = 60
+	        Caption = 'プロキシ'
+	      end
+	      item
+	        Width = 49
+	        Caption = 'spFlag'
+	      end>
+	    MultiSelect = True
+	    ReadOnly = True
+	    RowSelect = True
+	    PopupMenu = PopupMenu1
+	    TabOrder = 0
+	    ViewStyle = vsReport
+	  end
+	  object PopupMenu1: TPopupMenu
+	    Left = 104
+	    Top = 104
+	    object PopSetting: TMenuItem
+	      Caption = '設定(&S)'
+	      Enabled = False
+	    end
+	    object PopAdd: TMenuItem
+	      Caption = '追加(&A)'
+	    end
+	    object PopDelete: TMenuItem
+	      Caption = '削除(&D)'
+	      Enabled = False
+	    end
+	  end
+	  object OKBtn: TButton
+	    Left = 570
+	    Top = 420
+	    Width = 75
+	    Height = 25
+	    Caption = 'OK'
+	    Default = False
+	    ModalResult = 1
+	    TabOrder = 1
+	  end
+	  object CancelBtn: TButton
+	    Left = 650
+	    Top = 420
+	    Width = 75
+	    Height = 25
+	    Cancel = True
+	    Caption = 'キャンセル'
+	    ModalResult = 2
+	    TabOrder = 2
+	  end
+	end
+	";
+
+	var D="
+	object OKBottomDlg1: TOKBottomDlg1
+	  Left = 377
+	  Top = 306
+	  BorderStyle = bsDialog
+	  Caption = '設定'
+	  ClientHeight = 500
+	  ClientWidth = 313
+	  Color = clBtnFace
+	  Font.Charset = SHIFTJIS_CHARSET
+	  Font.Color = clWindowText
+	  Font.Height = -12
+	  Font.Name = 'ＭＳ Ｐゴシック'
+	  Font.Style = []
+	  OldCreateOrder = True
+	  Position = poScreenCenter
+	  PixelsPerInch = 96
+	  TextHeight = 12
+	  object Label1: TLabel
+	    Left = 8
+	    Top = 8
+	    Width = 24
+	    Height = 12
+	    Caption = 'キャプション'
+	  end
+	  object Label2: TLabel
+	    Left = 8
+	    Top = 46
+	    Width = 24
+	    Height = 12
+	    Caption = 'matchUrl'
+	  end
+	  object CheckBox1: TCheckBox
+	    Left = 8
+	    Top = 90
+	    Width = 90
+	    Height = 12
+	    Caption = 'リトライ数制限'
+	    TabOrder = 2
+	  end
+	  object Label3: TLabel
+	    Left = 8
+	    Top = 112
+	    Width = 24
+	    Height = 12
+	    Caption = '直接接続'
+	  end
+	  object Label4: TLabel
+	    Left = 160
+	    Top = 112
+	    Width = 24
+	    Height = 12
+	    Caption = 'プロキシ接続'
+	  end
+	  object CheckBox2: TCheckBox
+	    Left = 8
+	    Top = 130
+	    Width = 90
+	    Height = 12
+	    Caption = '同時DL数制限'
+	    TabOrder = 5
+	  end
+	  object Label5: TLabel
+	    Left = 8
+	    Top = 152
+	    Width = 24
+	    Height = 12
+	    Caption = '直接接続'
+	  end
+	  object Label6: TLabel
+	    Left = 160
+	    Top = 152
+	    Width = 24
+	    Height = 12
+	    Caption = 'プロキシ接続'
+	  end
+	  object Edit1: TEdit
+	    Left = 8
+	    Top = 24
+	    Width = 137
+	    Height = 20
+	    TabOrder = 0
+	    Text = ''
+	  end
+	  object Edit2: TEdit
+	    Left = 8
+	    Top = 62
+	    Width = 300
+	    Height = 20
+	    TabOrder = 1
+	    Text = ''
+	  end
+	  object Edit3: TSpinEdit
+	    Left = 60
+	    Top = 106
+	    Width = 93
+	    Height = 20
+	    MinValue = 0
+	    TabOrder = 3
+	    Value = 0
+	  end
+	  object Edit4: TSpinEdit
+	    Left = 232
+	    Top = 106
+	    Width = 73
+	    Height = 20
+	    MinValue = 0
+	    TabOrder = 4
+	    Value = 0
+	  end
+	  object Edit5: TSpinEdit
+	    Left = 60
+	    Top = 146
+	    Width = 93
+	    Height = 20
+	    MinValue = 0
+	    TabOrder = 6
+	    Value = 0
+	  end
+	  object Edit6: TSpinEdit
+	    Left = 232
+	    Top = 146
+	    Width = 73
+	    Height = 20
+	    MinValue = 0
+	    TabOrder = 7
+	    Value = 0
+	  end
+	  object GroupBox1: TGroupBox
+	    Left = 8
+	    Top = 172
+	    Width = 300
+	    Height = 85
+	    Caption = 'DL数が上限に達した場合'
+	    object radioGroup1: TRadioGroup
+	     Left = 6
+	     Top = 14
+	     Width = 288
+	     Height = 32
+	     Caption = '直接接続'
+	     Columns = 2
+	     ItemIndex = 0
+	     Items.Strings = (
+	       '停止'
+	       '待機'
+	     )
+	     TabOrder = 8
+	    end
+	    object radioGroup2: TRadioGroup
+	     Left = 6
+	     Top = 48
+	     Width = 288
+	     Height = 32
+	     Caption = 'プロキシ接続'
+	     Columns = 2
+	     ItemIndex = 0
+	     Items.Strings = (
+	       '停止'
+	       '待機'
+	     )
+	     TabOrder = 9
+	    end
+	  end
+	  object radioGroup3: TRadioGroup
+	   Left = 14
+	   Top = 260
+	   Width = 288
+	   Height = 32
+	   Caption = 'プロキシの使用'
+	   Columns = 2
+	   ItemIndex = 0
+	   Items.Strings = (
+	     '許可'
+	     '禁止'
+	   )
+	  end
+	  object GroupBox2: TGroupBox
+	    Left = 8
+	    Top = 295
+	    Width = 300
+	    Height = 170
+	    Caption = '使用中プロキシ'
+	    object CheckBox3: TCheckBox
+	      Left = 8
+	      Top = 16
+	      Width = 200
+	      Height = 14
+	      Caption = 'ポート番号が違っても同一とみなす'
+	      TabOrder = 11
+	    end
+	    object radioGroup4: TRadioGroup
+	     Left = 6
+	     Top = 36
+	     Width = 288
+	     Height = 54
+	     Caption = '同一プロキシの使用'
+	     Columns = 2
+	     ItemIndex = 0
+	     Items.Strings = (
+	       '許可'
+	       '禁止'
+	       '同じmatchのみ許可'
+	       '同じmatchのみ禁止'
+	     )
+	     TabOrder = 12
+	    end
+	    object radioGroup5: TRadioGroup
+	     Left = 6
+	     Top = 90
+	     Width = 288
+	     Height = 32
+	     Caption = '禁止の場合(固定プロキシ)'
+	     Columns = 4
+	     ItemIndex = 0
+	     Items.Strings = (
+	       '停止'
+	       '待機'
+	       'リトライ'
+	       '直接接続'
+	     )
+	     TabOrder = 13
+	    end
+	    object radioGroup6: TRadioGroup
+	     Left = 6
+	     Top = 126
+	     Width = 288
+	     Height = 32
+	     Caption = '禁止の場合(ランダムプロキシ)'
+	     Columns = 4
+	     ItemIndex = 0
+	     Items.Strings = (
+	       '停止'
+	       '待機'
+	       'リトライ'
+	       '直接接続'
+	     )
+	     TabOrder = 14
+	    end
+	  end
+	  object OKBtn: TButton
+	    Left = 79
+	    Top = 470
+	    Width = 75
+	    Height = 25
+	    Caption = 'OK'
+	    Default = True
+	    ModalResult = 1
+	    TabOrder = 15
+	  end
+	  object CancelBtn: TButton
+	    Left = 159
+	    Top = 470
+	    Width = 75
+	    Height = 25
+	    Cancel = True
+	    Caption = 'キャンセル'
+	    ModalResult = 2
+	    TabOrder = 16
+	  end
+	end
+	";
+	
+	function setfrm(addflag){
+		var setfrm = new VCLForm;
+		setfrm.loadFromText(D);
+		
+		if(!addflag){
+			index = frm.ListView1.Selected.Index;
+			sec = frm.ListView1.Items[index].caption;
+			setfrm.Edit1.Text = sec;
+			setfrm.Edit2.Text = list[sec].matchUrl;
+			setfrm.Edit3.Value = list[sec].tryConnectCount[0];
+			setfrm.Edit4.Value = list[sec].tryConnectCount[1];
+			setfrm.Edit5.Value = list[sec].downloadCount[0];
+			setfrm.Edit6.Value = list[sec].downloadCount[1];
+			setfrm.CheckBox1.Checked = list[sec].useRtrylimit;
+			setfrm.CheckBox2.Checked = list[sec].useDlimit;
+			setfrm.radioGroup1.ItemIndex = list[sec].dlimitFlag & 0x02;
+			setfrm.radioGroup2.ItemIndex = list[sec].dlimitFlag & 0x20;
+			setfrm.radioGroup3.ItemIndex = list[sec].canUseProxy? 0: 1;
+			setfrm.CheckBox3.Checked = (list[sec].sameProxyFlag & SAMEPROXY_REMOVEPORT) != 0;
+			setfrm.radioGroup4.ItemIndex = (list[sec].sameProxyFlag & SAMEPROXY_USE) != 0? 0: 1;
+			setfrm.radioGroup4.ItemIndex += (list[sec].sameProxyFlag & SAMEPROXY_MATCHONLY) != 0? 2: 0;
+			var tmp,tmp2;
+			if((list[sec].sameProxyFlag & SAMEPROXY_RETRY) == SAMEPROXY_RETRY){
+				tmp = 2;
+			}else if(list[sec].sameProxyFlag & SAMEPROXY_STOP){
+				tmp = 0;
+			}else if(list[sec].sameProxyFlag & SAMEPROXY_WAIT){
+				tmp = 1;
+			}else if(list[sec].sameProxyFlag & SAMEPROXY_DIRECT){
+				tmp = 3;
+			}
+			if((list[sec].sameProxyFlag & SAMEPROXY_RETRY_RANDOM) == SAMEPROXY_RETRY_RANDOM){
+				tmp2 = 2;
+			}else if(list[sec].sameProxyFlag & SAMEPROXY_STOP_RANDOM){
+				tmp2 = 0;
+			}else if(list[sec].sameProxyFlag & SAMEPROXY_WAIT_RANDOM){
+				tmp2 = 1;
+			}else if(list[sec].sameProxyFlag & SAMEPROXY_DIRECT_RANDOM){
+				tmp2 = 3;
+			}
+			setfrm.radioGroup5.ItemIndex = tmp;
+			setfrm.radioGroup6.ItemIndex = tmp2;
+		}
+		setfrm.OKBtn.onClick = function(){
+			var oldsec = sec;
+			sec = setfrm.Edit1.Text;
+			if(sec == '') return;
+			if(addflag){
+				for(var i in frm.ListView1.Items){
+					if(sec == frm.ListView1.Items[i].Caption) return;
+				}
+				list[sec] = {};
+			}else{
+				if(sec != oldsec){
+					list[sec] = list[oldsec];
+					list.removeKey(oldsec);
+					ini.eraseSection(oldsec);
+				}
+			}
+			list[sec].matchUrl = setfrm.Edit2.Text;
+			list[sec].tryConnectCount = [setfrm.Edit3.Value, setfrm.Edit4.Value];
+			list[sec].downloadCount = [setfrm.Edit5.Value, setfrm.Edit6.Value];
+			list[sec].useRtrylimit = setfrm.CheckBox1.Checked;
+			list[sec].useDlimit = setfrm.CheckBox2.Checked;
+			list[sec].dlimitFlag = setfrm.radioGroup1.ItemIndex? 0x02: 0x01;
+			list[sec].dlimitFlag = '0x' + (list[sec].dlimitFlag | (setfrm.radioGroup2.ItemIndex? 0x20: 0x10)).toString(16);
+			list[sec].canUseProxy = setfrm.radioGroup3.ItemIndex == 0;
+			switch(setfrm.radioGroup4.ItemIndex){
+				case 0:
+					list[sec].sameProxyFlag = SAMEPROXY_USE;
+					break;
+				case 1:
+					list[sec].sameProxyFlag = 0x000;
+					break;
+				case 2:
+					list[sec].sameProxyFlag = SAMEPROXY_USE | SAMEPROXY_MATCHONLY;
+					break;
+				case 3:
+					list[sec].sameProxyFlag = SAMEPROXY_MATCHONLY;
+			}
+			switch(setfrm.radioGroup5.ItemIndex){
+				case 0:
+					list[sec].sameProxyFlag |= SAMEPROXY_STOP;
+					break;
+				case 1:
+					list[sec].sameProxyFlag |= SAMEPROXY_WAIT;
+					break;
+				case 2:
+					list[sec].sameProxyFlag |= SAMEPROXY_RETRY;
+					break;
+				case 3:
+					list[sec].sameProxyFlag |= SAMEPROXY_DIRECT;
+			}
+			switch(setfrm.radioGroup6.ItemIndex){
+				case 0:
+					list[sec].sameProxyFlag |= SAMEPROXY_STOP_RANDOM;
+					break;
+				case 1:
+					list[sec].sameProxyFlag |= SAMEPROXY_WAIT_RANDOM;
+					break;
+				case 2:
+					list[sec].sameProxyFlag |= SAMEPROXY_RETRY_RANDOM;
+					break;
+				case 3:
+					list[sec].sameProxyFlag |= SAMEPROXY_DIRECT_RANDOM;
+			}
+			list[sec].sameProxyFlag |= setfrm.CheckBox3.Checked? SAMEPROXY_REMOVEPORT: 0;
+			list[sec].sameProxyFlag = '0x' + ('000' + list[sec].sameProxyFlag.toString(16)).slice(-3);
+			if(addflag){
+				item_add(
+					1,
+					sec,
+					list[sec].matchUrl,
+					list[sec].useRtrylimit? list[sec].tryConnectCount: '',
+					list[sec].useDlimit? list[sec].downloadCount: '',
+					list[sec].dlimitFlag,
+					list[sec].canUseProxy? '許可': '禁止',
+					list[sec].sameProxyFlag
+				);
+			}else{
+				frm.ListView1.Items[index].Caption = sec;
+				frm.ListView1.Items[index].matchUrl = list[sec].matchUrl;
+				frm.ListView1.Items[index].retry = list[sec].useRtrylimit? list[sec].tryConnectCount: '無効';
+				frm.ListView1.Items[index].dl = list[sec].useDlimit? list[sec].downloadCount: '無効';
+				frm.ListView1.Items[index].dflag = list[sec].dlimitFlag;
+				frm.ListView1.Items[index].proxy = list[sec].canUseProxy? '許可': '禁止';
+				frm.ListView1.Items[index].spflag = list[sec].sameProxyFlag;
+				frm.ListView1.Items[index].subItems[0] = list[sec].matchUrl;
+				frm.ListView1.Items[index].subItems[1] = list[sec].useRtrylimit? list[sec].tryConnectCount: '';
+				frm.ListView1.Items[index].subItems[2] = list[sec].useDlimit? list[sec].downloadCount: '';
+				frm.ListView1.Items[index].subItems[3] = list[sec].dlimitFlag;
+				frm.ListView1.Items[index].subItems[4] = list[sec].canUseProxy? '許可': '禁止';
+				frm.ListView1.Items[index].subItems[5] = list[sec].sameProxyFlag;
+				frm.ListView1.update();
+			}
+			setfrm.close();
+		};
+		
+		setfrm.showModal();
+	}
+	
+	function item_add(checked, caption, matchUrl, retry, dl, dflag, proxy, spflag){
+		var a = frm.ListView1.Items.add();
+		a.Checked = checked;
+		a.Caption = caption;
+		a.matchUrl = matchUrl;
+		a.retry = retry;
+		a.dl = dl;
+		a.dflag = dflag;
+		a.proxy = proxy;
+		a.spflag = spflag;
+		a.SubItems.add(matchUrl);
+		a.SubItems.add(retry);
+		a.SubItems.add(dl);
+		a.SubItems.add(dflag);
+		a.SubItems.add(proxy);
+		a.SubItems.add(spflag);
+	}
+	
+	var reg = new RegIni('\software\wildforce\irvine');
+	var irvpath = reg.read('path','Application','');
+	var ini = new Ini(irvpath.match('^.+\\') + 'itemlimit.ini');
+	
+	var frm = new VCLForm();
+	frm.loadFromText(F);
+	
+	frm.ListView1.onSelectItem = function(){
+		frm.PopSetting.Enabled = true;
+		frm.PopDelete.Enabled = true;
+		frm.EditSetting.Enabled = true;
+		frm.EditDelete.Enabled = true;
+		if(frm.ListView1.SelCount == 0){
+			frm.PopSetting.Enabled = false;
+			frm.PopDelete.Enabled = false;
+			frm.EditSetting.Enabled = false;
+			frm.EditDelete.Enabled = false;
+			return;
+		}else if(frm.ListView1.SelCount != 1){
+			frm.PopSetting.Enabled = false;
+			frm.EditSetting.Enabled = false;
+		}
+	};
+	frm.PopSetting.onClick = function(){
+		setfrm(false);
+		//setfrm.show();
+		//eventLoop();
+	};
+	frm.PopAdd.onClick = function(){
+		setfrm(true);
+	};
+	frm.ListView1.onKeyPress = function(obj, key){
+		if(key == 13){
+			if(frm.ListView1.SelCount == 1) setfrm(false);
+		}
+	};
+	frm.PopDelete.onClick = function(){
+		while(frm.ListView1.SelCount > 0){
+			list.removeKey(frm.ListView1.Items[frm.ListView1.Selected.Index].Caption);
+			ini.eraseSection(frm.ListView1.Items[frm.ListView1.Selected.Index].Caption);
+			frm.ListView1.Selected.delete();
+		}
+		frm.ListView1.update();
+	};
+	frm.EditSetting.onClick = frm.PopSetting.onClick;
+	frm.EditAdd.onClick = frm.PopAdd.onClick;
+	frm.EditDelete.onClick = frm.PopDelete.onClick;
+	frm.ListView1.onDblClick = function(){
+		if(frm.ListView1.SelCount == 1) frm.PopSetting.onClick();
+	};
+	frm.OKBtn.onClick = function(){
+		var sec;
+		for(var i in frm.ListView1.Items){
+			sec = frm.ListView1.Items[i].caption;
+			list[sec].check = frm.ListView1.Items[i].Checked;
+			for(var key in list[sec]){
+				ini.write(sec, key, list[sec][key]);
+			}
+		}
+		ini.update();
+		frm.close();
+	};
+	frm.CancelBtn.onClick = function(){
+		frm.close();
+	};
+
+	var list = {};
+	var secs = ini.readSections();
+	secs.sort();
+	for(var i in secs){
+		var sec = secs[i];
+		list[sec] = {
+			check          : ini.read(sec, 'check'          , false)==true,
+			matchUrl       : ini.read(sec, 'matchUrl'       , ''),
+			tryConnectCount: ini.read(sec, 'tryConnectCount', '0,0').split(','),
+			downloadCount  : ini.read(sec, 'downloadCount'  , '0,0').split(','),
+			useRtrylimit   : ini.read(sec, 'useRtrylimit'   , false)==true,
+			useDlimit      : ini.read(sec, 'useDlimit'      , false)==true,
+			dlimitFlag     : ini.read(sec, 'dlimitFlag'     , 0x11),
+			canUseProxy    : ini.read(sec, 'canUseProxy'    , true)==true,
+			sameProxyFlag  : ini.read(sec, 'sameProxyFlag'  , 0x111)
+		};
+		item_add(
+			list[sec].check,
+			sec,
+			list[sec].matchUrl,
+			list[sec].useRtrylimit? list[sec].tryConnectCount: '無効',
+			list[sec].useDlimit? list[sec].downloadCount: '無効',
+			list[sec].dlimitFlag,
+			list[sec].canUseProxy? '許可': '禁止',
+			list[sec].sameProxyFlag
+		);
+	}
+	
+	//同一プロキシ(使用中プロキシ)の使用
+	var SAMEPROXY_USE           = 0x100; //0001 0000 0000 同一プロキシの使用を許可
+	var SAMEPROXY_MATCHONLY     = 0x200; //0010 0000 0000 同じmatchのみ許可,禁止
+	var SAMEPROXY_REMOVEPORT    = 0x400; //0100 0000 0000 ポート番号が違っても同一とみなす
+	//許可しない場合の処理
+	var SAMEPROXY_STOP          = 0x01; //0000 0001 停止
+	var SAMEPROXY_WAIT          = 0x02; //0000 0010 待機
+	var SAMEPROXY_RETRY         = 0x03; //0000 0011 リトライ
+	var SAMEPROXY_DIRECT        = 0x04; //0000 0100 直接接続
+	var SAMEPROXY_STOP_RANDOM   = 0x10; //0001 0000 停止(ランダムプロキシ時)
+	var SAMEPROXY_WAIT_RANDOM   = 0x20; //0010 0000 待機(ランダムプロキシ時)
+	var SAMEPROXY_RETRY_RANDOM  = 0x30; //0011 0000 リトライ(ランダムプロキシ時)
+	var SAMEPROXY_DIRECT_RANDOM = 0x40; //0100 0000 直接接続(ランダムプロキシ時)
+
+	
+	frm.showModal();
+	//frm.show();
+	//eventLoop();
+}
+
+function OnMenuUpdate(irvine,action){
+//メニューの更新イベント
+	action.shortcut=32844;
+}

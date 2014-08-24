@@ -1,0 +1,46 @@
+//Dorothy2
+//caption=JunoCloud.me
+//version=0.11
+//hint=
+//match=http://(\w+\.)?junocloud.me/\w+
+//author=wan
+//path=DOA
+//priority=
+//end
+function(){
+//コンストラクタ
+	common_load('download');
+//メイン
+this.main = function(url){
+	urlinfo.url.match('junocloud.me/(\w+)');
+	var url = new URL('http://junocloud.me/' + RegExp.$1);
+	
+	var http = download(url.url, true, {Cookie: ''});
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error>' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match('<p class="request_file">[^<]+/([^<]+)')){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		if(http.data.match('<p class="request_filesize">Size:\s?([^<]+)')){
+			DOA.size = RegExp.$1;
+		}
+		return;
+	}
+	if(http.data.match('>File Not Found<')){
+		DOA.status = DOA_NG;
+		DOA.comment = 'File Not Found';
+		return;
+	}
+	
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
+}

@@ -1,0 +1,56 @@
+//Dorothy2
+//caption=turbobit.net
+//version=0.1
+//hint=
+//match=http://(www\.)?turbobit.net/
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+//コンストラクタ
+	common_load('download', 'StringExtension2');
+//メイン
+this.main = function(url){
+	//http://turbobit.net/download/free/ だと長いファイル名は短縮されたものしか取得できないため変更
+	if(urlinfo.url.match('http://(www\.)?turbobit.net/download/free/(\w+)')){
+		urlinfo.url = 'http://turbobit.net/' + RegExp.$2 + '.html';
+	}
+	var http = download(urlinfo.url,false,{'Cookie':'user_lang=en'});
+	if(http.responseHeader.code != 200){
+		DOA.status = DOA_BS;
+		DOA.comment = 'error:' + http.responseHeader.code;
+		return;
+	}
+	if(http.data.match(/Download file:\s+.+?'>([^<]+)<[^>]+>\s+\(([^\)]+)/)){
+		DOA.status = DOA_OK;
+		DOA.size = RegExp.$2;
+		//長いファイル名は短縮されてしまうので<title>から取得
+		DOA.name = http.data.match('title>\s+Download (.+?)\.[^\.]+TurboBit.net\s*</title>')? RegExp.$1.decodeCharRef8(): '不明';
+		return;
+	}
+	if(http.data.match(/<div class="text-404">\s+<h1>([^<]+)/)){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$1;
+		return;
+	}
+	//ブラウザではPlease wait, searching file...が20秒間表示されてからエラーメッセージが表示
+	if(http.data.indexOf('Please wait, searching file...') != -1){
+		if(http.data.match(/\$\('h1'\)\.html\('([^']+)/)){
+			DOA.status = DOA_NG;
+			DOA.comment = RegExp.$1;
+		}else{
+			DOA.status = DOA_UK;
+			DOA.comment = 'Please wait, searching file...';
+		}
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+//デストラクタ
+this._ = function(){
+
+};
+}

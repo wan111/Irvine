@@ -1,0 +1,103 @@
+//Dorothy2
+//caption=sync_w
+//version=0.1
+//hint=sync_w
+//match=
+//author=wan
+//path=common
+//end
+function sync_w(name, wait, limit){
+	this.syncwait = parseInt(wait) >= 0 ? parseInt(wait) : 10;
+	this.synclimit = parseInt(limit) >= 0 ? parseInt(limit) : 10;
+	this.name = name ? name : Dorothy.matchFile;
+},
+sync_w.prototype.set = function(){
+	this.mutex_parent = new Mutex(this.name + 'parent');
+	this.mutex_child = new Mutex(this.name + 'child');
+	this.parent = false;
+	this.count = 0;
+	this.limit = false;
+	if(!mutex_parent.existed){
+		mutex_parent.lock();
+		parent = true;
+		println('同期:親');
+	}else{
+		count = this.child_count();
+		println('同期:子 ' + count + '番目');
+		if(count > this.synclimit){
+			this.exit();
+			println('同期の上限を超えました ' + synclimit);
+			println('同期から外れます');
+			this.limit = true;
+			return 'limit';
+		}
+	}
+	return true;
+},
+sync_w.prototype.start = function(){
+	if(this.limit) return 'limit';
+	common_load('l_sleep');
+	if(parent){
+		println('sync_wait ' + this.syncwait + ' sec');
+		l_sleep(syncwait * 1000);
+		this.count = this.child_count(true);
+		if(count > 0){
+			println('同期:親');
+			println('子の数 ' + count);
+			while(this.child_existed()){
+				l_sleep(1000);
+			}
+			println('同期:成功 子と再会 ロック解除');
+			this.mutex_parent.unlock();
+		}else{
+			println('同期:親のみ');
+			this.mutex_parent.unlock();
+		}
+	}else{
+		println('同期:子 ' + this.count + '番目 待機');
+		this.mutex_child = null;
+		this.mutex_parent.lock();
+		this.mutex_parent.unlock();
+		
+		this.mutex_count = null;
+		mutex_count = new Mutex(this.name + 'child' + (this.count-1));
+		if(mutex_count.existed){
+			println('同期:成功 親と再会');
+		}else{
+			println('同期:失敗 親死亡');
+			return false;
+		}
+	}
+	sleep(300);
+	return true;
+},
+sync_w.prototype.child_existed = function(){
+	this.mutex_child = null;
+	mutex_child = new Mutex(this.name + 'child');
+	return mutex_child.existed;
+},
+sync_w.prototype.child_count = function(flag){
+	var count = 0;
+	if(flag){
+		this.mutex_count = [];
+		var count2 = 0;
+		for(count=0; count<this.synclimit; ++count){
+			mutex_count[count] = new Mutex(this.name + 'child' + count);
+			if(!mutex_count[count].existed) mutex_count[count] = null;
+			else count2++;
+		}
+		return count2;
+	}else{
+		this.mutex_count = null;
+		for(count=0; count<this.synclimit; ++count){
+			mutex_count = new Mutex(this.name + 'child' + count);
+			if(!mutex_count.existed) break;
+		}
+		return count+1;
+	}
+},
+sync_w.prototype.exit = function(){
+	this.mutex_parent = null;
+	this.mutex_child = null;
+	this.mutex_count = null;
+}

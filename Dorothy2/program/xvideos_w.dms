@@ -1,0 +1,100 @@
+//Dorothy2
+//caption=xvideos_w
+//version=0.11
+//hint=http://(www\.|jp\.|flashservice\.)?xvideos\.(com|jp)/
+//match=http://(www\.|jp\.|flashservice\.)?xvideos\.(com|jp)/
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('download', 'character_references', 'utf8', 'fileSave');
+	
+	var dir=new Directory(Dorothy.userPath);
+	if(!dir.exists()){
+		dir.make();
+	}
+	var ini=new Ini(Dorothy.userIniPath);
+	var savename = ini.read('FILENAME','savename','%TITLE%');
+	var tag_max = ini.read('FILENAME', 'tag_max', 20);
+	
+	if(!urlinfo.url.match('http://(www\.|jp\.|flashservice\.)?xvideos\.(com|jp)/(video|embedframe/)(\d+)')){
+		println('–¢‘Î‰žURL>' + urlinfo.url);
+		exit();
+	}
+	var video_id = RegExp.$4;
+	
+	var url = new URL('http://www.xvideos.com/video' + video_id);
+	
+	var http = download(url.url, true);
+	if(http.responseHeader.code != 200){
+		println('error--->'+http.responseHeader.code);
+		if(http.data.match('<div id="content">\s*<h1>([^<]+)</h1>(\s*<h2>([^<]+)</h2>)')){
+			println(RegExp.$1 + "\n" + RegExp.$3);
+			exit();
+		}
+		return retry();
+	}
+	
+	if(http.data.match('>This video has been deleted\.')){
+		println('This video has been deleted.');
+		exit();
+	}
+	if(http.data.match('>(Sorry, this video is not available\.)')){
+		println(RegExp.$1);
+		exit();
+	}
+
+	if(!http.data.match('flv_url=(.+?)&amp;')){
+		println('error> flv_url‚ªŒ©‚Â‚©‚ç‚È‚¢');
+		fileSave('xvideos_error.html', http.data);
+		exit();
+	}
+	var url2 = new URL(unescape(RegExp.$1));
+
+	var title = 'unknown', tags = [], name = '', models = [], duration;
+	
+	if(http.data.match('<h2>([^<]+)\s?<span class="duration">- ([^<]+)</span')){
+		title = RegExp.$1;
+		duration = RegExp.$2;
+	}
+	if(http.data.match('<li>Uploader: </li>\s*<li class="profile_name"><a href="/profiles/[^"]+">([^<]+)<')){
+		name = RegExp.$1;
+	}
+	http.data.replace(/a href="\/tags\/[^"]+">([^<]+)</g, function(m,n){
+		tags.add(n);
+	});
+	if(http.data.match('Models in this video: </li>(\s*<li class="profile_name"><a href="[^"]+">[^<]+</a>, </li>)+')){
+		var tmp = RegExp.$0;
+		tmp.replace(/<li class="profile_name"><a href="[^"]+">([^<]+)</g, function(m, n){
+			models.add(n);
+		});
+		
+	}
+	
+	println('video_id: ' + video_id);
+	println('title: ' + title);
+	println('name: ' + name);
+	println('duration: ' + duration);
+	println('tags: ' + tags);
+	println('models: ' + models);
+	
+	var ext = url2.filename.slice(url2.filename.lastIndexOf('.'));
+	ext = ext.match('\.\w+'); //Šg’£Žq‚ÌŒã‚É;v=“™‚ª•t‚¢‚Ä‚¢‚éŽ–‚ª‚ ‚é‚½‚ß
+	tags = tags.slice(0, tag_max);
+	
+	var map={};
+	map['TITLE'] = title;
+	map['NAME'] = name;
+	map['DURATION'] = duration;
+	map['VIDEO_ID'] = video_id;
+	map['TAGS'] = tags.join(', ');
+	map['MODELS'] = models.join(', ');
+	
+	var p = map.getProperties().join('|');
+	savename = savename.replace('%(' + p + ')%', 'gi', function(m,n){return map[n.toUpperCase()];});
+	
+	Dorothy.fileName = new Utf8(savename).decodeCharRef().toSJIS() + ext;
+	urlinfo.url = url2.url;
+	headers.host = url2.host;
+}
