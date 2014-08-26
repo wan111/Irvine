@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={8BFA7EB9-3A06-4BB3-A763-54C016E25104}
 caption=各スクリプトのショートカットを有効に
-version=0.1
+version=0.11
 hint=
 event=OnCreate
 match=
@@ -26,7 +26,8 @@ if(typeof IrvineInfo === 'undefined'){
 			if(WshShell.AppActivate(processId) != -1) break;
 		}
 		WshShell.SendKeys("%T");
-		WshShell.SendKeys(keys[i] + "%");
-		WshShell.SendKeys("{ESC}");
+		WScript.sleep(100);
+		WshShell.SendKeys(keys[i]);
+		WScript.sleep(100);
 	}
 }
