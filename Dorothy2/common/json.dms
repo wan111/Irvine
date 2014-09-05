@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.11
+//version=0.12
 //hint=
 //match=
 //author=wan
@@ -202,6 +202,12 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 						return s_quot[0] + tmp + s_quot[1];
 				}
 		}
+		if(typeof value.toString == 'function'){
+			var tmp = esc ? toEscape(value.toString()) : value.toString();
+			return s_quot[0] + tmp + s_quot[1];
+		}
+		return '{}';
+
 	};
 	var n = '', 
 	    k_quot = typeof key_quot.length != 'undefined' ? (key_quot.length == 2 ? [key_quot[0], key_quot[1]] : ['', '']) : ['"', '"'],
