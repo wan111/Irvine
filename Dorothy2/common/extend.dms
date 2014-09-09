@@ -1,0 +1,45 @@
+//Dorothy2
+//caption=extend
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+//!!!!問題あり 1.循環参照で無限ループ発生。
+function extend(/*deep, dest, source*/){
+	var deep = false, dest, source, len = arguments.length, i = 1;
+	if(typeof arguments[0] == 'boolean'){
+		deep = arguments[0];
+		i++;
+	}
+	if(len == i){
+		dest = this;
+		i--:
+	}else{
+		dest = arguments[i-1];
+		if(typeof dest != 'object') dest = {};
+	}
+	for(; i < len; i++){
+		source = arguments[i];
+		if(nameOf(source) == 'Object' || nameOf(source) == 'Array'){
+			for(var key in source){
+				if(typeof dest[key] == 'undefined') dest[key] = {};
+
+				if(deep){
+					switch(nameOf(source[key])){
+						case 'Object':
+							dest[key] = extend(deep, (nameOf(dest[key]) == 'Object' ? dest[key] : {}), source[key]);
+							continue;
+						case 'Array':
+							dest[key] = extend(deep, (nameOf(dest[key]) == 'Array' ? dest[key] : []), source[key]);
+							continue;
+					}
+				}
+				dest[key] = source[key];
+			}
+		}
+	}
+	return dest;
+},
+Object.prototype.extend = extend;
