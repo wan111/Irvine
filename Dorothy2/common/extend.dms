@@ -1,61 +1,72 @@
 //Dorothy2
 //caption=extend
-//version=0.2
+//version=0.3
 //hint=
 //match=
 //author=wan
 //path=common
 //end
-//!!!!問題あり a = {}; b={c: a, d: a} にて循環参照と判断してしまう 問題となるのは循環参照を{}等に置き換えたり無視した場合
 function extend(/*deep, dest, source*/){
-	function _extend(_deep, _dest, _source){
-		for(var key in _source){
-			if(typeof _dest[key] == 'undefined') _dest[key] = {};
+	function _extend(deep, dest, src){
+		for(var key in src){
+			if(typeof dest[key] == 'undefined') dest[key] = {};
 
-			if(_deep){
-				switch(nameOf(_source[key])){
+			if(deep){
+				switch(nameOf(src[key])){
 					case 'Object':
-						if(check(_source[key])) _dest[key] = _extend(_deep, (nameOf(_dest[key]) == 'Object' ? _dest[key] : {}), _source[key]);
-						else _dest[key] = 'obj_circular';//{};
-						continue;
+						dest[key] = nameOf(dest[key]) == 'Object' ? dest[key] : {};
+						break;
 					case 'Array':
-						if(check(_source[key])) _dest[key] = _extend(_deep, (nameOf(_dest[key]) == 'Array' ? _dest[key] : []), _source[key]);
-						else _dest[key] = 'arr_circular';//[];
+						dest[key] = nameOf(dest[key]) == 'Array' ? dest[key] : [];
+						break;
+					default:
+						dest[key] = src[key];
 						continue;
 				}
+				if(circular.check(dest[key], src[key])) dest[key] = _extend(deep, dest[key], src[key]);
+				else dest[key] = circular.obj;
+			}else{
+				dest[key] = src[key];
 			}
-			_dest[key] = _source[key];
 		}
-		return _dest;
+		return dest;
 	}
-	//循環参照のチェック
-	function check(obj){
-		for(var i in cache){
-			if(cache[i] === obj) return false;
+	//循環参照,重複している参照渡しの確認
+	var circular = {
+		cache: [],
+		obj: {},
+		check: function(dest, src){
+			for(var i in cache){
+				if(cache[i][1] === src){
+					this.obj = cache[i][0];
+					return false;
+				}
+			}
+			cache.push([dest, src]);
+			return true;
 		}
-		cache.push(obj);
-		return true;
-	}
+	};
 
-	var deep = false, dest, source, len = arguments.length, i = 1, cache = [];
+	var deep = false, destination, source, len = arguments.length, i = 1;
 	if(typeof arguments[0] == 'boolean'){
 		deep = arguments[0];
 		i++;
 	}
 
 	if(len == i){
-		dest = this;
+		destination = this;
 		i--;
 	}else{
-		dest = arguments[i-1];
-		if(typeof dest != 'object') dest = {};
+		destination = arguments[i-1];
+		if(typeof destination != 'object') destination = {};
 	}
 	for(; i < len; i++){
 		source = arguments[i];
-		if((nameOf(source) == 'Object' || nameOf(source) == 'Array') && check(source)){
-			dest = _extend(deep, dest, source);
+		if((nameOf(source) == 'Object' || nameOf(source) == 'Array')){
+			circular.check(destination, source);
+			destination = _extend(deep, destination, source);
 		}
 	}
-	return dest;
+	return destination;
 },
 Object.prototype.extend = extend;
