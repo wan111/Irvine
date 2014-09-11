@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.12
+//version=0.20
 //hint=
 //match=
 //author=wan
@@ -184,16 +184,24 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 				switch(nameOf(value)){
 					case 'Object':
 						var s = [], sp = space + indent;
-						for(var key in value){
-							s.add(k_quot[0] + key + k_quot[1] + colon + toStr(value[key], sp));
+						var i;
+						if(i = check(value)){
+							for(var key in value){
+								s.add(k_quot[0] + key + k_quot[1] + colon + toStr(value[key], sp));
+							}
 						}
+						cache = cache.slice(0, i-1);
 						sp = n + sp;
 						return '{' + sp + s.join(comma + sp) + n + space + '}';
 					case 'Array':
 						var s = [], sp = space + indent;
-						for(var i = 0; i < value.length; i++){
-							s.add(toStr(value[i], sp));
+						var i;
+						if(i = check(value)){
+							for(var i = 0; i < value.length; i++){
+								s.add(toStr(value[i], sp));
+							}
 						}
+						cache = cache.slice(0, i-1);
 						sp = n + sp;
 						return '[' + sp + s.join(comma + sp) + n + space + ']';
 					case 'String':
@@ -209,6 +217,13 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 		return '{}';
 
 	};
+	var cache = [];
+	var check = function(obj){
+		for(var i in cache){
+			if(cache[i] === obj) return false;
+		}
+		return cache.push(obj);
+	};
 	var n = '', 
 	    k_quot = typeof key_quot.length != 'undefined' ? (key_quot.length == 2 ? [key_quot[0], key_quot[1]] : ['', '']) : ['"', '"'],
 	    s_quot = typeof str_quot.length != 'undefined' ? (str_quot.length == 2 ? [str_quot[0], str_quot[1]] : ['', '']) : ['"', '"']; 
@@ -221,6 +236,5 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 	}else{
 		indent = '';
 	}
-
 	return toStr(obj, '');
 };
