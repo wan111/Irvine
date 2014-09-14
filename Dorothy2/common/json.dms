@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.20
+//version=0.21
 //hint=
 //match=
 //author=wan
@@ -116,7 +116,7 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 			return (a.length % 2 == 0) ? (b == "\\" ? (c ? m : a + "\\\\") : a + "\\" + b) : m;
 		});
 		*/
-		s = s.replace(/[\/"\\]/, '\\$0');
+		s = s.replace(/[\/"\\]/g, '\\$0');
 		s = s.replace(/[\n\r\f\t\b]/g, function(m){
 			return control_char[m.charCodeAt(0)];
 		});
@@ -187,7 +187,7 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 						var i;
 						if(i = check(value)){
 							for(var key in value){
-								s.add(k_quot[0] + key + k_quot[1] + colon + toStr(value[key], sp));
+								s.add(k_quot[0] + (esc ? toEscape(key) : key) + k_quot[1] + colon + toStr(value[key], sp));
 							}
 						}
 						cache = cache.slice(0, i-1);
