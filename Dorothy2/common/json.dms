@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.21
+//version=0.22
 //hint=
 //match=
 //author=wan
@@ -179,15 +179,21 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 			case 'boolean':
 				return value.toString();
 			case 'null':
+			case 'undefined':
 				return 'null';
 			case 'object':
+				var isObj = false;
 				switch(nameOf(value)){
-					case 'Object':
+					case 'Object': isObj = true;
+					case 'IrvineUrlInfo':
+					case 'IrvineItem':
+					case 'IrvineFolderData':
+					case 'IrvineOptionData':
 						var s = [], sp = space + indent;
 						var i;
 						if(i = check(value)){
 							for(var key in value){
-								s.add(k_quot[0] + (esc ? toEscape(key) : key) + k_quot[1] + colon + toStr(value[key], sp));
+								if(isObj || (typeof value[key] != 'undefined')) s.add(k_quot[0] + (esc ? toEscape(key) : key) + k_quot[1] + colon + toStr(value[key], sp));
 							}
 						}
 						cache = cache.slice(0, i-1);
