@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.22
+//version=0.30
 //hint=
 //match=
 //author=wan
@@ -9,18 +9,219 @@
 
 /*
 JSON形式の文字列をオブジェクトに変換する 失敗した場合はfalseを返す
-text: オブジェクトに変換するJSON形式の文字列 改行されているものはJSON文字列と見なしません
-esc: trueならエスケープ文字を元の文字に変換します
-     falseなら '\u[4桁の16進数]'→'&#x[4桁の16進数];' '\/'→'/' と変換して他のエスケープ文字は変換しません
-      (Dmonkeyでは"\/"や"\u[16進数]"はエスケープ文字ではないため消えてしまう)
-     デフォルトはtrue
+text: オブジェクトに変換するJSON形式の文字列
 */
-function parseJSON(text, esc){
-	if(!text || !(typeof text == 'string' || nameOf(text) == 'String')) return false;
-	esc = typeof esc == 'boolean' ? esc : true;
-
-	//rentan氏のutf8.dmsから拝借
-	var fromUnicode = function (u) {
+function parseJSON(source){
+	if(typeof source != 'string' && nameOf(source) != 'String'){
+		println('parse error>引数が文字列ではない');
+		return false;
+	}
+	var Esc_char = {
+		'"' : '"',  //quotation mark  U+0022
+		'\' : '\',  //reverse solidus U+005C
+		'/' : '/',  //solidus         U+002F
+		'b' : "\b", //backspace       U+0008
+		'f' : "\f", //form feed       U+000C
+		'n' : String.fromCharCode(0x0A), //line feed U+000A
+		'r' : "\r", //carriage return U+000D
+		't' : "\t"  //tab             U+0009
+	};
+	var Str = new String(source);
+	Str.index = -1;
+	Str.end = Str.length - 1;
+	//次の文字を取得する lenを指定した場合はlenの長さの文字列を取得
+	//Str.indexは現在の位置
+	Str.next = function(len){
+		len = len || 1;
+		var s = this.substr(this.index+1, len);
+		this.index += len;
+		if(this.index > this.end){
+			throw 'parse error: index(' + this.index +  ')=>解析途中で文字列の終端に達した';
+		}
+		return s;
+	};
+	//次の文字を取得する 空白の場合スキップする
+	Str.nextStr = function(){
+		var r;
+		while(true){
+			switch(r = this.next()){
+				case ' ':
+				case Esc_char.t:
+				case Esc_char.n:
+				case Esc_char.r:
+					continue;
+			}
+			break;
+		}
+		return r;
+	};
+	function err(e){
+		throw 'parse error: index(' + Str.index +  ')=>' + e;
+	}
+	//オブジェクトを解析する
+	//呼ばれた時のStr.indexは最初の{の位置
+	function parseObj(){
+		var obj = {};
+		if(Str.nextStr() == '}') return obj;//空オブジェクト
+		while(true){
+			if(Str[Str.index] != '"') err('オブジェクトのメンバー名が文字列ではない');
+			var key = parseStr();
+			if(Str.nextStr() != ':') err('オブジェクトのメンバー名の後に:がない');
+			Str.nextStr();
+			obj[key] = parseValue();
+			switch(Str.nextStr()){
+				case ',':
+					Str.nextStr();
+					continue;
+				case '}': return obj;
+				default: err('オブジェクトの値が[,]で区切られていない');
+			}
+		}
+	}
+	//配列を解析する
+	//呼ばれた時のStr.indexは最初の[の位置
+	function parseArr(){
+		var arr = [];
+		if(Str.nextStr() == ']') return arr;//空配列
+		while(true){
+			arr.push(parseValue());
+			switch(Str.nextStr()){
+				case ',':
+					Str.nextStr();
+					continue;
+				case ']': return arr;
+				default: err('配列の値が[,]で区切られていない');
+			}
+		}
+	}
+	//文字列を解析
+	//呼ばれた時のStr.indexは最初の"の位置
+	function parseStr(){
+		var r = s = '';
+		while(s = Str.next()){
+			if(s == '"') return r;
+			if(s == '\'){
+				s = Str.next();
+				if(Esc_char.hasKey(s)){
+					s = Esc_char[s];
+				}else if(s == 'u'){
+					//uの後が正しい文字コードかチェックするように 間違っていた場合はそのまま変換せず出力
+					s = _unescape();
+				}
+			}
+			r += s;
+		}
+		err('文字列が"で閉じられていない');
+	}
+	//数値を解析
+	//呼ばれた時のStr.indexは数値の始まり[0-9\-]の位置
+	function parseNumber(){
+		/*
+		number = [ minus ] int [ frac ] [ exp ]
+		decimal-point = %x2E       ; .
+		digit1-9 = %x31-39         ; 1-9
+		e = %x65 / %x45            ; e E
+		exp = e [ minus / plus ] 1*DIGIT
+		frac = decimal-point 1*DIGIT
+		int = zero / ( digit1-9 *DIGIT )
+		minus = %x2D               ; -
+		plus = %x2B                ; +
+		zero = %x30                ; 0
+		*/
+		var start = Str.index,
+		s = Str[start],
+		p = e = false;
+		
+		if(s == '-') s = Str.next();
+		if(!(s | 0 || s == '0')) err('数値ではない');
+		
+		while(true){
+			while((s | 0 || s == '0') && (s = Str.next()));
+			if(s == '.'){
+				if(p || e) break;
+				p = true;
+				s = Str.next();
+			}else if(s == 'e' || s == 'E'){
+				if(e) break;
+				e = true;
+				s = Str.next();
+				if(s == '+' || s == '-') s = Str.next();
+			}else{
+				--Str.index;
+				s = Str[Str.index];
+				if(!(s | 0 || s == '0')) break;//小数点,指数の次が数字ではない場合
+				var r = Str.slice(start, Str.index+1);
+				return parseFloat(r);
+			}
+		}
+		err('数値ではない');
+	}
+	//オブジェクト・配列の値を解析する
+	//呼ばれた時のStr.indexは値の最初の文字の位置
+	function parseValue(){
+		/*
+		value = false / null / true / object / array / number / string
+		false = %x66.61.6c.73.65   ; false
+		null  = %x6e.75.6c.6c      ; null
+		true  = %x74.72.75.65      ; true
+		*/
+		var s = Str[Str.index];
+		switch(s){
+			case '{': return parseObj();
+			case '"': return parseStr();
+			case '[': return parseArr();
+			case 'f'://false
+				if(Str.next(4) == 'alse') return false;
+				break;
+			case 't'://true
+				if(Str.next(3) == 'rue') return true;
+				break;
+			case 'n'://null
+				if(Str.next(3) == 'ull') return null;
+				break;
+			default://number or error
+				if(s | 0 || s == '0' || s == '-') return parseNumber();
+		}
+		err('不正な値');
+	}
+	//rentanさんのUt8.dmsから拝借しました
+	function _unescape(){
+		// \uXXXX ... \u0000～\uffff
+		var r = Str[Str.index],
+		s = Str.next(4);
+		if (/^[0-9a-f]{4}/i.test (s)) {
+			s = parseInt ('0x' + s);  // 0～0xffff
+			
+			var m = s & 0xfc00;
+			if (m == 0xd800) {
+				// high surrogate
+				var s2 = Str.next(6);  //  0～0xffff
+				s2 = /^\\u[0-9a-fA-F]{4}/.test (s2) ? parseInt ('0x' + s2.slice (2)) : 0;
+				
+				if ((s2 & 0xfc00) == 0xdc00) {
+					r = fromUnicode (0x10000 + ((s & 0x03ff) << 10) + (s2 & 0x03ff));
+				}
+				else {
+					Str.index -= 6;
+					// high surrogate の直後が low surrogate ではない
+					// または Unicode エスケープシーケンスではない
+					r = '[U+' + s + ']';
+				}
+			}
+			else if (m == 0xdc00) {
+				// いきなり low surrogate がきた
+				r = '[U+' + s + ']';
+			}
+			else {
+				// 基本多言語面のコードポイント
+				r = fromUnicode (s);
+			}
+		}else{
+			Str.index -= 4;
+		}
+		return r;
+	}
+	function fromUnicode(u){
 		if (u <= 0x7f) {
 			return String.fromCharCode (u);
 		}
@@ -43,51 +244,24 @@ function parseJSON(text, esc){
 			return String.fromCharCode (n1 + 0xf0, n2 + 0x80, n3 + 0x80, n4 + 0x80);
 		};
 
-		return '';
-	};
-
-	var fromEscape = function(s){
-		switch(typeof s){
-			case 'string':
-				s = s.replace(/&#x([\da-fA-F]{4});/g, function(a, b){return fromUnicode('0x' + b);});
-				break;
-			case 'object':
-				switch(nameOf(s)){
-					case 'Object':
-						for(var key in s){
-							s[key] = fromEscape(s[key]);
-						}
-						break;
-					case 'Array':
-						for(var i = 0; i < s.length; i++){
-							s[i] = fromEscape(s[i]);
-						}
-						break;
-				}
-				break;
-		}
-		return s;
-	};
-
-	//json2.js https://github.com/douglascrockford/JSON-js から拝借
-	var reg_remaining = /^[\],:{}\s]*$/;
-	var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
-	var reg_tokens = /"[^"\\\n\r]*"|true|false|null|-?\d+(\.\d*)?([eE][+\-]?\d+)?/g;
-	var reg_brackets = /(^|:|,)(\s*\[)+/g;
-
-	if(reg_remaining.test(text.replace(reg_escape, '@')
-	  .replace(reg_tokens, ']')
-	  .replace(reg_brackets, ''))){
-
-		//Dmonkeyでは"\/"や"\u[16進数]"はエスケープ文字ではないため消えてしまうので置換
-		text = text.replace(/\\(\/)/g, '$1');
-		//text = text.replace(/(\\*)\\(u[\da-f]{4})/g, function(a, b, c){return (b.length % 2 == 0) ? b + '\\' + c: a;});
-		text = text.replace(/(\\*)\\u([\da-fA-F]{4})/g, function(a, b, c){return (b.length % 2 == 0) ? b + '&#x'+c + ';': a;});
-
-		var r = eval('(' + text + ')');
-		return esc ? fromEscape(r) : r;
+		return '[UTF-8 error]';
 	}
-	return false;
+	var r = false;
+	try{
+		switch(Str.nextStr()){
+			case '{': r = parseObj();break;
+			case '[': r = parseArr();break;
+			default: err('JSON文字列ではない');
+		}
+		if(Str.index < Str.end){
+			r = false;
+			Str.index++;
+			err(Str[Str.index-1] + 'の後に不明な文字がある');
+		}
+	}catch(e){
+		println(e);
+	}
+	return r;
 },
 /*
 オブジェクトをJSON文字列に変換する
@@ -107,7 +281,7 @@ function stringifyJSON(obj, esc, indent, key_quot, str_quot, colon, comma){
 		0x0d: "\\r",
 		0x0c: "\\f",
 		0x09: "\\t",
-		0x09: "\\b"
+		0x08: "\\b"
 	};
 	var toEscape = function(s){
 		if(!s) return s;
