@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.31
+//version=0.32
 //hint=
 //match=
 //author=wan
@@ -9,13 +9,20 @@
 
 /*
 JSON文字列を解析する
-parseJSON(source);
-	source: 解析するJSON形式の文字列(object,array,value)
-	戻り値: オブジェクトか配列か値[string,number,true or false, null]
-	        文字列ではなくboolean, number, nullを渡した場合はそのまま返す
-	        構文が間違っていた場合はfalse
+parseJSON(source[, reviver]);
+	引数
+		source: 解析するJSON形式の文字列(object,array,value)
+		reviver:
+			省略可能。解析結果を変換する関数 プロパティ名とプロパティの値が引数して渡される thisはそのプロパティを含むオブジェクト
+			プロパティの値を戻り値に置き換える nullかundefinedを返した場合そのプロパティを削除
+			最もネストされたプロパティから順次呼び出され最後は空文字列と最上位の値になる
+			sourceにvalueを指定した場合はプロパティ名は空プロパティの値はsource thisは{'', source}となる
+	戻り値
+		オブジェクトか配列か値[string,number,true or false, null]
+		sourceに文字列ではなくboolean, number, nullを渡した場合はそのまま返す
+		構文が間違っていた場合はfalse
 */
-function parseJSON(source){
+function parseJSON(source, reviver){
 	var Esc_char = {
 		'"' : '"',  //quotation mark  U+0022
 		'\' : '\',  //reverse solidus U+005C
@@ -258,6 +265,18 @@ function parseJSON(source){
 
 		return '[UTF-8 error]';
 	}
+	function walk(obj, key){
+		var value = obj[key];
+		if(typeof value == 'object'){
+			for(var i in value){
+				value[i] = walk(value, i);
+				if(isUndefined(value[i]) || isNull(value[i])){
+					value.removeKey(i);
+				}
+			}
+		}
+		return reviver.call(obj, key, value);
+	}
 	var r = false;
 	try{
 		switch(typeof source){
@@ -281,8 +300,10 @@ function parseJSON(source){
 		}
 	}catch(e){
 		println(e);
+		return r;
 	}
-	return r;
+	//reviver(key, value) thisはkeyを持つオブジェクト
+	return typeof reviver == 'function' ? walk({'': r}, '') : r;
 },
 /*
 オブジェクトをJSON文字列に変換する
