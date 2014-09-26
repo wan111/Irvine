@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.30
+//version=0.31
 //hint=
 //match=
 //author=wan
@@ -8,14 +8,14 @@
 //end
 
 /*
-JSON形式の文字列をオブジェクトに変換する 失敗した場合はfalseを返す
-text: オブジェクトに変換するJSON形式の文字列
+JSON文字列を解析する
+parseJSON(source);
+	source: 解析するJSON形式の文字列(object,array,value)
+	戻り値: オブジェクトか配列か値[string,number,true or false, null]
+	        文字列ではなくboolean, number, nullを渡した場合はそのまま返す
+	        構文が間違っていた場合はfalse
 */
 function parseJSON(source){
-	if(typeof source != 'string' && nameOf(source) != 'String'){
-		println('parse error>引数が文字列ではない');
-		return false;
-	}
 	var Esc_char = {
 		'"' : '"',  //quotation mark  U+0022
 		'\' : '\',  //reverse solidus U+005C
@@ -35,10 +35,7 @@ function parseJSON(source){
 		len = len || 1;
 		var s = this.substr(this.index+1, len);
 		this.index += len;
-		if(this.index > this.end){
-			throw 'parse error: index(' + this.index +  ')=>解析途中で文字列の終端に達した';
-		}
-		return s;
+		return s;//終端に達した場合は空文字
 	};
 	//次の文字を取得する 空白の場合スキップする
 	Str.nextStr = function(){
@@ -61,55 +58,61 @@ function parseJSON(source){
 	//オブジェクトを解析する
 	//呼ばれた時のStr.indexは最初の{の位置
 	function parseObj(){
-		var obj = {};
-		if(Str.nextStr() == '}') return obj;//空オブジェクト
-		while(true){
-			if(Str[Str.index] != '"') err('オブジェクトのメンバー名が文字列ではない');
+		var obj = {}, s = Str.nextStr();
+		if(s == '}') return obj;//空オブジェクト
+		while(s){
+			if(s != '"') err('オブジェクトのメンバー名が文字列ではない');
 			var key = parseStr();
 			if(Str.nextStr() != ':') err('オブジェクトのメンバー名の後に:がない');
 			Str.nextStr();
 			obj[key] = parseValue();
 			switch(Str.nextStr()){
 				case ',':
-					Str.nextStr();
+					s = Str.nextStr();
 					continue;
 				case '}': return obj;
-				default: err('オブジェクトの値が[,]で区切られていない');
+				default: err('オブジェクトの値がコンマで区切られていない');
 			}
 		}
+		err('オブジェクトが閉じていない');
 	}
 	//配列を解析する
 	//呼ばれた時のStr.indexは最初の[の位置
 	function parseArr(){
-		var arr = [];
-		if(Str.nextStr() == ']') return arr;//空配列
-		while(true){
+		var arr = [], s = Str.nextStr();
+		if(s == ']') return arr;//空配列
+		while(s){
 			arr.push(parseValue());
 			switch(Str.nextStr()){
 				case ',':
-					Str.nextStr();
+					s = Str.nextStr();
 					continue;
 				case ']': return arr;
-				default: err('配列の値が[,]で区切られていない');
+				default: err('配列の値がコンマで区切られていない');
 			}
 		}
+		err('配列が閉じていない');
 	}
 	//文字列を解析
 	//呼ばれた時のStr.indexは最初の"の位置
 	function parseStr(){
-		var r = s = '';
-		while(s = Str.next()){
+		var r = '', s = Str.next();
+		while(s){
 			if(s == '"') return r;
 			if(s == '\'){
 				s = Str.next();
 				if(Esc_char.hasKey(s)){
 					s = Esc_char[s];
 				}else if(s == 'u'){
-					//uの後が正しい文字コードかチェックするように 間違っていた場合はそのまま変換せず出力
+					//uの後が正しい文字コードかチェックするように 間違っていた場合はエラーに
 					s = _unescape();
+					if(s == '') err('不正なUnicode エスケープシーケンス');
+				}else{
+					continue;
 				}
 			}
 			r += s;
+			s = Str.next();
 		}
 		err('文字列が"で閉じられていない');
 	}
@@ -130,19 +133,28 @@ function parseJSON(source){
 		*/
 		var start = Str.index,
 		s = Str[start],
-		p = e = false;
+		p = e = isZero = false;
 		
 		if(s == '-') s = Str.next();
-		if(!(s | 0 || s == '0')) err('数値ではない');
-		
-		while(true){
+		if(s == '0') isZero = true;
+		else if(!(s | 0)) err('数値ではない');
+		//err[00, -00, 0123, 00.0, -00.0, 00e+1, 0123e1, 0123.0, 0123.1e1] ok[0e+1, 0e000, 0.000]
+		//先頭から複数連続した0は禁止する
+		//0の直後に指数と小数がある場合を除いて0から始まる数値は禁止する
+		//00, 0[1-9] になった時点でエラー
+		while(s){
+			if(isZero){
+				s = Str.next();
+				if(s | 0 || s == '0') err('不正な数値 0が先行している');
+				isZero = false;
+			}
 			while((s | 0 || s == '0') && (s = Str.next()));
 			if(s == '.'){
-				if(p || e) break;
+				if(p || e) break;//.が2回又はeの後に.がある
 				p = true;
 				s = Str.next();
 			}else if(s == 'e' || s == 'E'){
-				if(e) break;
+				if(e) break;//eが2回ある
 				e = true;
 				s = Str.next();
 				if(s == '+' || s == '-') s = Str.next();
@@ -154,7 +166,7 @@ function parseJSON(source){
 				return parseFloat(r);
 			}
 		}
-		err('数値ではない');
+		err('不正な数値');
 	}
 	//オブジェクト・配列の値を解析する
 	//呼ばれた時のStr.indexは値の最初の文字の位置
@@ -187,7 +199,7 @@ function parseJSON(source){
 	//rentanさんのUt8.dmsから拝借しました
 	function _unescape(){
 		// \uXXXX ... \u0000～\uffff
-		var r = Str[Str.index],
+		var r = '',
 		s = Str.next(4);
 		if (/^[0-9a-f]{4}/i.test (s)) {
 			s = parseInt ('0x' + s);  // 0～0xffff
@@ -248,15 +260,24 @@ function parseJSON(source){
 	}
 	var r = false;
 	try{
-		switch(Str.nextStr()){
-			case '{': r = parseObj();break;
-			case '[': r = parseArr();break;
-			default: err('JSON文字列ではない');
+		switch(typeof source){
+			case 'string': break;
+			case 'number':
+			case 'null':
+			case 'boolean': return source;
+			case 'object':
+				switch(nameOf(source)){
+					case 'String': break;
+					case 'Number': return source;
+				}
+			case 'undefined':
+			default:  err('引数が不正');
 		}
-		if(Str.index < Str.end){
+		Str.nextStr();
+		r = parseValue();
+		if(Str.nextStr()){ //残りが空白のみなら空文字になる
 			r = false;
-			Str.index++;
-			err(Str[Str.index-1] + 'の後に不明な文字がある');
+			err('不正な文字列');
 		}
 	}catch(e){
 		println(e);
