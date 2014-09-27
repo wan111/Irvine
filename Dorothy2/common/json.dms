@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.32
+//version=0.33
 //hint=
 //match=
 //author=wan
@@ -9,20 +9,90 @@
 
 /*
 JSON文字列を解析する
-parseJSON(source[, reviver]);
+parseJSON(text[, reviver][, esc]);
 	引数
-		source: 解析するJSON形式の文字列(object,array,value)
+		text: 解析するJSON形式の文字列(object,array,value)
 		reviver:
-			省略可能。解析結果を変換する関数 プロパティ名とプロパティの値が引数して渡される thisはそのプロパティを含むオブジェクト
+			省略可能。解析結果を変換する関数 オブジェクトの最もネストされたプロパティから順次呼び出され最後は空文字列と最上位の値になる
+				第一引数: プロパティ名
+				第二引数: プロパティの値
+				第三引数: 最上位からのプロパティ名
+				 (例){"a": {"b": ["c"]}} の場合の最初は 第一引数は0, 第二引数はc, 第三引数は["a"]["b"][0]
+			thisはそのプロパティを含むオブジェクト
 			プロパティの値を戻り値に置き換える nullかundefinedを返した場合そのプロパティを削除
-			最もネストされたプロパティから順次呼び出され最後は空文字列と最上位の値になる
-			sourceにvalueを指定した場合はプロパティ名は空プロパティの値はsource thisは{'', source}となる
+			textにJSONvalueを指定した場合はプロパティ名は空、プロパティの値はtext、thisは{'', text}となる
+		esc:
+			省略可能(デフォルトはtrue)。true or false
+			trueならエスケープ文字をデコードする 内部では一文字ずつ順に解析する(eval()を使う方法ではエスケープ文字のデコードが困難なため)
+			falseなら\をそのまま維持してデコードは行わない  内部では正規表現とeval()を使う こちらの方が処理が速い
 	戻り値
 		オブジェクトか配列か値[string,number,true or false, null]
-		sourceに文字列ではなくboolean, number, nullを渡した場合はそのまま返す
+		textに文字列ではなくboolean, number, nullを渡した場合はそのまま返す
 		構文が間違っていた場合はfalse
 */
-function parseJSON(source, reviver){
+function parseJSON(text, reviver, esc){
+	switch(typeof text){
+		case 'string': break;
+		case 'number':
+		case 'null':
+		case 'boolean': return text;
+		case 'object':
+			switch(nameOf(text)){
+				case 'String': break;
+				case 'Number': return text;
+			}
+		case 'undefined':
+		default:
+			println('parse error>引数が不正');
+			return false;
+	}
+	function walk(obj, key){
+		var value = obj[key];
+		if(typeof value == 'object'){
+			for(var i in value){
+				value[i] = walk(value, i);
+				if(isUndefined(value[i]) || isNull(value[i])){
+					value.removeKey(i);
+				}
+			}
+		}
+		return reviver.call(obj, key, value);
+	}
+	function walk(obj, key, properties){
+		var value = obj[key];
+		var isArr = nameOf(obj) == 'Array';
+		if(typeof value == 'object'){
+			var isArr = nameOf(value) == 'Array';
+			for(var i in value){
+				value[i] = walk(value, i, properties + '[' + (isArr ? i : '"' + i + '"') + ']');
+				if(isUndefined(value[i]) || isNull(value[i])){
+					value.removeKey(i);
+				}
+			}
+		}
+		return reviver.call(obj, key, value, properties);
+	}
+	return walk({'': obj}, '', '');
+
+	if(esc === false){
+		//json2.js https://github.com/douglascrockford/JSON-js から拝借
+		var reg_remaining = /^[\],:{}\s]*$/;
+		var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
+		//0123やtruetrue等の文字列もJSONと見なしていたので改変
+		var reg_tokens = /(^|[:,\[\{])\s*("[^"\\\n\r]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)/g;
+		var reg_brackets = /(^|:|,)(\s*\[)+/g;
+	
+		if(reg_remaining.test(text.replace(reg_escape, '@')
+		  .replace(reg_tokens, '$1]')
+		  .replace(reg_brackets, ''))){
+			
+			text = text.replace(/\\/g, '\\\\');
+			var r = eval('(' + text + ')');
+			return typeof reviver == 'function' ? walk({'': r}, '') : r;
+		}
+		println('parse error>JSON文字列ではない');
+		return false;
+	}
 	var Esc_char = {
 		'"' : '"',  //quotation mark  U+0022
 		'\' : '\',  //reverse solidus U+005C
@@ -33,7 +103,7 @@ function parseJSON(source, reviver){
 		'r' : "\r", //carriage return U+000D
 		't' : "\t"  //tab             U+0009
 	};
-	var Str = new String(source);
+	var Str = new String(text);
 	Str.index = -1;
 	Str.end = Str.length - 1;
 	//次の文字を取得する lenを指定した場合はlenの長さの文字列を取得
@@ -265,33 +335,8 @@ function parseJSON(source, reviver){
 
 		return '[UTF-8 error]';
 	}
-	function walk(obj, key){
-		var value = obj[key];
-		if(typeof value == 'object'){
-			for(var i in value){
-				value[i] = walk(value, i);
-				if(isUndefined(value[i]) || isNull(value[i])){
-					value.removeKey(i);
-				}
-			}
-		}
-		return reviver.call(obj, key, value);
-	}
 	var r = false;
 	try{
-		switch(typeof source){
-			case 'string': break;
-			case 'number':
-			case 'null':
-			case 'boolean': return source;
-			case 'object':
-				switch(nameOf(source)){
-					case 'String': break;
-					case 'Number': return source;
-				}
-			case 'undefined':
-			default:  err('引数が不正');
-		}
 		Str.nextStr();
 		r = parseValue();
 		if(Str.nextStr()){ //残りが空白のみなら空文字になる
