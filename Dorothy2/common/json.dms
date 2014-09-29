@@ -1,12 +1,12 @@
 //Dorothy2
 //caption=JSON
-//version=0.33
+//version=0.34
 //hint=
 //match=
 //author=wan
 //path=common
 //end
-
+(function(){
 /*
 JSON文字列を解析する
 parseJSON(text[, reviver][, esc])
@@ -28,313 +28,317 @@ parseJSON(text[, reviver][, esc])
 	戻り値
 		オブジェクトか配列か値[string,number,true or false, null]
 		textに文字列ではなくboolean, number, nullを渡した場合はそのまま返す
-		構文が間違っていた場合はfalse
+		構文が間違っていた場合やエラーの場合はundefinedを返す
 */
-function parseJSON(text, reviver, esc){
-	switch(typeof text){
-		case 'string': break;
-		case 'number':
-		case 'null':
-		case 'boolean': return text;
-		case 'object':
-			switch(nameOf(text)){
-				case 'String': break;
-				case 'Number': return text;
-			}
-		case 'undefined':
-		default:
-			println('parse error>引数が不正');
-			return false;
-	}
-	function walk(obj, key, path){
-		var value = obj[key];
-		if(typeof value == 'object'){
-			var isArr = nameOf(value) == 'Array';
-			for(var i in value){
-				value[i] = walk(value, i, path + (isArr ? '[' + i + ']' : '["' + i + '"]'));
-				if(isUndefined(value[i]) || isNull(value[i])){
-					value.removeKey(i);
+JSON = {};
+JSON.parse = (function(){
+	var F = {
+		Esc_char: {
+			'"' : '"',  //quotation mark  U+0022
+			'\' : '\',  //reverse solidus U+005C
+			'/' : '/',  //solidus         U+002F
+			'b' : "\b", //backspace       U+0008
+			'f' : "\f", //form feed       U+000C
+			'n' : String.fromCharCode(0x0A), //line feed U+000A
+			'r' : "\r", //carriage return U+000D
+			't' : "\t"  //tab             U+0009
+		},
+		err: function(e, Str){
+			throw 'parse error: index(' + Str.index +  ')=>' + e;
+		},
+		//オブジェクトを解析する
+		//呼ばれた時のStr.indexは最初の{の位置
+		parseObj: function(Str){
+			var obj = {}, s = Str.nextStr();
+			if(s == '}') return obj;//空オブジェクト
+			while(s){
+				if(s != '"') err('オブジェクトのメンバー名が文字列ではない', Str);
+				var key = parseStr(Str);
+				if(Str.nextStr() != ':') err('オブジェクトのメンバー名の後に:がない', Str);
+				Str.nextStr();
+				obj[key] = parseValue(Str);
+				switch(Str.nextStr()){
+					case ',':
+						s = Str.nextStr();
+						continue;
+					case '}': return obj;
+					default: err('オブジェクトの値がコンマで区切られていない', Str);
 				}
 			}
-		}
-		return reviver.call(obj, key, value, path);
-	}
+			err('オブジェクトが閉じていない', Str);
+		},
+		//配列を解析する
+		//呼ばれた時のStr.indexは最初の[の位置
+		parseArr: function(Str){
+			var arr = [], s = Str.nextStr();
+			if(s == ']') return arr;//空配列
+			while(s){
+				arr.push(parseValue(Str));
+				switch(Str.nextStr()){
+					case ',':
+						s = Str.nextStr();
+						continue;
+					case ']': return arr;
+					default: err('配列の値がコンマで区切られていない', Str);
+				}
+			}
+			err('配列が閉じていない', Str);
+		},
+		//文字列を解析
+		//呼ばれた時のStr.indexは最初の"の位置
+		parseStr: function(Str){
+			var r = '', s = Str.next();
+			while(s){
+				if(s == '"') return r;
+				if(s == '\'){
+					s = Str.next();
+					if(Esc_char.hasKey(s)){
+						s = Esc_char[s];
+					}else if(s == 'u'){
+						//uの後が正しい文字コードかチェックするように 間違っていた場合はエラーに
+						s = _unescape(Str);
+						if(s == '') err('不正なUnicode エスケープシーケンス', Str);
+					}else{
+						continue;
+					}
+				}
+				r += s;
+				s = Str.next();
+			}
+			err('文字列が"で閉じられていない', Str);
+		},
+		//数値を解析
+		//呼ばれた時のStr.indexは数値の始まり[0-9\-]の位置
+		parseNumber: function(Str){
+			/*
+			number = [ minus ] int [ frac ] [ exp ]
+			decimal-point = %x2E       ; .
+			digit1-9 = %x31-39         ; 1-9
+			e = %x65 / %x45            ; e E
+			exp = e [ minus / plus ] 1*DIGIT
+			frac = decimal-point 1*DIGIT
+			int = zero / ( digit1-9 *DIGIT )
+			minus = %x2D               ; -
+			plus = %x2B                ; +
+			zero = %x30                ; 0
+			*/
+			var start = Str.index,
+			s = Str[start],
+			p = e = isZero = false;
 
-	if(esc === false){
-		//json2.js https://github.com/douglascrockford/JSON-js から拝借
-		var reg_remaining = /^[\],:{}\s]*$/;
-		var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
-		//0123やtruetrue等の文字列もJSONと見なしていたので改変
-		var reg_tokens = /(^|[:,\[\{])\s*("[^"\\\n\r]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)/g;
-		var reg_brackets = /(^|:|,)(\s*\[)+/g;
-	
-		if(reg_remaining.test(text.replace(reg_escape, '@')
-		  .replace(reg_tokens, '$1]')
-		  .replace(reg_brackets, ''))){
-			
-			text = text.replace(/\\/g, '\\\\');
-			var r = eval('(' + text + ')');
-			return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
-		}
-		println('parse error>JSON文字列ではない');
-		return false;
-	}
-	var Esc_char = {
-		'"' : '"',  //quotation mark  U+0022
-		'\' : '\',  //reverse solidus U+005C
-		'/' : '/',  //solidus         U+002F
-		'b' : "\b", //backspace       U+0008
-		'f' : "\f", //form feed       U+000C
-		'n' : String.fromCharCode(0x0A), //line feed U+000A
-		'r' : "\r", //carriage return U+000D
-		't' : "\t"  //tab             U+0009
-	};
-	var Str = new String(text);
-	Str.index = -1;
-	Str.end = Str.length - 1;
-	//次の文字を取得する lenを指定した場合はlenの長さの文字列を取得
-	//Str.indexは現在の位置
-	Str.next = function(len){
-		len = len || 1;
-		var s = this.substr(this.index+1, len);
-		this.index += len;
-		return s;//終端に達した場合は空文字
-	};
-	//次の文字を取得する 空白の場合スキップする
-	Str.nextStr = function(){
-		var r;
-		while(true){
-			switch(r = this.next()){
-				case ' ':
-				case Esc_char.t:
-				case Esc_char.n:
-				case Esc_char.r:
-					continue;
-			}
-			break;
-		}
-		return r;
-	};
-	function err(e){
-		throw 'parse error: index(' + Str.index +  ')=>' + e;
-	}
-	//オブジェクトを解析する
-	//呼ばれた時のStr.indexは最初の{の位置
-	function parseObj(){
-		var obj = {}, s = Str.nextStr();
-		if(s == '}') return obj;//空オブジェクト
-		while(s){
-			if(s != '"') err('オブジェクトのメンバー名が文字列ではない');
-			var key = parseStr();
-			if(Str.nextStr() != ':') err('オブジェクトのメンバー名の後に:がない');
-			Str.nextStr();
-			obj[key] = parseValue();
-			switch(Str.nextStr()){
-				case ',':
-					s = Str.nextStr();
-					continue;
-				case '}': return obj;
-				default: err('オブジェクトの値がコンマで区切られていない');
-			}
-		}
-		err('オブジェクトが閉じていない');
-	}
-	//配列を解析する
-	//呼ばれた時のStr.indexは最初の[の位置
-	function parseArr(){
-		var arr = [], s = Str.nextStr();
-		if(s == ']') return arr;//空配列
-		while(s){
-			arr.push(parseValue());
-			switch(Str.nextStr()){
-				case ',':
-					s = Str.nextStr();
-					continue;
-				case ']': return arr;
-				default: err('配列の値がコンマで区切られていない');
-			}
-		}
-		err('配列が閉じていない');
-	}
-	//文字列を解析
-	//呼ばれた時のStr.indexは最初の"の位置
-	function parseStr(){
-		var r = '', s = Str.next();
-		while(s){
-			if(s == '"') return r;
-			if(s == '\'){
-				s = Str.next();
-				if(Esc_char.hasKey(s)){
-					s = Esc_char[s];
-				}else if(s == 'u'){
-					//uの後が正しい文字コードかチェックするように 間違っていた場合はエラーに
-					s = _unescape();
-					if(s == '') err('不正なUnicode エスケープシーケンス');
+			if(s == '-') s = Str.next();
+			if(s == '0') isZero = true;
+			else if(!(s | 0)) err('数値ではない', Str);
+			//err[00, -00, 0123, 00.0, -00.0, 00e+1, 0123e1, 0123.0, 0123.1e1] ok[0e+1, 0e000, 0.000]
+			//先頭から複数連続した0は禁止する
+			//0の直後に指数と小数がある場合を除いて0から始まる数値は禁止する
+			//00, 0[1-9] になった時点でエラー
+			while(s){
+				if(isZero){
+					s = Str.next();
+					if(s | 0 || s == '0') err('不正な数値 0が先行している', Str);
+					isZero = false;
+				}
+				while((s | 0 || s == '0') && (s = Str.next()));
+				if(s == '.'){
+					if(p || e) break;//.が2回又はeの後に.がある
+					p = true;
+					s = Str.next();
+				}else if(s == 'e' || s == 'E'){
+					if(e) break;//eが2回ある
+					e = true;
+					s = Str.next();
+					if(s == '+' || s == '-') s = Str.next();
 				}else{
-					continue;
+					Str.index -= 1;
+					s = Str[Str.index];
+					if(!(s | 0 || s == '0')) break;//小数点,指数の次が数字ではない場合
+					var r = Str.slice(start, Str.index+1);
+					return parseFloat(r, Str);
 				}
 			}
-			r += s;
-			s = Str.next();
-		}
-		err('文字列が"で閉じられていない');
-	}
-	//数値を解析
-	//呼ばれた時のStr.indexは数値の始まり[0-9\-]の位置
-	function parseNumber(){
-		/*
-		number = [ minus ] int [ frac ] [ exp ]
-		decimal-point = %x2E       ; .
-		digit1-9 = %x31-39         ; 1-9
-		e = %x65 / %x45            ; e E
-		exp = e [ minus / plus ] 1*DIGIT
-		frac = decimal-point 1*DIGIT
-		int = zero / ( digit1-9 *DIGIT )
-		minus = %x2D               ; -
-		plus = %x2B                ; +
-		zero = %x30                ; 0
-		*/
-		var start = Str.index,
-		s = Str[start],
-		p = e = isZero = false;
-		
-		if(s == '-') s = Str.next();
-		if(s == '0') isZero = true;
-		else if(!(s | 0)) err('数値ではない');
-		//err[00, -00, 0123, 00.0, -00.0, 00e+1, 0123e1, 0123.0, 0123.1e1] ok[0e+1, 0e000, 0.000]
-		//先頭から複数連続した0は禁止する
-		//0の直後に指数と小数がある場合を除いて0から始まる数値は禁止する
-		//00, 0[1-9] になった時点でエラー
-		while(s){
-			if(isZero){
-				s = Str.next();
-				if(s | 0 || s == '0') err('不正な数値 0が先行している');
-				isZero = false;
+			err('不正な数値', Str);
+		},
+		//オブジェクト・配列の値を解析する
+		//呼ばれた時のStr.indexは値の最初の文字の位置
+		parseValue: function(Str){
+			/*
+			value = false / null / true / object / array / number / string
+			false = %x66.61.6c.73.65   ; false
+			null  = %x6e.75.6c.6c      ; null
+			true  = %x74.72.75.65      ; true
+			*/
+			var s = Str[Str.index];
+			switch(s){
+				case '{': return parseObj(Str);
+				case '"': return parseStr(Str);
+				case '[': return parseArr(Str);
+				case 'f'://false
+					if(Str.next(4) == 'alse') return false;
+					break;
+				case 't'://true
+					if(Str.next(3) == 'rue') return true;
+					break;
+				case 'n'://null
+					if(Str.next(3) == 'ull') return null;
+					break;
+				default://number or error
+					if(s | 0 || s == '0' || s == '-') return parseNumber(Str);
 			}
-			while((s | 0 || s == '0') && (s = Str.next()));
-			if(s == '.'){
-				if(p || e) break;//.が2回又はeの後に.がある
-				p = true;
-				s = Str.next();
-			}else if(s == 'e' || s == 'E'){
-				if(e) break;//eが2回ある
-				e = true;
-				s = Str.next();
-				if(s == '+' || s == '-') s = Str.next();
-			}else{
-				--Str.index;
-				s = Str[Str.index];
-				if(!(s | 0 || s == '0')) break;//小数点,指数の次が数字ではない場合
-				var r = Str.slice(start, Str.index+1);
-				return parseFloat(r);
-			}
-		}
-		err('不正な数値');
-	}
-	//オブジェクト・配列の値を解析する
-	//呼ばれた時のStr.indexは値の最初の文字の位置
-	function parseValue(){
-		/*
-		value = false / null / true / object / array / number / string
-		false = %x66.61.6c.73.65   ; false
-		null  = %x6e.75.6c.6c      ; null
-		true  = %x74.72.75.65      ; true
-		*/
-		var s = Str[Str.index];
-		switch(s){
-			case '{': return parseObj();
-			case '"': return parseStr();
-			case '[': return parseArr();
-			case 'f'://false
-				if(Str.next(4) == 'alse') return false;
-				break;
-			case 't'://true
-				if(Str.next(3) == 'rue') return true;
-				break;
-			case 'n'://null
-				if(Str.next(3) == 'ull') return null;
-				break;
-			default://number or error
-				if(s | 0 || s == '0' || s == '-') return parseNumber();
-		}
-		err('不正な値');
-	}
-	//rentanさんのUt8.dmsから拝借しました
-	function _unescape(){
-		// \uXXXX ... \u0000～\uffff
-		var r = '',
-		s = Str.next(4);
-		if (/^[0-9a-f]{4}/i.test (s)) {
-			s = parseInt ('0x' + s);  // 0～0xffff
-			
-			var m = s & 0xfc00;
-			if (m == 0xd800) {
-				// high surrogate
-				var s2 = Str.next(6);  //  0～0xffff
-				s2 = /^\\u[0-9a-fA-F]{4}/.test (s2) ? parseInt ('0x' + s2.slice (2)) : 0;
-				
-				if ((s2 & 0xfc00) == 0xdc00) {
-					r = fromUnicode (0x10000 + ((s & 0x03ff) << 10) + (s2 & 0x03ff));
+			err('不正な値', Str);
+		},
+		//rentanさんのUt8.dmsから拝借しました
+		_unescape: function(Str){
+			// \uXXXX ... \u0000～\uffff
+			var r = '',
+			s = Str.next(4);
+			if (/^[0-9a-f]{4}/i.test (s)) {
+				s = parseInt ('0x' + s);  // 0～0xffff
+
+				var m = s & 0xfc00;
+				if (m == 0xd800) {
+					// high surrogate
+					var s2 = Str.next(6);  //  0～0xffff
+					s2 = /^\\u[0-9a-fA-F]{4}/.test (s2) ? parseInt ('0x' + s2.slice (2)) : 0;
+
+					if ((s2 & 0xfc00) == 0xdc00) {
+						r = fromUnicode (0x10000 + ((s & 0x03ff) << 10) + (s2 & 0x03ff));
+					}
+					else {
+						Str.index -= 6;
+						// high surrogate の直後が low surrogate ではない
+						// または Unicode エスケープシーケンスではない
+						r = '[U+' + s + ']';
+					}
 				}
-				else {
-					Str.index -= 6;
-					// high surrogate の直後が low surrogate ではない
-					// または Unicode エスケープシーケンスではない
+				else if (m == 0xdc00) {
+					// いきなり low surrogate がきた
 					r = '[U+' + s + ']';
 				}
+				else {
+					// 基本多言語面のコードポイント
+					r = fromUnicode (s);
+				}
+			}else{
+				Str.index -= 4;
 			}
-			else if (m == 0xdc00) {
-				// いきなり low surrogate がきた
-				r = '[U+' + s + ']';
+			return r;
+		},
+		fromUnicode: function(u){
+			if (u <= 0x7f) {
+				return String.fromCharCode (u);
 			}
-			else {
-				// 基本多言語面のコードポイント
-				r = fromUnicode (s);
+			if (u <= 0x7ff) {
+				var n1 = u >> 6;
+				var n2 = u & 0x3f;
+				return String.fromCharCode (n1 + 0xc0, n2 + 0x80);
 			}
-		}else{
-			Str.index -= 4;
+			if (u <= 0xffff) {
+				var n1 = u >> 12;
+				var n2 = (u >> 6) & 0x3f;
+				var n3 = u & 0x3f;
+				return String.fromCharCode (n1 + 0xe0, n2 + 0x80, n3 + 0x80);
+			}
+			if (u <= 0x1fffff) {
+				var n1 = u >> 18;
+				var n2 = (u >> 12) & 0x3f;
+				var n3 = (u >> 6) & 0x3f;
+				var n4 = u & 0x3f;
+				return String.fromCharCode (n1 + 0xf0, n2 + 0x80, n3 + 0x80, n4 + 0x80);
+			};
+    	
+			return '[UTF-8 error]';
 		}
-		return r;
-	}
-	function fromUnicode(u){
-		if (u <= 0x7f) {
-			return String.fromCharCode (u);
-		}
-		if (u <= 0x7ff) {
-			var n1 = u >> 6;
-			var n2 = u & 0x3f;
-			return String.fromCharCode (n1 + 0xc0, n2 + 0x80);
-		}
-		if (u <= 0xffff) {
-			var n1 = u >> 12;
-			var n2 = (u >> 6) & 0x3f;
-			var n3 = u & 0x3f;
-			return String.fromCharCode (n1 + 0xe0, n2 + 0x80, n3 + 0x80);
-		}
-		if (u <= 0x1fffff) {
-			var n1 = u >> 18;
-			var n2 = (u >> 12) & 0x3f;
-			var n3 = (u >> 6) & 0x3f;
-			var n4 = u & 0x3f;
-			return String.fromCharCode (n1 + 0xf0, n2 + 0x80, n3 + 0x80, n4 + 0x80);
-		};
+	};
 
-		return '[UTF-8 error]';
-	}
-	var r = false;
-	try{
-		Str.nextStr();
-		r = parseValue();
-		if(Str.nextStr()){ //残りが空白のみなら空文字になる
-			r = false;
-			err('不正な文字列');
+	return function(text, reviver, esc){
+		switch(typeof text){
+			case 'string': break;
+			case 'number':
+			case 'null':
+			case 'boolean': return text;
+			case 'object':
+				switch(nameOf(text)){
+					case 'String': break;
+					case 'Number': return text;
+				}
+			case 'undefined':
+			default:
+				println('parse error>引数が不正');
+				return;
 		}
-	}catch(e){
-		println(e);
-		return r;
-	}
-	return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
-},
+		function walk(obj, key, path){
+			var value = obj[key];
+			if(typeof value == 'object'){
+				var isArr = nameOf(value) == 'Array';
+				for(var i in value){
+					value[i] = walk(value, i, path + (isArr ? '[' + i + ']' : '["' + i + '"]'));
+					if(isUndefined(value[i]) || isNull(value[i])){
+						value.removeKey(i);
+					}
+				}
+			}
+			return reviver.call(obj, key, value, path);
+		}
+		if(esc === false){
+			//json2.js https://github.com/douglascrockford/JSON-js から拝借
+			var reg_remaining = /^[\],:{}\s]*$/;
+			var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
+			//0123やtruetrue等の文字列もJSONと見なしていたので改変
+			var reg_tokens = /(^|[:,\[\{])\s*("[^"\\\n\r]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)/g;
+			var reg_brackets = /(^|:|,)(\s*\[)+/g;
+
+			if(reg_remaining.test(text.replace(reg_escape, '@')
+			  .replace(reg_tokens, '$1]')
+			  .replace(reg_brackets, ''))){
+
+				text = text.replace(/\\/g, '\\\\');
+				var r = eval('(' + text + ')');
+				return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
+			}
+			println('parse error>JSON文字列ではない');
+			return false;
+		}
+		var Str = new String(text);
+		Str.index = -1;
+		Str.end = Str.length - 1;
+		//次の文字を取得する lenを指定した場合はlenの長さの文字列を取得
+		//Str.indexは現在の位置
+		Str.next = function(len){
+			len = len || 1;
+			var s = this.substr(this.index+1, len);
+			this.index += len;
+			return s;//終端に達した場合は空文字
+		};
+		//次の文字を取得する 空白の場合スキップする
+		Str.nextStr = function(){
+			var r;
+			while(true){
+				switch(r = this.next()){
+					case ' ':
+					case F.Esc_char.t:
+					case F.Esc_char.n:
+					case F.Esc_char.r:
+						continue;
+				}
+				break;
+			}
+			return r;
+		};
+		var r;
+		try{
+			Str.nextStr();
+			r = F.parseValue(Str);
+			if(Str.nextStr()){ //残りが空白のみなら空文字になる
+				F.err('不正な文字列', Str);
+			}
+		}catch(e){
+			println(e);
+			return;
+		}
+		return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
+	};
+})();
 /*
 値をJSON文字列に変換する
 stringifyJSON(value[, replacer][, space][, opts])
@@ -352,99 +356,151 @@ stringifyJSON(value[, replacer][, space][, opts])
 				ホワイトリストとして使用する
 				配列のキー値を持つメンバーのみを変換する。 配列のキーの順序でメンバーを文字列に変換する
 		space: 省略可能。インデントに使用する文字を指定 数値の場合はその数の空白を使用 10文字より長い場合は10文字に切り詰め
+		opts: 省略可能。オブジェクトでオプションを指定する
+		{
+			esc: デフォルトはtrue  trueならエスケープ文字に変換するfalseならしない
+			keyQuot: デフォルトは['"', '"']  プロパティ名を囲む引用符を配列で指定する
+			strQuot: デフォルトは['"', '"']  文字列値を囲む引用符を配列で指定する
+			colon: デフォルトは':'  オブジェクトのプロパティ名の後ろの文字を指定する
+			comma: デフォルトは','  オブジェクトや配列の区切りの文字を指定する
+		}
 	戻り値
 		JSON文字列。undefinedや関数を渡した場合はundefinedを返す
 もしオブジェクトにtoJSONメソッドがあった場合は呼び出してその戻り値を使う
 値がundefinedの時はオブジェクトのメンバーの場合はそのメンバーは省略、配列の要素の場合はnullに変換
 値が未知のオブジェクトの場合toStringメソッドがあるなら呼び出してその戻り値を使用する。無いなら{}に変換
 */
-function stringifyJSON(value, replacer, space, opts){
-	var control_char = {
-		0x0a: "\\n",
-		0x0d: "\\r",
-		0x0c: "\\f",
-		0x09: "\\t",
-		0x08: "\\b"
-	};
-	function _escape(s){
-		if(!s) return s;
-		s = s.replace(/["\\]/g, '\\$0');
-		//正規表現でも\nはCR+LFなので\rは必要なし
-		s = s.replace(/[\n\f\t\b]/g, function(m){
-			return control_char[m.charCodeAt(0)];
-		});
-		if(/^[\s -~]+$/.test(s)) return s;
-		return toUnicode(s);
-	}
-	//rentanさんのUt8.dmsから拝借しました
-	function toUnicode(s){
-		var sb = new StringBuffer(s);
-		var sb_len = sb.length;
-		var len = 0;
-		var result = '';
-		var n1, n2, n3, n4;
-		for(var i = 0; i < sb_len; i += len){
-			n1 = sb.charCodeAt(i);
-			if (n1 <= 0x7f) {
-				len = 1;
-				result += sb[i];
-				continue;
+JSON.stringify = (function(){
+	var F = {
+		control_char: {
+			0x0a: "\\p.n",
+			0x0d: "\\r",
+			0x0c: "\\f",
+			0x09: "\\t",
+			0x08: "\\b"
+		},
+		_escape: function(s){
+			if(!s) return s;
+			s = s.replace(/["\\]/g, '\\$0');
+			//正規表現でも\p.nはCR+LFなので\rは必要なし
+			s = s.replace(/[\p.n\f\t\b]/g, function(m){
+				return control_char[m.charCodeAt(0)];
+			});
+			if(/^[\s -~]+$/.test(s)) return s;
+			return toUnicode(s);
+		},
+		//rentanさんのUt8.dmsから拝借しました
+		toUnicode: function(s){
+			var sb = new StringBuffer(s);
+			var sb_len = sb.length;
+			var len = 0;
+			var result = '';
+			var n1, n2, n3, n4;
+			for(var i = 0; i < sb_len; i += len){
+				n1 = sb.charCodeAt(i);
+				if (n1 <= 0x7f) {
+					len = 1;
+					result += sb[i];
+					continue;
+				}
+				else if (n1 <= 0xc1) {// 0x80-0xc1 不正なコード
+					len = 1;
+					result += sb[i];
+					continue;
+				}
+				else if (n1 <= 0xdf) {
+					len = 2;
+					n1 = n1 & 0x1f;
+					n2 = sb.charCodeAt (i + 1) & 0x3f;
+					unicode = (n1 << 6) + n2;
+				}
+				else if (n1 <= 0xef) {
+					len = 3;
+					n1 = n1 & 0x0f;
+					n2 = sb.charCodeAt (i + 1) & 0x3f;
+					n3 = sb.charCodeAt (i + 2) & 0x3f;
+					unicode = (n1 << 12) + (n2 << 6) + n3;
+				}
+				else if (n1 <= 0xf7) {
+					len = 4;
+					n1 = n1 & 0x07;
+					n2 = sb.charCodeAt (i + 1) & 0x3f;
+					n3 = sb.charCodeAt (i + 2) & 0x3f;
+					n4 = sb.charCodeAt (i + 3) & 0x3f;
+					unicode = (n1 << 18) + (n2 << 12) + (n3 << 6) + n4;
+				}
+				else {// 0xf8-0xff 不正なコード
+					len = 1;
+					result += sb[i];
+					continue;
+				}
+				result += format('\u%.4x', parseInt(unicode));
 			}
-			else if (n1 <= 0xc1) {// 0x80-0xc1 不正なコード
-				len = 1;
-				result += sb[i];
-				continue;
+			return result;
+		},
+		toStr: function(src, key, _space, path){
+			var value = src[key];
+			//toJSON
+			if(typeof value.toJSON == 'function') value = value.toJSON(key);
+			//p.replacer関数
+			if(p.repType == 'function'){
+				value = p.replacer.call(src, key, value, path);
 			}
-			else if (n1 <= 0xdf) {
-				len = 2;
-				n1 = n1 & 0x1f;
-				n2 = sb.charCodeAt (i + 1) & 0x3f;
-				unicode = (n1 << 6) + n2;
-			}
-			else if (n1 <= 0xef) {
-				len = 3;
-				n1 = n1 & 0x0f;
-				n2 = sb.charCodeAt (i + 1) & 0x3f;
-				n3 = sb.charCodeAt (i + 2) & 0x3f;
-				unicode = (n1 << 12) + (n2 << 6) + n3;
-			}
-			else if (n1 <= 0xf7) {
-				len = 4;
-				n1 = n1 & 0x07;
-				n2 = sb.charCodeAt (i + 1) & 0x3f;
-				n3 = sb.charCodeAt (i + 2) & 0x3f;
-				n4 = sb.charCodeAt (i + 3) & 0x3f;
-				unicode = (n1 << 18) + (n2 << 12) + (n3 << 6) + n4;
-			}
-			else {// 0xf8-0xff 不正なコード
-				len = 1;
-				result += sb[i];
-				continue;
-			}
-			result += format('\u%.4x', parseInt(unicode));
-		}
-		return result;
-	}
-	function toStr(src, key, _space, path){
-		var value = src[key];
-		//toJSON
-		if(typeof value.toJSON == 'function') value = value.toJSON(key);
-		//replacer関数
-		if(repType == 'function'){
-			value = replacer.call(src, key, value, path);
-		}
-		switch(getName(value)){
-			case 'string':
-				var tmp = opts.esc ? _escape(value) : value;
-				return opts.strQuot[0] + tmp + opts.strQuot[1];
-			case 'object':
-				var s = [], sp = _space + indent, v, key;
-				var i;
-				if(i = check(value)){
-					if(repType == 'array'){
-						for(var i = 0; i < replacer.length; i++){
-							key = replacer[i];
-							if(value.hasKey(key)){
+			switch(getName(value)){
+				case 'string':
+					var tmp = opts.esc ? _escape(value) : value;
+					return opts.strQuot[0] + tmp + opts.strQuot[1];
+				case 'object':
+					var s = [], sp = _space + p.indent, v, key;
+					var i;
+					if(i = check(value)){
+						if(p.repType == 'array'){
+							for(var i = 0; i < p.replacer.length; i++){
+								key = p.replacer[i];
+								if(value.hasKey(key)){
+									v = toStr(value, key, sp, path + '["' + key + '"]');
+									if(!isUndefined(v)){
+										s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+									}
+								}
+							}
+						}else{
+							for(key in value){
+								v = toStr(value, key, sp, path + '["' + key + '"]');
+								if(!isUndefined(v)){
+									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+								}
+							}
+						}
+					}
+					cache = cache.slice(0, i-1);//現在の階層を含む上位階層のみをチェックの対象にする
+					sp = p.n + sp;
+					return s.length == 0 ? '{}' : '{' + sp + s.join(opts.comma + sp) + p.n + _space + '}';
+				case 'array':
+					var s = [], sp = _space + p.indent;
+					var i;
+					if(i = check(value)){
+						for(var i = 0; i < value.length; i++){
+							s.add(toStr(value, i, sp, path + '[' + i + ']') || null);
+						}
+					}
+					cache = cache.slice(0, i-1);
+					sp = p.n + sp;
+					return s.length == 0 ? '[]' : '[' + sp + s.join(opts.comma + sp) + p.n + _space + ']';
+				case 'number':
+				case 'boolean': return value.toString();
+				case 'null': return 'null';
+				case 'function':
+				case 'undefined': return;//undefinedを返す
+				case 'irvineurlinfo':
+				case 'irvineitem':
+				case 'irvinefolderdata':
+				case 'irvineoptiondata':
+					var s = [], sp = _space + p.indent, v;
+					if(p.repType == 'array'){
+						for(var i = 0; i < p.replacer.length; i++){
+							key = p.replacer[i];
+							if(typeof value[key] != 'undefined'){
 								v = toStr(value, key, sp, path + '["' + key + '"]');
 								if(!isUndefined(v)){
 									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
@@ -452,98 +508,72 @@ function stringifyJSON(value, replacer, space, opts){
 							}
 						}
 					}else{
-						for(key in value){
-							v = toStr(value, key, sp, path + '["' + key + '"]');
-							if(!isUndefined(v)){
-								s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+						for(var key in value){
+							if(typeof value[key] != 'undefined'){
+								v = toStr(value, key, sp, path + '["' + key + '"]');
+								if(!isUndefined(v)){
+									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+								}
 							}
 						}
 					}
-				}
-				cache = cache.slice(0, i-1);//現在の階層を含む上位階層のみをチェックの対象にする
-				sp = n + sp;
-				return s.length == 0 ? '{}' : '{' + sp + s.join(opts.comma + sp) + n + _space + '}';
-			case 'array':
-				var s = [], sp = _space + indent;
-				var i;
-				if(i = check(value)){
-					for(var i = 0; i < value.length; i++){
-						s.add(toStr(value, i, sp, path + '[' + i + ']') || null);
-					}
-				}
-				cache = cache.slice(0, i-1);
-				sp = n + sp;
-				return s.length == 0 ? '[]' : '[' + sp + s.join(opts.comma + sp) + n + _space + ']';
-			case 'number':
-			case 'boolean': return value.toString();
-			case 'null': return 'null';
-			case 'function':
-			case 'undefined': return;//undefinedを返す
-			case 'irvineurlinfo':
-			case 'irvineitem':
-			case 'irvinefolderdata':
-			case 'irvineoptiondata':
-				var s = [], sp = _space + indent, v;
-				if(repType == 'array'){
-					for(var i = 0; i < replacer.length; i++){
-						key = replacer[i];
-						if(typeof value[key] != 'undefined'){
-							v = toStr(value, key, sp, path + '["' + key + '"]');
-							if(!isUndefined(v)){
-								s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
-							}
-						}
-					}
-				}else{
-					for(var key in value){
-						if(typeof value[key] != 'undefined'){
-							v = toStr(value, key, sp, path + '["' + key + '"]');
-							if(!isUndefined(v)){
-								s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
-							}
-						}
-					}
-				}
-				sp = n + sp;
-				return '{' + sp + s.join(opts.comma + sp) + n + _space + '}';
-		}
-		if(typeof value.toString == 'function'){
-			var tmp = opts.esc ? _escape(value.toString()) : value.toString();
-			return opts.strQuot[0] + tmp + opts.strQuot[1];
-		}
-		return '{}';
-
-	}
-	function getName(obj){
-		var name = typeof obj;
-		if(name == 'object') name = nameOf(obj).toLowerCase();
-		return name;
-	}
-	//循環参照のチェック
-	var cache = [];
-	function check(obj){
-		for(var i in cache){
-			if(cache[i] === obj) return false;
-		}
-		return cache.push(obj);
-	}
-	if(nameOf(opts) != 'Object') opts = {};
-	opts = {
-		esc: opts.hasKey('esc') && typeof opts.esc == 'boolean' ? opts.esc : true,
-		keyQuot: opts.hasKey('keyQuot') && nameOf(opts.keyQuot) == 'Array' && opts.keyQuot.length >= 2 ? opts.keyQuot : ['"', '"'],
-		strQuot: opts.hasKey('strQuot') && nameOf(opts.strQuot) == 'Array' && opts.strQuot.length >= 2 ? opts.strQuot : ['"', '"'],
-		colon: opts.hasKey('colon') && getName(opts.colon) == 'string' ? opts.colon : ':',
-		comma: opts.hasKey('comma') && getName(opts.comma) == 'string' ? opts.comma : ','
+					sp = p.n + sp;
+					return '{' + sp + s.join(opts.comma + sp) + p.n + _space + '}';
+			}
+			if(typeof value.toString == 'function'){
+				var tmp = opts.esc ? _escape(value.toString()) : value.toString();
+				return opts.strQuot[0] + tmp + opts.strQuot[1];
+			}
+			return '{}';
+    	
+		},
+		getName: function(obj){
+			var name = typeof obj;
+			if(name == 'object') name = nameOf(obj).toLowerCase();
+			return name;
+		},
+		//循環参照のチェック
+		cache: [],
+		check: function(obj){
+			for(var i in cache){
+				if(cache[i] === obj) return false;
+			}
+			return cache.push(obj);
+		},
+		p: null,
+		opts: null
 	};
-	var n = indent = '', repType = getName(replacer);
-	
-	switch(getName(space)){
-		case 'string': indent = space;break;
-		case 'number': indent = ' '.multiply(space);break;
-	}
-	indent = indent.slice(0, 10);
-	if(indent != ''){
-		n = "\n";
-	}
-	return toStr({'': value}, '', '', '');
-};
+	return function (value, replacer, space, opts){
+		if(nameOf(opts) != 'Object') opts = {};
+		opts = {
+			esc: opts.hasKey('esc') && typeof opts.esc == 'boolean' ? opts.esc : true,
+			keyQuot: opts.hasKey('keyQuot') && nameOf(opts.keyQuot) == 'Array' && opts.keyQuot.length >= 2 ? opts.keyQuot : ['"', '"'],
+			strQuot: opts.hasKey('strQuot') && nameOf(opts.strQuot) == 'Array' && opts.strQuot.length >= 2 ? opts.strQuot : ['"', '"'],
+			colon: opts.hasKey('colon') && getName(opts.colon) == 'string' ? opts.colon : ':',
+			comma: opts.hasKey('comma') && getName(opts.comma) == 'string' ? opts.comma : ','
+		};
+		var n = indent = '';
+		switch(F.getName(space)){
+			case 'string': indent = space;break;
+			case 'number': indent = ' '.multiply(space);break;
+		}
+		indent = indent.slice(0, 10);
+		if(indent != ''){
+			n = "\n";
+		}
+		F.p = {
+			replacer: replacer,
+			space: space,
+			n: n,
+			indent: indent,
+			repType: F.getName(replacer)
+		};
+		F.opts = opts;
+		var r = F.toStr({'': value}, '', '', '');
+		F.p = null;
+		F.opts = null;
+		return r;
+	};
+})();
+
+})();
