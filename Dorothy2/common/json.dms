@@ -373,7 +373,7 @@ stringifyJSON(value[, replacer][, space][, opts])
 JSON.stringify = (function(){
 	var F = {
 		control_char: {
-			0x0a: "\\p.n",
+			0x0a: "\\n",
 			0x0d: "\\r",
 			0x0c: "\\f",
 			0x09: "\\t",
@@ -382,8 +382,8 @@ JSON.stringify = (function(){
 		_escape: function(s){
 			if(!s) return s;
 			s = s.replace(/["\\]/g, '\\$0');
-			//正規表現でも\p.nはCR+LFなので\rは必要なし
-			s = s.replace(/[\p.n\f\t\b]/g, function(m){
+			//正規表現でも\nはCR+LFなので\rは必要なし
+			s = s.replace(/[\n\f\t\b]/g, function(m){
 				return control_char[m.charCodeAt(0)];
 			});
 			if(/^[\s -~]+$/.test(s)) return s;
