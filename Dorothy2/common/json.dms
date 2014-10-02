@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.34
+//version=0.35
 //hint=
 //match=
 //author=wan
@@ -31,6 +31,21 @@ parseJSON(text[, reviver][, esc])
 		\•¶‚ªŠÔˆá‚Á‚Ä‚¢‚½ê‡‚âƒGƒ‰[‚Ìê‡‚Íundefined‚ğ•Ô‚·
 */
 JSON = {};
+JSON.check = function(text){
+	//json2.js https://github.com/douglascrockford/JSON-js ‚©‚ç”qØ
+	var reg_remaining = /^[\],:{}\s]*$/;
+	var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
+	//0123‚âtruetrue“™‚Ì•¶š—ñ‚àJSON‚ÆŒ©‚È‚µ‚Ä‚¢‚½‚Ì‚Å‰ü•Ï
+	var reg_tokens = /(^|[:,\[\{])\s*("[^"\\\n\r]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)/g;
+	var reg_brackets = /(^|:|,)(\s*\[)+/g;
+
+	if(reg_remaining.test(text.replace(reg_escape, '@')
+	  .replace(reg_tokens, '$1]')
+	  .replace(reg_brackets, ''))){
+		return true;
+	}
+	return false;
+};
 JSON.parse = (function(){
 	var F = {
 		Esc_char: {
@@ -281,17 +296,7 @@ JSON.parse = (function(){
 			return reviver.call(obj, key, value, path);
 		}
 		if(esc === false){
-			//json2.js https://github.com/douglascrockford/JSON-js ‚©‚ç”qØ
-			var reg_remaining = /^[\],:{}\s]*$/;
-			var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
-			//0123‚âtruetrue“™‚Ì•¶š—ñ‚àJSON‚ÆŒ©‚È‚µ‚Ä‚¢‚½‚Ì‚Å‰ü•Ï
-			var reg_tokens = /(^|[:,\[\{])\s*("[^"\\\n\r]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)/g;
-			var reg_brackets = /(^|:|,)(\s*\[)+/g;
-
-			if(reg_remaining.test(text.replace(reg_escape, '@')
-			  .replace(reg_tokens, '$1]')
-			  .replace(reg_brackets, ''))){
-
+			if(this.check(text)){
 				text = text.replace(/\\/g, '\\\\');
 				var r = eval('(' + text + ')');
 				return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
