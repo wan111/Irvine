@@ -1,0 +1,328 @@
+//Dorothy2
+//caption=oEmbed
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+(function(){
+
+common_load('http', 'json');
+void function oEmbed(query){
+	this.query = {
+		url: null,
+		format: 'json'
+		//maxwidth: null,
+		//maxheight: null
+	};
+	if(nameOf(query) == 'Object'){
+		for(var i in query){
+			this.query[i] = query[i];
+		}
+	}
+};
+oEmbed.prototype.query = {};
+oEmbed.prototype.requestHeader = {};
+oEmbed.prototype.responseHeader = {};
+oEmbed.prototype.code = 0;
+oEmbed.prototype.data = '';
+oEmbed.prototype.parseJSON = true;
+oEmbed.prototype.isJSON = false;
+oEmbed.prototype.isXML = false;
+//get() query.urlを使用する query.urlが設定されていない場合はfalse
+//get(url) urlを使用する query.urlは無視
+//get(url, name) providersからのマッチングを行わずproviders[name]を使用 nameが存在しないかurlがpatternにマッチしない場合はfalse
+//get(url, name, check) checkがfalseならpatternにマッチするかは確認しない
+oEmbed.prototype.get = function(url, name, check){
+	this.data = '';
+	this.code = 0;
+	this.isJSON = this.isXML = false;
+	url = url || (this.query.hasKey('url') ? this.query.url : null);
+	if(!url) return false;
+	if(!name){
+		name = this.getProviderName(url);
+		if(!name) return false;
+	}else{
+		if(!this.providers.hasKey(name)) return false;
+		if(check != false && !this.providers[name].pattern.test(url)) return false;
+	}
+	
+	this.query.url = url;
+	var requestUrl = this.getRequestUrl(name);
+	if(!requestUrl) return false;
+	
+	var http = new Http({autoRedirect: true});
+	for(var i in this.requestHeader){
+		http.requestHeader[i] = this.requestHeader[i];
+	}
+	http.get(requestUrl);
+	this.responseHeader = http.responseHeader;
+	this.code = http.code;
+	this.data = http.data;
+	if(http.code != 200) return false;
+	
+	var contentType = http.getResponseHeader('content-type');
+	if(/application\/json/.test(contentType)){
+		if(JSON.check(http.data)){
+			this.isJSON = true;
+			if(this.parseJSON) this.data = JSON.parse(http.data);
+		}
+	}else if(/text\/xml|application\/xml/.test(contentType)){
+		this.isXML = true;
+	}
+	
+	return true;
+};
+//patternにマッチするproviderの名前を取得する
+oEmbed.prototype.getProviderName = function(url){
+	for(var name in this.providers){
+		if(this.providers[name].pattern.test(url)){
+			return name;
+		}
+	}
+	return null;
+};
+//queryが正しいかチェックしendpointとqueryからrequestUrlを作成する
+oEmbed.prototype.getRequestUrl = function(name){
+	var query = this.query, providers = this.providers;
+	
+	if(!providers.hasKey(name)) return null;
+	if(nameOf(query) != 'Object') return null;
+	if(!query.hasKey('url') || !query.url) return null;
+	var q = {};
+	for(var i in query) q[i] = query[i];
+	var site = providers[name];
+	var _format = q.hasKey('format') && q.format || 'json';
+	var requestUrl = site.endpoint;
+	var type = {
+		nonStd: 0,
+		nonFormat: 1,
+		ext: 1 << 1,
+		json: 1 << 2,
+		xml: 1 << 3
+	};
+	if(_format != 'json' && _format != 'xml') _format = 'json';
+	
+	if(site.hasKey('getRequestUrl')) return site.getRequestUrl(site.endpoint, q, site.pattern);
+	if(site.type == type.nonStd) return null;
+	
+	if(_format == 'json'){
+		if(!(site.type & type.json)) return null;
+	}else if(_format == 'xml'){
+		if(!(site.type & type.xml)) return null;
+	}
+	if(site.type & type.ext){
+		requestUrl = requestUrl.replace('\{format\}', _format);
+		q.format = null;
+	}else if(site.type & type.nonFormat){
+		q.format = null;
+	}
+	
+	var qstr = [];
+	for(var i in q){
+		if(!(q[i] === null)){
+			qstr.push(i + '=' + escape(q[i]));
+		}
+	}
+	requestUrl += '?' + qstr.join('&');
+	
+	return requestUrl;
+};
+//oembed.jsonの形式を使えるものはそちらを使用する(この形式のみに対応して&format= は使用できないものがあるため)
+//requestUrlを容易に生成できない物はtype:0 にして個別にgetRequestUrlを用意する
+//nonStd=0, nonFormat=1, ext=2, json=4, xml=8
+//(only supports json)となっているものはendpointが/oembed.jsonならtype:5 /oembedならtype:4(将来対応formatが増えた場合に備える)
+//正規表現はかなり適当 ワイルドカードを単純な正規表現に置き換えただけなので厳密なチェックには使用できない
+// ワイルドカードの*をサブドメインにあるものは[^/?&#]+ パスにあるものは.+ に置き換えて、
+// URL schemeが複数あるものはひとつにまとめただけ
+// 仕様書にあるURL schemeとExampleのURLが全く違う場合はExampleにもマッチするようにした 仕様書に載っていたExampleのURLのみ確認
+//https://github.com/iamcal/oembed/blob/master/index.htm(2014-09-02T19:18:30Z) から作成
+oEmbed.prototype.providers = {
+	'IFTTT': {endpoint: 'http://www.ifttt.com/oembed/', type: 12, pattern: /^https?:\/\/ifttt\.com\/recipes\/.+/},
+	//URL scheme: http:\/\/ifttt.com\/recipes\/*
+	'YouTube': {endpoint: 'http://www.youtube.com/oembed', type: 12, pattern: /^https?:\/\/(www\.)?youtube\.com\/watch\?v=.+/},
+	//URL schemeの記述がない /(v/|embed/)は不可
+	'Flickr': {endpoint: 'http://www.flickr.com/services/oembed/', type: 12, pattern: /^http:\/\/([^\/?&#]+\.)?flickr\.com\/(photos|p)\/.+/},
+	//URL scheme: http:\/\/*.flickr.com\/photos\/*
+	//URL scheme: http:\/\/flic.kr\/p\/*
+	'Viddler': {endpoint: 'http://www.viddler.com/oembed/', type: 12, pattern: /^http:\/\/(www\.)?viddler\.com\/v\/.+/},
+	//URL scheme: http:\/\/www.viddler.com\/v\/*
+	'Revision3': {endpoint: 'http://revision3.com/api/oembed/', type: 12, pattern: /^http:\/\/([^\/?&#]+\.)?revision3\.com\/.+/},
+	//URL scheme: http:\/\/*.revision3.com\/*
+	'Hulu': {endpoint: 'http://www.hulu.com/api/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?hulu\.com\/watch\/.+/},
+	//URL scheme: http:\/\/www.hulu.com\/watch\/*
+	'Vimeo': {endpoint: 'http://vimeo.com/api/oembed.{format}', type: 14, pattern: /^http:\/\/vimeo\.com\/(groups\/.+\/|channels\/.+\/)?.+/},
+	//URL scheme (video): http:\/\/vimeo.com\/*
+	//URL scheme (group video): http:\/\/vimeo.com\/groups\/*\/videos\/*
+	//http://vimeo.com/channels/*/*
+	'CollegeHumor': {endpoint: 'http://www.collegehumor.com/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?collegehumor\.com\/video\/.+/},
+	//URL scheme (videos): http:\/\/www.collegehumor.com\/video\/*
+	'Jest': {endpoint: 'http://www.jest.com/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?jest\.com\/(video|embed)\/.+/},
+	//URL scheme (videos): http:\/\/www.jest.com\/video\/*
+	//URL scheme (videos): http:\/\/www.jest.com\/embed\/*
+	'Poll Everywhere': {endpoint: 'http://www.polleverywhere.com/services/oembed/', type: 12, pattern: /^http:\/\/(www\.)?polleverywhere\.com\/(polls|multiple_choice_polls|free_text_polls)\/.+/},
+	//URL scheme: http:\/\/www.polleverywhere.com\/polls\/*
+	//URL scheme: http:\/\/www.polleverywhere.com\/multiple_choice_polls\/*
+	//URL scheme: http:\/\/www.polleverywhere.com\/free_text_polls\/*
+	'iFixit': {endpoint: 'http://www.ifixit.com/Embed', type: 12, pattern: /^http:\/\/(www\.)?ifixit\.com\/(Guide\/View\/.+|.+\/\d+)/},
+	//URL scheme: http:\/\/www.ifixit.com\/Guide\/View\/*
+	'SmugMug': {endpoint: 'http://api.smugmug.com/services/oembed/', type: 12, pattern: /^http:\/\/[^\/?&#]+\.smugmug\.com\/.+/},
+	//URL Scheme: http:\/\/*.smugmug.com\/*
+	//URL Scheme: http:\/\/*.example.com\/* (where example.com = SmugMug customer domain)
+	'Deviantart.com': {endpoint: 'http://backend.deviantart.com/oembed', type: 12, pattern: /^http:\/\/([^\/?&#]+\.deviantart\.com\/(art\/|.+#\/d)|fav\.me\/|sta\.sh\/).+/},
+	//URL Scheme: http:\/\/*.deviantart.com\/art\/*
+	//URL Scheme: http:\/\/*.deviantart.com\/*#\/d*
+	//URL Scheme: http:\/\/fav.me\/*
+	//URL Scheme: http:\/\/sta.sh\/*
+	'SlideShare': {endpoint: 'http://www.slideshare.net/api/oembed/2', type: 12, pattern: /^http:\/\/(www\.)?slideshare\.net\/.+\/.+/},
+	//URL Scheme: http:\/\/www.slideshare.net\/*\/*
+	'WordPress.com': {endpoint: 'http://public-api.wordpress.com/oembed/', type: 12, pattern: /https?:\/\/([^\/?&#]+\.wordpress.com|wp\.me)\/.+/},
+	//URL Schemeの記述がない
+	'chirbit.com': {endpoint: 'http://chirb.it/oembed.{format}', type: 14, pattern: /^http:\/\/chirb\.it\/.+/},
+	//URL Scheme: http:\/\/chirb.it\/*
+	'nfb.ca': {endpoint: 'http://www.nfb.ca/remote/services/oembed/', type: 12, pattern: /^http:\/\/[^\/?&#]+\.nfb\.ca\/film\/.+/},
+	//URL Scheme: http:\/\/*.nfb.ca\/film\/*
+	'Scribd': {endpoint: 'http://www.scribd.com/services/oembed/', type: 12, pattern: /^http:\/\/(www\.)?scribd\.com\/doc\/.+/},
+	//URL Scheme: http:\/\/www.scribd.com\/doc\/*
+	'Dotsub': {endpoint: 'http://dotsub.com/services/oembed', type: 12, pattern: /^http:\/\/dotsub\.com\/view\/.+/},
+	//URL scheme: http:\/\/dotsub.com\/view\/*
+	'Animoto': {endpoint: 'http://animoto.com/oembeds/create', type: 12, pattern: /^http:\/\/animoto\.com\/play\/.+/},
+	//URL scheme: http:\/\/animoto.com\/play\/*
+	'Rdio': {endpoint: 'http://www.rdio.com/api/oembed/', type: 12, pattern: /^http:\/\/[^\/?&#]+\.rdio\.com\/(artist|people)\/.+/},
+	//URL scheme: http:\/\/*.rdio.com\/artist\/*
+	//URL scheme: http:\/\/*.rdio.com\/people\/*
+	'MixCloud': {endpoint: 'http://www.mixcloud.com/oembed/', type: 12, pattern: /^http:\/\/(www\.)?mixcloud\.com\/.+\/.+\//},
+	//URL Scheme: http:\/\/www.mixcloud.com\/*\/*\/
+	'Clyp': {endpoint: 'http://api.clyp.it/oembed/', type: 12, pattern: /^http:\/\/clyp\.it\/(playlist\/)?.+/},
+	//URL scheme: http:\/\/clyp.it\/*
+	//URL scheme: http:\/\/clyp.it\/playlist\/*
+	'Screenr': {endpoint: 'http://www.screenr.com/api/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?screenr\.com\/.+/},
+	//URL Scheme: http:\/\/www.screenr.com\/*\/
+	'FunnyOrDie': {endpoint: 'http://www.funnyordie.com/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?funnyordie\.com\/videos\/.+/},
+	//URL scheme: http:\/\/www.funnyordie.com\/videos\/*
+	'Poll Daddy': {endpoint: 'http://polldaddy.com/oembed/', type: 12, pattern: /^http:\/\/([^\/?&#]+\.)?polldaddy\.com\/(s|poll|ratings)\/*/},
+	//URL scheme: http:\/\/*.polldaddy.com\/s\/*
+	//URL scheme: http:\/\/*.polldaddy.com\/poll\/*
+	//URL scheme: http:\/\/*.polldaddy.com\/ratings\/*
+	'Ted': {endpoint: 'http://www.ted.com/talks/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?ted\.com\/talks\/.+/},
+	//URL scheme: http:\/\/ted.com\/talks\/*
+	'VideoJug': {endpoint: 'http://www.videojug.com/oembed.{format}', type: 14, pattern: /^http:\/\/(www\.)?videojug\.com\/(film|interview)\/.+/},
+	//URL scheme: http:\/\/www.videojug.com\/film\/*
+	//URL scheme: http:\/\/www.videojug.com\/interview\/*
+	'Sapo Videos': {endpoint: 'http://videos.sapo.pt/oembed', type: 12, pattern: /^http:\/\/videos\.sapo\.pt\/.+/},
+	//URL scheme: http:\/\/videos.sapo.pt\/*
+	'Official FM': {endpoint: 'http://official.fm/services/oembed.{format}', type: 14, pattern: /^http:\/\/official\.fm\/(tracks|playlists)\/.+/},
+	//URL scheme: http:\/\/official.fm\/tracks\/*
+	//URL scheme: http:\/\/official.fm\/playlists\/*
+	'HuffDuffer': {endpoint: 'http://huffduffer.com/oembed', type: 12, pattern: /^http:\/\/huffduffer\.com\/.+\/.+/},
+	//httpsへリダイレクトされる
+	//URL scheme: http:\/\/huffduffer.com\/*\/*
+	'Shoudio': {endpoint: 'http://shoudio.com/api/oembed', type: 12, pattern: /^http:\/\/shoud(io\.com|\.io)\/.+/},
+	//URL scheme: http:\/\/shoudio.com\/*
+	//URL scheme: http:\/\/shoud.io\/*
+	'Moby Picture': {endpoint: 'http://api.mobypicture.com/oEmbed', type: 12, pattern: /^http:\/\/((www\.)?mobypicture\.com\/user\/.+\/view\/|moby\.to\/).+/},
+	//URL scheme: http:\/\/www.mobypicture.com\/user\/*\/view\/*
+	//URL scheme: http:\/\/moby.to\/*
+	'23HQ': {endpoint: 'http://www.23hq.com/23/oembed', type: 12, pattern: /^http:\/\/(www\.)?23hq\.com\/.+\/photo\/.+/},
+	//URL scheme: http:\/\/www.23hq.com\/*\/photo\/*
+	'Cacoo': {endpoint: 'http://cacoo.com/oembed.{format}', type: 14, pattern: /^https?:\/\/cacoo\.com\/diagrams\/.+/},
+	//URL scheme: https:\/\/cacoo.com\/diagrams\/*
+	'Dipity': {endpoint: 'http://www.dipity.com/oembed/timeline/', type: 12, pattern: /^http:\/\/(www\.)?dipity\.com\/.+\/.+\//},
+	//URL scheme: http:\/\/www.dipity.com\/*\/*\/
+	'Roomshare': {endpoint: 'http://roomshare.jp/en/oembed.{format}', type: 14, pattern: /^http:\/\/roomshare\.jp\/(en\/)?post\/.+/},
+	//URL scheme: http:\/\/roomshare.jp\/post\/*
+	//URL scheme: http:\/\/roomshare.jp\/en\/post\/*
+	'Daily Motion': {endpoint: 'http://www.dailymotion.com/services/oembed', type: 12, pattern: /^http:\/\/(www\.)?dailymotion\.com\/video\/.+/},
+	//URL scheme: http:\/\/www.dailymotion.com\/video\/*
+	'Crowd Ranking': {endpoint: 'http://crowdranking.com/api/oembed.{format}', type: 14, pattern: /^http:\/\/crowdranking\.com\/.+\/.+/},
+	//URL scheme: http:\/\/crowdranking.com\/*\/*
+	'CircuitLab': {endpoint: 'https://www.circuitlab.com/circuit/oembed/', type: 12, pattern: /^https:\/\/(www\.)?circuitlab\.com\/circuit\/.+/},
+	//URL scheme: https:\/\/www.circuitlab.com\/circuit\/*
+	'Geograph Britain and Ireland': {endpoint: 'http://api.geograph.org.uk/api/oembed', type: 12, pattern: /^http:\/\/[^\/?&#]+\.(geograph\.(org\.uk|co\.uk|ie)\/|wikimedia\.org\/.+_geograph\.org\.uk_).+/},
+	//URL scheme: http:\/\/*.geograph.org.uk\/*
+	//URL scheme: http:\/\/*.geograph.co.uk\/*
+	//URL scheme: http:\/\/*.geograph.ie\/*
+	//URL scheme: http:\/\/*.wikimedia.org\/*_geograph.org.uk_* (can also help with Geograph images crossloaded to Wikimedia Commons)
+	'Geograph Germany': {endpoint: 'http://geo.hlipp.de/restapi.php/api/oembed', type: 12, pattern: /^http:\/\/(geo(-en)?\.hlipp\.de|germany\.geograph\.org)\/.+/},
+	//URL scheme: http:\/\/geo-en.hlipp.de\/*
+	//URL scheme: http:\/\/geo.hlipp.de\/*
+	//URL scheme: http:\/\/germany.geograph.org\/*
+	'Geograph Channel Islands': {endpoint: 'http://www.geograph.org.gg/api/oembed', type: 12, pattern: /^http:\/\/([^\/?&#]+\.geograph\.org\.(gg|je)|channel-islands\.geographs?\.org|[^\/?&#]+\.channel\.geographs\.org)\/.+/},
+	//URL scheme: http:\/\/*.geograph.org.gg\/*
+	//URL scheme: http:\/\/*.geograph.org.je\/*
+	//URL scheme: http:\/\/channel-islands.geograph.org\/*
+	//URL scheme: http:\/\/channel-islands.geographs.org\/*
+	//URL scheme: http:\/\/*.channel.geographs.org\/*
+	'Quiz.biz': {endpoint: 'http://www.quiz.biz/api/oembed', type: 12, pattern: /^http:\/\/(www\.)?quiz\.biz\/quizz-.+\.html/},
+	//URL scheme: http:\/\/www.quiz.biz\/quizz-*.html
+	'Quizz.biz': {endpoint: 'http://www.quizz.biz/api/oembed', type: 12, pattern: /^http:\/\/(www\.)?quizz\.biz\/quizz-.+\.html/},
+	//URL scheme: http:\/\/www.quizz.biz\/quizz-*.html
+	'Coub': {endpoint: 'http://coub.com/api/oembed.{format}', type: 14, pattern: /^http:\/\/coub\.com\/(view|embed)\/.+/},
+	//URL scheme: http:\/\/coub.com\/view\/*
+	//URL scheme: http:\/\/coub.com\/embed\/*
+	'SpeakerDeck': {endpoint: 'https://speakerdeck.com/oembed.json', type: 5, pattern: /^https?:\/\/speakerdeck\.com\/.+\/.+/},
+	//(only supports json)
+	//URL Scheme: http:\/\/speakerdeck.com\/*\/*
+	//URL Scheme: https:\/\/speakerdeck.com\/*\/*
+	'Alpha App Net': {endpoint: 'https://alpha-api.app.net/oembed', type: 4, pattern: /^https:\/\/(alpha\.app\.net\/.+\/post\/|photos\.app\.net\/.+\/).+/},
+	//(only supports json)
+	//URL Scheme: https:\/\/alpha.app.net\/*\/post\/*
+	//URL Scheme: https:\/\/photos.app.net\/*\/*
+	'BlipTV': {endpoint: 'http://blip.tv/oembed/', type: 4, pattern: /^http:\/\/([^\/?&#]+\.)?blip\.tv\/.+\/.+/},
+	//(only supports json)
+	//URL Scheme: http:\/\/*.blip.tv\/*\/*
+	'YFrog': {endpoint: 'http://www.yfrog.com/api/oembed', type: 4, pattern: /^http:\/\/(([^\/?&#]+\.)?yfrog\.com|yfrog\.us)\/.+/},
+	//(only supports json)
+	//URL Scheme: http:\/\/*.yfrog.com\/*
+	//URL Scheme: http:\/\/yfrog.us\/*
+	'Instagram': {endpoint: 'http://api.instagram.com/oembed', type: 4, pattern: /^http:\/\/instagr(am\.com|\.am)\/p\/.+/},
+	//(only supports json)
+	//URL Scheme: http:\/\/instagram.com\/p\/*
+	//URL Scheme: http:\/\/instagr.am\/p\/*
+	'SoundCloud': {endpoint: 'https://soundcloud.com/oembed', type: 12, pattern: /^https?:\/\/(www\.)?soundcloud\.com\/.+/},
+	//URL scheme: http:\/\/soundcloud.com\/*
+	'On Aol': {endpoint: 'http://on.aol.com/api', type: 12, pattern: /^http:\/\/on\.aol\.com\/video\/.+/},
+	//URL scheme: http:\/\/on.aol.com\/video\/*
+	'Kickstarter': {endpoint: 'http://www.kickstarter.com/services/oembed', type: 12, pattern: /^http:\/\/(www\.)?kickstarter\.com\/projects\/.+/},
+	//URL scheme: http:\/\/www.kickstarter.com\/projects\/*
+	'Ustream': {endpoint: 'http://www.ustream.tv/oembed', type: 4, pattern: /^http:\/\/[^\/?&#]+\.ustream\.(tv|com)\/.+/},
+	//(only supports json)
+	//URL scheme: http:\/\/*.ustream.tv\/*
+	//URL scheme: http:\/\/*.ustream.com\/*
+	'GMEP': {endpoint: 'https://gmep.org/oembed.{format}', type: 14, pattern: /^https:\/\/gmep\.org\/media\/.+/},
+	//URL scheme: https:\/\/gmep.org\/media\/*
+	'Daily Mile': {endpoint: 'http://api.dailymile.com/oembed', type: 4, pattern: /^http:\/\/(www\.)?dailymile\.com\/people\/.+\/entries\/.+/},
+	//(only supports json)
+	//URL scheme: http:\/\/www.dailymile.com\/people\/*\/entries\/*
+	'Sketchfab': {endpoint: 'http://sketchfab.com/oembed', type: 4, pattern: /^https?:\/\/sketchfab\.com\/models\/.+/},
+	//(only supports json)
+	//URL scheme: http:\/\/sketchfab.com\/models\/*
+	//URL scheme: https:\/\/sketchfab.com\/models\/*
+	'Meetup': {endpoint: 'https://api.meetup.com/oembed', type: 4, pattern: /^http:\/\/(www\.)?meetu(p\.com|\.ps)\/.+/},
+	//(only supports json)
+	//URL scheme: http:\/\/meetup.com\/*
+	//URL scheme: http:\/\/meetu.ps\/*
+	'VideoFork': {endpoint: 'http://videofork.com/oembed/', type: 0, pattern: /^http:\/\/videofork\.com\/.+\/(\d+)/, getRequestUrl:function(e,q,r){return e+(r\.test(q\.url),RegExp\.$1);}},
+	//(only supports json)
+	//URL scheme: http:\/\/videofork.com\/oembed\/([0-9]+)
+	//Example: http://videofork.com/oembed/33536 where 33536 is id of the video.
+	'AudioSnaps': {endpoint: 'http://audiosnaps.com/service/oembed', type: 12, pattern: /^http:\/\/audiosnaps\.com\/k\/.+/},
+	//URL scheme: http:\/\/audiosnaps.com\/k\/*
+	'edocr': {endpoint: 'http://edocr.com/api/oembed', type: 12, pattern: /^http:\/\/(www\.)?edocr\.com\/docs?\/.+/},
+	//URL scheme: http:\/\/edocr.com\/docs\/*
+	'RapidEngage': {endpoint: 'https://rapidengage.com/api/oembed', type: 12, pattern: /^https:\/\/rapidengage\.com\/s\/.+/},
+	//URL scheme: https:\/\/rapidengage.com\/s\/*
+	'Ora TV': {endpoint: 'https://www.ora.tv/oembed/', type: 0, pattern: /^https?:\/\/(www\.)?ora\.tv\/.+(\d+_\w+)$/, getRequestUrl:function(e,q,r){return e+(r\.test(q\.url),RegExp\.$2);}},
+	//URL schemeの記述なし
+	//Example: https://www.ora.tv/oembed/0_6e6tvou17xau?format=json
+	'Getty Images': {endpoint: 'http://embed.gettyimages.com/oembed', type: 4, pattern: /^http:\/\/gty\.im\/.+/},
+	//(only supports json)
+	//URL scheme: http:\/\/gty.im\/*
+	'amCharts Live Editor': {endpoint: 'http://live.amcharts.com/oembed', type: 12, pattern: /^http:\/\/live\.amcharts\.com\/.+/},
+	//URL scheme: http:\/\/live.amcharts.com\/*
+	'iSnare Articles': {endpoint: 'http://www.isnare.com/oembed/', type: 12, pattern: /^http:\/\/(www\.)?isnare\.com\/.+/}
+	//URL scheme: http:\/\/www.isnare.com\/*
+};
+
+})();
