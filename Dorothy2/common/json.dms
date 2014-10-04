@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.35
+//version=0.36
 //hint=
 //match=
 //author=wan
@@ -557,7 +557,7 @@ JSON.stringify = (function(){
 			colon: opts.hasKey('colon') && getName(opts.colon) == 'string' ? opts.colon : ':',
 			comma: opts.hasKey('comma') && getName(opts.comma) == 'string' ? opts.comma : ','
 		};
-		var n = indent = '';
+		var n = '', indent = '';
 		switch(F.getName(space)){
 			case 'string': indent = space;break;
 			case 'number': indent = ' '.multiply(space);break;
