@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.36
+//version=0.37
 //hint=
 //match=
 //author=wan
@@ -8,9 +8,9 @@
 //end
 (function(){
 /*
-JSON文字列を解析する
-parseJSON(text[, reviver][, esc])
-	引数
+JSON.parse(text[, reviver][, esc])
+	説明: JSON文字列を解析する
+	引数:
 		text: 解析するJSON形式の文字列(object,array,value)
 		reviver:
 			省略可能。解析結果を変換する関数 オブジェクトの最もネストされたプロパティから順次呼び出され最後は空文字列と最上位の値になる(ルートオブジェクトは{"":解析結果})
@@ -24,11 +24,63 @@ parseJSON(text[, reviver][, esc])
 		esc:
 			省略可能(デフォルトはtrue)。true or false
 			trueならエスケープ文字をデコードする 内部では一文字ずつ順に解析する(eval()を使う方法ではエスケープ文字のデコードが困難なため)
-			falseなら\をそのまま維持してデコードは行わない  内部では正規表現とeval()を使う こちらの方が処理が速い
-	戻り値
+			falseなら\をそのまま維持してデコードは行わない  内部では正規表現とeval()を使う こちらの方が処理が速い 厳密なチェックは行わない。
+	戻り値:
 		オブジェクトか配列か値[string,number,true or false, null]
 		textに文字列ではなくboolean, number, nullを渡した場合はそのまま返す
 		構文が間違っていた場合やエラーの場合はundefinedを返す
+
+JSON.stringify(value[, replacer][, space][, opts])
+	説明: 値をJSON文字列に変換する
+	引数:
+		value: JSON文字列に変換する値。
+		replacer: 省略可能。
+			関数の場合
+				変換する値を戻り値で置換する。
+				ルートオブジェクトは{"":value引数}
+				第一引数: プロパティ名
+				第二引数: プロパティの値
+				第三引数: 最上位からのプロパティ名
+				thisはそのプロパティを含むオブジェクト
+			配列の場合
+				ホワイトリストとして使用する
+				配列のキー値を持つメンバーのみを変換する。 配列のキーの順序でメンバーを文字列に変換する
+		space: 省略可能。インデントに使用する文字を指定 数値の場合はその数の空白を使用 10文字より長い場合は10文字に切り詰め
+		opts: 省略可能。オブジェクトでオプションを指定する
+		{
+			esc: デフォルトはtrue  trueならエスケープ文字に変換するfalseならしない
+			keyQuot: デフォルトは['"', '"']  プロパティ名を囲む引用符を配列で指定する
+			strQuot: デフォルトは['"', '"']  文字列値を囲む引用符を配列で指定する
+			colon: デフォルトは':'  オブジェクトのプロパティ名の後ろの文字を指定する
+			comma: デフォルトは','  オブジェクトや配列の区切りの文字を指定する
+		}
+	戻り値:
+		JSON文字列。undefinedや関数を渡した場合はundefinedを返す
+	
+	もしオブジェクトにtoJSONメソッドがあった場合は呼び出してその戻り値を使う
+	値がundefinedの時はオブジェクトのメンバーの場合はそのメンバーは省略、配列の要素の場合はnullに変換
+	値が未知のオブジェクトの場合toStringメソッドがあるなら呼び出してその戻り値を使用する。無いなら{}に変換
+
+JSON.check(text)
+	説明: textがJSON文字列かをチェックする
+	戻り値: JSON文字列ならtrue 違うならfalse
+	
+	正規表現による簡易的な確認だけなので戻り値がtrueでも実際の解析では失敗する可能性がある
+
+JSON.load(path, reviver, esc){
+	説明: pathで指定されたファイルを読み取りJSON文字列として解析する
+	引数:
+		path: ファイルのパス
+		reviver, esc: JSON.parseの引数と同じ
+	戻り値: JSON文字列。 失敗した場合はundefinedを返す
+JSON.save(path, value, replacer, space, opts){
+	説明: valueをJSON文字列に変換しpathで指定されたファイルに保存する
+	引数:
+		path:
+			ファイルのパス
+		value, replacer, space, opts:
+			JSON.stringifyの引数と同じ
+	戻り値: 成功ならtrue 失敗ならfalse
 */
 JSON = {};
 JSON.check = function(text){
@@ -344,37 +396,6 @@ JSON.parse = (function(){
 		return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
 	};
 })();
-/*
-値をJSON文字列に変換する
-stringifyJSON(value[, replacer][, space][, opts])
-	引数
-		value: JSON文字列に変換する値。
-		replacer: 省略可能。
-			関数の場合
-				変換する値を戻り値で置換する。
-				ルートオブジェクトは{"":value引数}
-				第一引数: プロパティ名
-				第二引数: プロパティの値
-				第三引数: 最上位からのプロパティ名
-				thisはそのプロパティを含むオブジェクト
-			配列の場合
-				ホワイトリストとして使用する
-				配列のキー値を持つメンバーのみを変換する。 配列のキーの順序でメンバーを文字列に変換する
-		space: 省略可能。インデントに使用する文字を指定 数値の場合はその数の空白を使用 10文字より長い場合は10文字に切り詰め
-		opts: 省略可能。オブジェクトでオプションを指定する
-		{
-			esc: デフォルトはtrue  trueならエスケープ文字に変換するfalseならしない
-			keyQuot: デフォルトは['"', '"']  プロパティ名を囲む引用符を配列で指定する
-			strQuot: デフォルトは['"', '"']  文字列値を囲む引用符を配列で指定する
-			colon: デフォルトは':'  オブジェクトのプロパティ名の後ろの文字を指定する
-			comma: デフォルトは','  オブジェクトや配列の区切りの文字を指定する
-		}
-	戻り値
-		JSON文字列。undefinedや関数を渡した場合はundefinedを返す
-もしオブジェクトにtoJSONメソッドがあった場合は呼び出してその戻り値を使う
-値がundefinedの時はオブジェクトのメンバーの場合はそのメンバーは省略、配列の要素の場合はnullに変換
-値が未知のオブジェクトの場合toStringメソッドがあるなら呼び出してその戻り値を使用する。無いなら{}に変換
-*/
 JSON.stringify = (function(){
 	var F = {
 		control_char: {
@@ -580,5 +601,31 @@ JSON.stringify = (function(){
 		return r;
 	};
 })();
+JSON.load = function(path, reviver, esc){
+	try{
+		if(!(new File(path).exists())){
+			throw '指定されたパスが存在しません';
+		}
+		var sl = new Strings();
+		sl.loadFromFile(path);
+		var r = this.parse(sl.text, reviver, esc);
+	}catch(e){
+		println('JSON.load error>' + e);
+		return;//undefinedを返す
+	}
+	return r;
+};
+JSON.save = function(path, value, replacer, space, opts){
+	try{
+		var json = this.stringify(value, replacer, space, opts);
+		var sl = new Strings(json);
+		sl.saveToFile(path);
+	}catch(e){
+		println('JSON.save error>' + e);
+		return false;
+	}
+	return true;
+};
+
 
 })();
