@@ -1,0 +1,167 @@
+//Dorothy2
+//caption=Ini2
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+
+/*
+iniファイルをオブジェクトの形式で処理します。
+Ini2(path)
+	引数
+		path: iniファイルのパス。省略した場合は空のiniとして読み込みます。
+	メソッド
+		load(def, typeConversion)
+			説明: iniファイルを読み込みオブジェクトに変換します
+			引数:
+				def: 省略可能。オブジェクト デフォルト値
+				typeConversion: 省略可能。defの値を元に型変換を行うか 規定値はtrue。
+			戻り値: オブジェクト
+		save(obj)
+			説明: オブジェクトをini形式に変換して保存します
+			引数:
+				obj: iniに保存するオブジェクト
+			戻り値: 保存に成功ならtrue、失敗もしくはpathが指定されていない場合はfalse
+	プロパティ
+		path: iniファイルのパス
+
+仕様
+行やセクションやキーや値の前後にある空白は無視する
+[で始まり]で終わる行はセクション
+先頭から1文字以上の文字と= の行はキー
+上記に当てはまらない行と、;が先頭にある行はコメント
+[section];comment  の様にセクションの後ろに文字がある場合はセクションと見なさない
+iniを保存する際は読み込んだiniの空白やコメント等の表記を維持する
+大文字小文字を区別する
+文字コードをSJISに変換しない
+Ini2オブジェクト作成時にファイルの読み込みが行われる
+save(obj)は読み込んだ元のiniの表記を維持しながらobjをiniに変換して保存する
+	値がnull,undefinedになっているものは保存しない objにないセクションやキーはiniから削除する
+	既存のセクションに新たにキーを追加した場合はそのセクションの最後のキーの直下に追加する
+	新規セクションはiniの最後尾に追加する
+*/
+(function(){
+
+common_load('extend');
+void function Ini2(path){
+	this.path = path;
+	this._sl = new Strings();
+	if(new File(path).exists()){
+		this._sl.loadFromFile(path);
+	}
+};
+Ini2.prototype.path = '';
+Ini2.prototype.load = function(def, typeConversion){
+	var r = extend(true, {}, def);
+	var line, equal, sec = '', key, value, sl = this._sl;
+	for(var i in sl){
+		line = sl[i].trim();
+		if(line == '' || line[0] == ';') continue;
+		if(line[0] == '[' && line.slice(-1) == ']'){
+			sec = line.slice(1, -1).trim();
+			if(sec != ''){
+				if(!r.hasKey(sec) || nameOf(r[sec]) != 'Object') r[sec] = {};
+			}
+			continue;
+		}
+		if((equal = line.indexOf('=')) > 0 && sec != ''){
+			key = line.slice(0, equal).trim();
+			value = line.slice(equal+1).trim();
+			if(typeConversion != false){
+				switch(typeof r[sec][key]){
+					case 'boolean': value = (value == true);break;
+					case 'number': value = value | 0;break;
+				}
+			}
+			r[sec][key] = value;
+		}
+	}
+	return r;
+};
+Ini2.prototype.save = function(obj){
+	if(!this.path){
+		println('Ini2 error>保存先のパスが指定されていません');
+		return false;
+	}
+	function addKeys(sec, index){
+		if(nameOf(ini[sec]) != 'Object') return;
+		for(var key in ini[sec]){
+			if(ini[sec][key] === null || isUndefined(ini[sec][key])) continue;
+			r.insert(index, key + '=' + ini[sec][key]);
+		}
+	}
+
+	var sl = this._sl, ini = extend(true, {}, obj);
+	var r = new Strings(), sec = '', line, line_ori, key, key_ori, isSec = false, delSec = false, equal, addIndex = 0;
+
+	for(var index = 0; index < sl.length; index++){
+		line_ori = sl[index]; //元の表記維持用
+		line = line_ori.trim();
+		if(line == '' || line[0] == ';'){
+			r.add(line_ori);
+			continue;
+		}
+		isSec = (line[0] == '[' && line.slice(-1) == ']');
+
+		if(isSec){
+			//前回セクションの未処理のkeyを追加
+			if(sec != '' && !delSec){
+				addKeys(sec, addIndex);
+				ini[sec] = null; //処理済み
+			}
+			sec = line.slice(1, -1).trim();
+
+			if(ini.hasKey(sec) && !(ini[sec] === null)){
+				delSec = false;
+				addIndex = r.length+1;
+			}else{
+				//セクションを削除
+				delSec = true;
+				continue;
+			}
+		}else if(sec != ''){
+			equal = line_ori.indexOf('=');
+			if(equal > 0){
+				key_ori = sl[index].slice(0, equal);//元の表記維持用
+				key = key_ori.trim();
+				if(key != ''){
+					if(delSec || typeof ini[sec][key] == null){
+						//key行を削除
+						continue;
+					}else{
+						//key行を上書き
+						line_ori = key_ori + '=' + ini[sec][key];
+						ini[sec][key] = null;//処理済み
+						addIndex = r.length+1;
+					}
+				}
+			}
+
+		}
+		r.add(line_ori);
+	}
+	//前回セクションの未処理のkeyを追加
+	if(sec != '' && !delSec){
+		addKeys(sec, addIndex);
+		ini[sec] = null;//処理済み
+	}
+
+	//新規セクションの追加
+	for(var sec in ini){
+		if(ini[sec] === null) continue;
+		r.add("\n[" + sec + ']');
+		addKeys(sec, r.length);
+	}
+	sl.assign(r);
+	try{
+		sl.saveToFile(this.path);
+	}catch(e){
+		println('Ini2 error>' + e);
+		return false;
+	}
+	return true;
+};
+
+})();
