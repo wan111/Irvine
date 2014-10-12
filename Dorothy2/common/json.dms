@@ -617,7 +617,7 @@ JSON.load = function(path, reviver, esc){
 };
 JSON.save = function(path, value, replacer, space, opts){
 	try{
-		space = space || "\t";
+		space = isUndefined(space) || isNull(space) ? "\t" : space;
 		var json = this.stringify(value, replacer, space, opts);
 		var sl = new Strings(json);
 		sl.saveToFile(path);
