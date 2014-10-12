@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.37
+//version=0.38
 //hint=
 //match=
 //author=wan
@@ -507,7 +507,7 @@ JSON.stringify = (function(){
 					var i;
 					if(i = check(value)){
 						for(var i = 0; i < value.length; i++){
-							s.add(toStr(value, i, sp, path + '[' + i + ']') || null);
+							s.add(toStr(value, i, sp, path + '[' + i + ']') || 'null');
 						}
 					}
 					cache = cache.slice(0, i-1);
@@ -575,8 +575,8 @@ JSON.stringify = (function(){
 			esc: opts.hasKey('esc') && typeof opts.esc == 'boolean' ? opts.esc : true,
 			keyQuot: opts.hasKey('keyQuot') && nameOf(opts.keyQuot) == 'Array' && opts.keyQuot.length >= 2 ? opts.keyQuot : ['"', '"'],
 			strQuot: opts.hasKey('strQuot') && nameOf(opts.strQuot) == 'Array' && opts.strQuot.length >= 2 ? opts.strQuot : ['"', '"'],
-			colon: opts.hasKey('colon') && getName(opts.colon) == 'string' ? opts.colon : ':',
-			comma: opts.hasKey('comma') && getName(opts.comma) == 'string' ? opts.comma : ','
+			colon: opts.hasKey('colon') && F.getName(opts.colon) == 'string' ? opts.colon : ':',
+			comma: opts.hasKey('comma') && F.getName(opts.comma) == 'string' ? opts.comma : ','
 		};
 		var n = '', indent = '';
 		switch(F.getName(space)){
@@ -617,6 +617,7 @@ JSON.load = function(path, reviver, esc){
 };
 JSON.save = function(path, value, replacer, space, opts){
 	try{
+		space = space || "\t";
 		var json = this.stringify(value, replacer, space, opts);
 		var sl = new Strings(json);
 		sl.saveToFile(path);
