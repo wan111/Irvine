@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=extend
-//version=0.3
+//version=0.4
 //hint=
 //match=
 //author=wan
@@ -11,22 +11,58 @@ function extend(/*deep, dest, source*/){
 		for(var key in src){
 			if(typeof dest[key] == 'undefined') dest[key] = {};
 
-			if(deep){
-				switch(nameOf(src[key])){
-					case 'Object':
-						dest[key] = nameOf(dest[key]) == 'Object' ? dest[key] : {};
-						break;
-					case 'Array':
-						dest[key] = nameOf(dest[key]) == 'Array' ? dest[key] : [];
-						break;
-					default:
-						dest[key] = src[key];
-						continue;
+			if(deep && typeof src[key] == 'object'){
+				if(circular.check(dest[key], src[key])){
+					switch(nameOf(src[key])){
+						case 'Object':
+							dest[key] = nameOf(dest[key]) == 'Object' ? dest[key] : {};
+							break;
+						case 'Array':
+							dest[key] = nameOf(dest[key]) == 'Array' ? dest[key] : [];
+							break;
+						case 'Number':
+							dest[key] = new Number(src[key].toString());
+							continue;
+						case 'String':
+							dest[key] = new String(src[key].toString());
+							continue;
+						case 'Boolean':
+							dest[key] = new Boolean(src[key].toString());
+							continue;
+						case 'RegExp':
+							var s = src[key].source;
+							var opt = (src[key].ignoreCase ? 'i' : '') + (src[key].global ? 'g' : '') + (src[key].multiline ? 'm' : '');
+							dest[key] =  new RegExp(s, opt);
+							continue;
+						case 'Date':
+							dest[key] = new Date(src[key].getTime());
+							continue;
+						case 'URL':
+							dest[key] = new URL(src[key].url);
+							continue;
+						case 'Cookie':
+							var cookie = new Cookie;
+							cookie.parse(src[key].toString());
+							dest[key] = cookie;
+							continue;
+						default:
+							dest[key] = src[key];
+							continue;
+					}
+					dest[key] = _extend(deep, dest[key], src[key]);
+				}else{
+					dest[key] = circular.obj;
 				}
-				if(circular.check(dest[key], src[key])) dest[key] = _extend(deep, dest[key], src[key]);
-				else dest[key] = circular.obj;
 			}else{
 				dest[key] = src[key];
+			}
+		}
+		//functionå^ÇÃÉÅÉìÉo
+		if(nameOf(src) == 'Object'){
+			var methods = src.getMethods(), key;
+			for(var i = 0; i < methods.length; i++){
+				key = methods[i];
+				if(!Object.hasKey(key)) dest[key] = src[key];
 			}
 		}
 		return dest;
@@ -36,6 +72,7 @@ function extend(/*deep, dest, source*/){
 		cache: [],
 		obj: {},
 		check: function(dest, src){
+			if(nameOf(src) == 'String') return true;
 			for(var i in cache){
 				if(cache[i][1] === src){
 					this.obj = cache[i][0];
