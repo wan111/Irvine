@@ -58,7 +58,7 @@ JSON.stringify(value[, replacer][, space][, opts])
 		JSON文字列。undefinedや関数を渡した場合はundefinedを返す
 	
 	もしオブジェクトにtoJSONメソッドがあった場合は呼び出してその戻り値を使う
-	値がundefinedの時はオブジェクトのメンバーの場合はそのメンバーは省略、配列の要素の場合はnullに変換
+	値がundefined,関数の時はオブジェクトのメンバーの場合はそのメンバーは省略、配列の要素の場合はnullに変換
 	値が未知のオブジェクトの場合toStringメソッドがあるなら呼び出してその戻り値を使用する。無いなら{}に変換
 
 JSON.check(text)
@@ -498,8 +498,8 @@ JSON.stringify = (function(){
 								}
 							}
 						}
+						cache = cache.slice(0, i-1);//現在の階層を含む上位階層のみをチェックの対象にする
 					}
-					cache = cache.slice(0, i-1);//現在の階層を含む上位階層のみをチェックの対象にする
 					sp = p.n + sp;
 					return s.length == 0 ? '{}' : '{' + sp + s.join(opts.comma + sp) + p.n + _space + '}';
 				case 'array':
@@ -509,8 +509,8 @@ JSON.stringify = (function(){
 						for(var i = 0; i < value.length; i++){
 							s.add(toStr(value, i, sp, path + '[' + i + ']') || 'null');
 						}
+						cache = cache.slice(0, i-1);
 					}
-					cache = cache.slice(0, i-1);
 					sp = p.n + sp;
 					return s.length == 0 ? '[]' : '[' + sp + s.join(opts.comma + sp) + p.n + _space + ']';
 				case 'number':
