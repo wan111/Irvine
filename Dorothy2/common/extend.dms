@@ -25,6 +25,7 @@ function extend(/*deep, dest, source*/){
 							continue;
 						case 'String':
 							dest[key] = new String(src[key].toString());
+							circular.pop();
 							continue;
 						case 'Boolean':
 							dest[key] = new Boolean(src[key].toString());
@@ -57,7 +58,7 @@ function extend(/*deep, dest, source*/){
 				dest[key] = src[key];
 			}
 		}
-		//functionŒ^‚Ìƒƒ“ƒo
+		//functionŒ^‚Ìƒƒ“ƒo QÆ“n‚µ
 		if(nameOf(src) == 'Object'){
 			var methods = src.getMethods(), key;
 			for(var i = 0; i < methods.length; i++){
@@ -71,8 +72,11 @@ function extend(/*deep, dest, source*/){
 	var circular = {
 		cache: [],
 		obj: {},
+		pop: function(){
+			var len = this.cache.length;
+			if(len) this.cache.delete(len - 1);
+		},
 		check: function(dest, src){
-			if(nameOf(src) == 'String') return true;
 			for(var i in cache){
 				if(cache[i][1] === src){
 					this.obj = cache[i][0];
@@ -100,6 +104,7 @@ function extend(/*deep, dest, source*/){
 	for(; i < len; i++){
 		source = arguments[i];
 		if((nameOf(source) == 'Object' || nameOf(source) == 'Array')){
+			if(destination == source) continue;
 			circular.check(destination, source);
 			destination = _extend(deep, destination, source);
 		}
