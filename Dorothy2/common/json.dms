@@ -468,7 +468,7 @@ JSON.stringify = (function(){
 			var value = src[key];
 			//toJSON
 			if(typeof value.toJSON == 'function') value = value.toJSON(key);
-			//p.replacerä÷êî
+			//replacerä÷êî
 			if(p.repType == 'function'){
 				value = p.replacer.call(src, key, value, path);
 			}
