@@ -46,6 +46,17 @@ function extend(/*deep, dest, source*/){
 							cookie.parse(src[key].toString());
 							dest[key] = cookie;
 							continue;
+						case 'StringList':
+							var sl = new Strings(src[key].text);
+							sl.sorted = src[key].sorted;
+							sl.caseSensitive = src[key].caseSensitive;
+							sl.duplicates = src[key].duplicates;
+							dest[key] = sl;
+							continue;
+						case 'StringBuffer':
+							dest[key] = new StringBuffer(src[key].text);
+							circular.pop();
+							continue;
 						default:
 							dest[key] = src[key];
 							continue;
