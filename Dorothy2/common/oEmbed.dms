@@ -16,25 +16,26 @@ void function oEmbed(query){
 		//maxwidth: null,
 		//maxheight: null
 	};
+	this.http = new Http({autoRedirect: true});
+	this.requestHeader = this.http.requestHeader; 
+	this.responseHeader = this.http.responseHeader;
+	this.parseJSON = true;
+	this.isJSON = false;
+	this.isXML = false;
 	if(nameOf(query) == 'Object'){
 		for(var i in query){
 			this.query[i] = query[i];
 		}
 	}
 };
-oEmbed.prototype.query = {};
-oEmbed.prototype.requestHeader = {};
-oEmbed.prototype.responseHeader = {};
 oEmbed.prototype.code = 0;
 oEmbed.prototype.data = '';
-oEmbed.prototype.parseJSON = true;
-oEmbed.prototype.isJSON = false;
-oEmbed.prototype.isXML = false;
 //get() query.urlを使用する query.urlが設定されていない場合はfalse
 //get(url) urlを使用する query.urlは無視
 //get(url, name) providersからのマッチングを行わずproviders[name]を使用 nameが存在しないかurlがpatternにマッチしない場合はfalse
 //get(url, name, check) checkがfalseならpatternにマッチするかは確認しない
 oEmbed.prototype.get = function(url, name, check){
+	var http = this.http;
 	this.data = '';
 	this.code = 0;
 	this.isJSON = this.isXML = false;
@@ -52,14 +53,10 @@ oEmbed.prototype.get = function(url, name, check){
 	var requestUrl = this.getRequestUrl(name);
 	if(!requestUrl) return false;
 	
-	var http = new Http({autoRedirect: true});
-	for(var i in this.requestHeader){
-		http.requestHeader[i] = this.requestHeader[i];
-	}
 	http.get(requestUrl);
-	this.responseHeader = http.responseHeader;
 	this.code = http.code;
 	this.data = http.data;
+	this.responseHeader = http.responseHeader;
 	if(http.code != 200) return false;
 	
 	var contentType = http.getResponseHeader('content-type');
