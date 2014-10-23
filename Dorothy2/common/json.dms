@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.38
+//version=0.39
 //hint=
 //match=
 //author=wan
@@ -608,6 +608,10 @@ JSON.load = function(path, reviver, esc){
 		}
 		var sl = new Strings();
 		sl.loadFromFile(path);
+		//コメントを削除
+		for(var i = sl.length-1; i >= 0; i--){
+			if(/^\s*\/\//.test(sl[i])) sl.delete(i);
+		}
 		var r = this.parse(sl.text, reviver, esc);
 	}catch(e){
 		println('JSON.load error>' + e);
@@ -618,6 +622,8 @@ JSON.load = function(path, reviver, esc){
 JSON.save = function(path, value, replacer, space, opts){
 	try{
 		space = isUndefined(space) || isNull(space) ? "\t" : space;
+		opts = nameOf(opts) == 'Object' ? opts : {};
+		opts.esc = true;//コメントの誤認識を防ぐため文字列を改行させない
 		var json = this.stringify(value, replacer, space, opts);
 		var sl = new Strings(json);
 		sl.saveToFile(path);
