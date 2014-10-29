@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.39
+//version=0.40
 //hint=
 //match=
 //author=wan
@@ -53,6 +53,7 @@ JSON.stringify(value[, replacer][, space][, opts])
 			strQuot: デフォルトは['"', '"']  文字列値を囲む引用符を配列で指定する
 			colon: デフォルトは':'  オブジェクトのプロパティ名の後ろの文字を指定する
 			comma: デフォルトは','  オブジェクトや配列の区切りの文字を指定する
+			skipFunc: デフォルトはtrue  オブジェクトのメンバーがfunction型であった場合にそのメンバーを省略する。 省略しない場合はnullに変換する
 		}
 	戻り値:
 		JSON文字列。undefinedや関数を渡した場合はundefinedを返す
@@ -487,6 +488,8 @@ JSON.stringify = (function(){
 									v = toStr(value, key, sp, path + '["' + key + '"]');
 									if(!isUndefined(v)){
 										s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+									}else if(!opts.skipFunc && typeof value[key] == 'function'){
+										s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + 'null');
 									}
 								}
 							}
@@ -495,6 +498,14 @@ JSON.stringify = (function(){
 								v = toStr(value, key, sp, path + '["' + key + '"]');
 								if(!isUndefined(v)){
 									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+								}
+							}
+							//function型のメンバ
+							if(!opts.skipFunc){
+								var methods = value.getMethods(), key;
+								for(var i = 0; i < methods.length; i++){
+									key = methods[i];
+									if(!Object.hasKey(key)) s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + 'null');
 								}
 							}
 						}
@@ -576,7 +587,8 @@ JSON.stringify = (function(){
 			keyQuot: opts.hasKey('keyQuot') && nameOf(opts.keyQuot) == 'Array' && opts.keyQuot.length >= 2 ? opts.keyQuot : ['"', '"'],
 			strQuot: opts.hasKey('strQuot') && nameOf(opts.strQuot) == 'Array' && opts.strQuot.length >= 2 ? opts.strQuot : ['"', '"'],
 			colon: opts.hasKey('colon') && F.getName(opts.colon) == 'string' ? opts.colon : ':',
-			comma: opts.hasKey('comma') && F.getName(opts.comma) == 'string' ? opts.comma : ','
+			comma: opts.hasKey('comma') && F.getName(opts.comma) == 'string' ? opts.comma : ',',
+			skipFunc: opts.hasKey('skipFunc') && typeof opts.skipFunc == 'boolean' ? opts.skipFunc : true
 		};
 		var n = '', indent = '';
 		switch(F.getName(space)){
