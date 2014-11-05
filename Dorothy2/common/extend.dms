@@ -280,4 +280,5 @@ function extend2(/*deep, dest, source*/){
 	}
 	return destination;
 },
-Object.prototype.extend = extend;
+Object.prototype.extend = extend,
+Object.prototype.extend2 = extend2;
