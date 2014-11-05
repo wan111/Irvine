@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.40
+//version=0.41
 //hint=
 //match=
 //author=wan
@@ -155,23 +155,25 @@ JSON.parse = (function(){
 		//文字列を解析
 		//呼ばれた時のStr.indexは最初の"の位置
 		parseStr: function(Str){
-			var r = '', s = Str.next();
-			while(s){
-				if(s == '"') return r;
-				if(s == '\'){
-					s = Str.next();
-					if(Esc_char.hasKey(s)){
-						s = Esc_char[s];
-					}else if(s == 'u'){
-						//uの後が正しい文字コードかチェックするように 間違っていた場合はエラーに
-						s = _unescape(Str);
-						if(s == '') err('不正なUnicode エスケープシーケンス', Str);
-					}else{
-						continue;
-					}
+			var r = '', s = '';
+			while(++Str.index <= Str.end){
+				s = Str[Str.index];
+				switch(s){
+					case '"': return r;
+					case '\':
+						s = Str.next();
+						if(Esc_char.hasKey(s)){
+							s = Esc_char[s];
+						}else if(s == 'u'){
+							//uの後が正しい文字コードかチェックするように 間違っていた場合はエラーに
+							s = _unescape(Str);
+							if(s == '') err('不正なUnicode エスケープシーケンス', Str);
+						}else{
+							//err('不正なエスケープシーケンス', Str);
+							continue;
+						}
 				}
 				r += s;
-				s = Str.next();
 			}
 			err('文字列が"で閉じられていない', Str);
 		},
@@ -222,7 +224,7 @@ JSON.parse = (function(){
 					s = Str[Str.index];
 					if(!(s | 0 || s == '0')) break;//小数点,指数の次が数字ではない場合
 					var r = Str.slice(start, Str.index+1);
-					return parseFloat(r, Str);
+					return parseFloat(r.toString());
 				}
 			}
 			err('不正な数値', Str);
@@ -348,7 +350,8 @@ JSON.parse = (function(){
 			}
 			return reviver.call(obj, key, value, path);
 		}
-		if(esc === false){
+		esc = isUndefined(esc) || isNull(esc) ? true : esc;
+		if(!esc){
 			if(this.check(text)){
 				text = text.replace(/\\/g, '\\\\');
 				var r = eval('(' + text + ')');
@@ -357,7 +360,7 @@ JSON.parse = (function(){
 			println('parse error>JSON文字列ではない');
 			return false;
 		}
-		var Str = new String(text);
+		var Str = /^[\s -~]+$/.test(text) ? new StringBuffer(text) : new String(text);
 		Str.index = -1;
 		Str.end = Str.length - 1;
 		//次の文字を取得する lenを指定した場合はlenの長さの文字列を取得
@@ -371,18 +374,19 @@ JSON.parse = (function(){
 		//次の文字を取得する 空白の場合スキップする
 		Str.nextStr = function(){
 			var r;
-			while(true){
-				switch(r = this.next()){
+			while(++this.index <= this.end){
+				switch(r = this[this.index]){
 					case ' ':
 					case F.Esc_char.t:
 					case F.Esc_char.n:
 					case F.Esc_char.r:
 						continue;
+					default: return r;
 				}
-				break;
 			}
-			return r;
+			return '';
 		};
+		
 		var r;
 		try{
 			Str.nextStr();
@@ -473,15 +477,16 @@ JSON.stringify = (function(){
 			if(p.repType == 'function'){
 				value = p.replacer.call(src, key, value, path);
 			}
-			switch(getName(value)){
+			switch(nameOf(value) || typeof value){
 				case 'string':
+				case 'String':
 					var tmp = opts.esc ? _escape(value) : value;
 					return opts.strQuot[0] + tmp + opts.strQuot[1];
-				case 'object':
+				case 'Object':
 					var s = [], sp = _space + p.indent, v, key;
 					var i;
 					if(i = check(value)){
-						if(p.repType == 'array'){
+						if(p.repType == 'Array'){
 							for(var i = 0; i < p.replacer.length; i++){
 								key = p.replacer[i];
 								if(value.hasKey(key)){
@@ -513,7 +518,7 @@ JSON.stringify = (function(){
 					}
 					sp = p.n + sp;
 					return s.length == 0 ? '{}' : '{' + sp + s.join(opts.comma + sp) + p.n + _space + '}';
-				case 'array':
+				case 'Array':
 					var s = [], sp = _space + p.indent;
 					var i;
 					if(i = check(value)){
@@ -525,16 +530,18 @@ JSON.stringify = (function(){
 					sp = p.n + sp;
 					return s.length == 0 ? '[]' : '[' + sp + s.join(opts.comma + sp) + p.n + _space + ']';
 				case 'number':
-				case 'boolean': return value.toString();
+				case 'Number':
+				case 'boolean':
+				case 'Boolean': return value.toString();
 				case 'null': return 'null';
 				case 'function':
 				case 'undefined': return;//undefinedを返す
-				case 'irvineurlinfo':
-				case 'irvineitem':
-				case 'irvinefolderdata':
-				case 'irvineoptiondata':
+				case 'IrvineUrlInfo':
+				case 'IrvineItem':
+				case 'IrvineFolderData':
+				case 'IrvineOptionData':
 					var s = [], sp = _space + p.indent, v;
-					if(p.repType == 'array'){
+					if(p.repType == 'Array'){
 						for(var i = 0; i < p.replacer.length; i++){
 							key = p.replacer[i];
 							if(typeof value[key] != 'undefined'){
@@ -564,11 +571,6 @@ JSON.stringify = (function(){
 			return '{}';
     	
 		},
-		getName: function(obj){
-			var name = typeof obj;
-			if(name == 'object') name = nameOf(obj).toLowerCase();
-			return name;
-		},
 		//循環参照のチェック
 		cache: [],
 		check: function(obj){
@@ -583,19 +585,20 @@ JSON.stringify = (function(){
 	return function (value, replacer, space, opts){
 		if(nameOf(opts) != 'Object') opts = {};
 		opts = {
-			esc: opts.hasKey('esc') && typeof opts.esc == 'boolean' ? opts.esc : true,
+			esc: opts.hasKey('esc') ? opts.esc : true,
 			keyQuot: opts.hasKey('keyQuot') && nameOf(opts.keyQuot) == 'Array' && opts.keyQuot.length >= 2 ? opts.keyQuot : ['"', '"'],
 			strQuot: opts.hasKey('strQuot') && nameOf(opts.strQuot) == 'Array' && opts.strQuot.length >= 2 ? opts.strQuot : ['"', '"'],
-			colon: opts.hasKey('colon') && F.getName(opts.colon) == 'string' ? opts.colon : ':',
-			comma: opts.hasKey('comma') && F.getName(opts.comma) == 'string' ? opts.comma : ',',
-			skipFunc: opts.hasKey('skipFunc') && typeof opts.skipFunc == 'boolean' ? opts.skipFunc : true
+			colon: opts.hasKey('colon') && (nameOf(opts.colon) == 'String' || typeof opts.colon == 'string') ? opts.colon : ':',
+			comma: opts.hasKey('comma') && (nameOf(opts.comma) == 'String' || typeof opts.comma == 'string') ? opts.comma : ',',
+			skipFunc: opts.hasKey('skipFunc') ? opts.skipFunc : true
 		};
 		var n = '', indent = '';
-		switch(F.getName(space)){
-			case 'string': indent = space;break;
-			case 'number': indent = ' '.multiply(space);break;
+		switch(nameOf(space) || typeof space){
+			case 'string':
+			case 'String': indent = space.slice(0, 10);break;
+			case 'number':
+			case 'Number': indent = ' '.multiply(space > 10 ? 10 : space);break;
 		}
-		indent = indent.slice(0, 10);
 		if(indent != ''){
 			n = "\n";
 		}
@@ -604,7 +607,7 @@ JSON.stringify = (function(){
 			space: space,
 			n: n,
 			indent: indent,
-			repType: F.getName(replacer)
+			repType: nameOf(replacer) || typeof replacer
 		};
 		F.opts = opts;
 		var r = F.toStr({'': value}, '', '', '');
