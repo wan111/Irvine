@@ -7,29 +7,55 @@
 //path=common
 //end
 (function(){
-/*
-JSON.parse(text[, reviver][, esc])
-	説明: JSON文字列を解析する
-	引数:
-		text: 解析するJSON形式の文字列(object,array,value)
-		reviver:
-			省略可能。解析結果を変換する関数 オブジェクトの最もネストされたプロパティから順次呼び出され最後は空文字列と最上位の値になる(ルートオブジェクトは{"":解析結果})
-			プロパティの値を戻り値に置き換える nullかundefinedを返した場合そのプロパティを削除
-			thisはそのプロパティを含むオブジェクト
-			textにvalueを指定した場合はプロパティ名は空文字、プロパティの値はtext、thisは{'', text}となる
-				第一引数: プロパティ名
-				第二引数: プロパティの値
-				第三引数: 最上位からのプロパティ名
-				 (例){"a": {"b": ["c"]}} の場合の最初は 第一引数は0, 第二引数はc, 第三引数は["a"]["b"][0]
-		esc:
-			省略可能(デフォルトはtrue)。true or false
-			trueならエスケープ文字をデコードする 内部では一文字ずつ順に解析する(eval()を使う方法ではエスケープ文字のデコードが困難なため)
-			falseなら\をそのまま維持してデコードは行わない  内部では正規表現とeval()を使う こちらの方が処理が速い 厳密なチェックは行わない。
-	戻り値:
-		オブジェクトか配列か値[string,number,true or false, null]
-		textに文字列ではなくboolean, number, nullを渡した場合はそのまま返す
-		構文が間違っていた場合やエラーの場合はundefinedを返す
 
+//JSON.parse(text[, reviver][, opts])
+//	説明:
+//		JSON文字列を解析し値に変換する
+//	引数:
+//		text: 解析するJSON文字列(JSON Value) 文字列以外が渡された場合は文字列に変換して解析します
+//		reviver:
+//			省略可能。解析結果を変換する関数 オブジェクトの最もネストされたプロパティから順次呼び出され最後は空文字列と最上位の値になる(ルートオブジェクトは{"":解析結果})
+//			プロパティの値を戻り値に置き換える nullかundefinedを返した場合そのプロパティを削除
+//			thisはそのプロパティを含むオブジェクト
+//			textにvalueを指定した場合はプロパティ名は空文字、プロパティの値はtext、thisは{'', text}となる
+//				第一引数: プロパティ名
+//				第二引数: プロパティの値
+//				第三引数: 最上位からのプロパティ名
+//				 (例){"a": {"b": ["c"]}} の場合の最初は 第一引数は0, 第二引数はc, 第三引数は["a"]["b"][0]
+//		opts: 省略可能。オブジェクト オプションを指定する
+//		{
+//			eval:
+//				デフォルトはfalse
+//				trueなら正規表現にて簡易的にJSONかをチェックした後にeval()を使用します
+//			decode:
+//				デフォルトはtrue
+//				trueならエスケープ文字をデコードする(evalがtrueの場合は\uXXXXはデコードしない)
+//				falseなら\をそのまま維持してデコードしない
+//			relaxed:
+//				デフォルトはfalse
+//				falseなら正規のJSONとして解析する
+//				trueならRelaxed Modeで解析する
+//				Relaxed Modeでの仕様:
+//					オブジェクトのメンバー名:
+//						引用符無し: [A-Za-z_$][A-Za-z0-9_$]*
+//						引用符有り: 正規JSONと同じ
+//					数値: 0123や00 等の先頭に0があっても許容する
+//					文字列:
+//						"～": エスケープ文字を展開する 制御文字が含まれていても許容する
+//						'～': エスケープ文字を展開しない
+//					他の値: 正規JSONと同じ
+//					コメント:
+//						/*～*/ : /*から*/までコメント(最短一致) 値の途中に出てきたらエラー(例: {aa/*aa*/a: 1/*11*/1})
+//						// : これ以降改行か終端までコメント
+//					コンマ:
+//						正規JSONと同じとする
+//		}
+//	戻り値:
+//		解析結果 オブジェクトか配列か値[string,number,true or false, null]
+//		構文が間違っていた場合やエラーの場合はundefinedを返す
+
+
+/*
 JSON.stringify(value[, replacer][, space][, opts])
 	説明: 値をJSON文字列に変換する
 	引数:
@@ -48,31 +74,32 @@ JSON.stringify(value[, replacer][, space][, opts])
 		space: 省略可能。インデントに使用する文字を指定 数値の場合はその数の空白を使用 10文字より長い場合は10文字に切り詰め
 		opts: 省略可能。オブジェクトでオプションを指定する
 		{
-			esc: デフォルトはtrue  trueならエスケープ文字に変換するfalseならしない
-			keyQuot: デフォルトは['"', '"']  プロパティ名を囲む引用符を配列で指定する
-			strQuot: デフォルトは['"', '"']  文字列値を囲む引用符を配列で指定する
+			encode: デフォルトはtrue  trueならエスケープ文字に変換するfalseならしない
+			keyQuote: デフォルトは['"', '"']  プロパティ名を囲む引用符を配列で指定する
+			strQuote: デフォルトは['"', '"']  文字列値を囲む引用符を配列で指定する
 			colon: デフォルトは':'  オブジェクトのプロパティ名の後ろの文字を指定する
 			comma: デフォルトは','  オブジェクトや配列の区切りの文字を指定する
 			skipFunc: デフォルトはtrue  オブジェクトのメンバーがfunction型であった場合にそのメンバーを省略する。 省略しない場合はnullに変換する
 		}
 	戻り値:
 		JSON文字列。undefinedや関数を渡した場合はundefinedを返す
-	
+
 	もしオブジェクトにtoJSONメソッドがあった場合は呼び出してその戻り値を使う
+	値が循環参照になっていた場合はオブジェクトなら{},配列なら[]に変換します
 	値がundefined,関数の時はオブジェクトのメンバーの場合はそのメンバーは省略、配列の要素の場合はnullに変換
 	値が未知のオブジェクトの場合toStringメソッドがあるなら呼び出してその戻り値を使用する。無いなら{}に変換
 
 JSON.check(text)
 	説明: textがJSON文字列かをチェックする
 	戻り値: JSON文字列ならtrue 違うならfalse
-	
+
 	正規表現による簡易的な確認だけなので戻り値がtrueでも実際の解析では失敗する可能性がある
 
-JSON.load(path, reviver, esc){
+JSON.load(path, reviver, opts){
 	説明: pathで指定されたファイルを読み取りJSON文字列として解析する
 	引数:
 		path: ファイルのパス
-		reviver, esc: JSON.parseの引数と同じ
+		reviver, opts: JSON.parseの引数と同じ
 	戻り値: JSON文字列。 失敗した場合はundefinedを返す
 JSON.save(path, value, replacer, space, opts){
 	説明: valueをJSON文字列に変換しpathで指定されたファイルに保存する
@@ -85,17 +112,20 @@ JSON.save(path, value, replacer, space, opts){
 */
 JSON = {};
 JSON.check = function(text){
-	//json2.js https://github.com/douglascrockford/JSON-js から拝借
-	var reg_remaining = /^[\],:{}\s]*$/;
+//json2.js https://github.com/douglascrockford/JSON-js から一部拝借し改変
 	var reg_escape = /\\(["\\\/bfnrt]|u[0-9a-fA-F]{4})/g;
-	//0123やtruetrue等の文字列もJSONと見なしていたので改変
-	var reg_tokens = /(^|[:,\[\{])\s*("[^"\\\n\r]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)/g;
-	var reg_brackets = /(^|:|,)(\s*\[)+/g;
+	var reg_value = /\s*("[^"\\\t\n]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)\s*/g;
+	var reg_brackets = /\s*(\{((@:@,)*@:@)?\s*\}|\[((@,)*@)?\s*\])\s*/g;
 
-	if(reg_remaining.test(text.replace(reg_escape, '@')
-	  .replace(reg_tokens, '$1]')
-	  .replace(reg_brackets, ''))){
-		return true;
+	text = new String(text).replace(/@/g, '_').replace(reg_escape, '@');
+	if(text.indexOf('\') != -1) return false;
+
+	text = text.replace(reg_value, '@');
+	if(!/@@/.test(text)){
+		do{
+			text = text.replace(reg_brackets, '@');
+		}while(reg_brackets.index != -1);
+		if(text == '@') return true;
 	}
 	return false;
 };
@@ -112,25 +142,48 @@ JSON.parse = (function(){
 			't' : "\t"  //tab             U+0009
 		},
 		err: function(e, Str){
-			throw 'parse error: index(' + Str.index +  ')=>' + e;
+			throw 'JSON.parse error: index(' + Str.index +  ')=>' + e;
 		},
 		//オブジェクトを解析する
 		//呼ばれた時のStr.indexは最初の{の位置
 		parseObj: function(Str){
-			var obj = {}, s = Str.nextStr();
+			var obj = {}, s = Str.nextStr(), key;
+			if(s == '/' && opts.relaxed) s = parseComment(Str);
 			if(s == '}') return obj;//空オブジェクト
 			while(s){
-				if(s != '"') err('オブジェクトのメンバー名が文字列ではない', Str);
-				var key = parseStr(Str);
-				if(Str.nextStr() != ':') err('オブジェクトのメンバー名の後に:がない', Str);
+				if(s == '"'){
+					key = parseStr(Str);
+					s = Str.nextStr();
+				}else if(s == "'"){
+					if(!opts.relaxed) err("'～'は文字列として認識しません", Str);
+					key = parseStr_singleQuote(Str);
+					s = Str.nextStr();
+				}else if(s == "/"){
+					if(!opts.relaxed) err('コメントは使用できません', Str);
+					s = parseComment(Str);
+					continue;
+				}else if(/^([A-Za-z_$][A-Za-z0-9_$]*) *[:\/]/.test(Str.slice(Str.index))){
+					if(!opts.relaxed) err('オブジェクトのメンバー名が引用符で囲まれていない', Str);
+					Str.index += RegExp.lastIndex - 1;
+					key = RegExp.$1;
+					s = Str[Str.index];
+				}else{
+					err('オブジェクトのメンバー名が文字列ではない', Str);
+				}
+
+				if(s != ':' && !(s == '/' && opts.relaxed && parseComment(Str) == ':')){
+					err('オブジェクトのメンバー名の後に:がない', Str);
+				}
 				Str.nextStr();
 				obj[key] = parseValue(Str);
-				switch(Str.nextStr()){
+				s = Str.nextStr();
+				if(s == '/' && opts.relaxed) s = parseComment(Str);
+				switch(s){
 					case ',':
 						s = Str.nextStr();
-						continue;
+						break;
 					case '}': return obj;
-					default: err('オブジェクトの値がコンマで区切られていない', Str);
+					default: err('オブジェクトの値がコンマで区切られていない:' + s, Str);
 				}
 			}
 			err('オブジェクトが閉じていない', Str);
@@ -139,13 +192,16 @@ JSON.parse = (function(){
 		//呼ばれた時のStr.indexは最初の[の位置
 		parseArr: function(Str){
 			var arr = [], s = Str.nextStr();
+			if(s == '/' && opts.relaxed) s = parseComment(Str);
 			if(s == ']') return arr;//空配列
 			while(s){
 				arr.push(parseValue(Str));
-				switch(Str.nextStr()){
+				s = Str.nextStr();
+				if(s == '/' && opts.relaxed) s = parseComment(Str);
+				switch(s){
 					case ',':
 						s = Str.nextStr();
-						continue;
+						break;
 					case ']': return arr;
 					default: err('配列の値がコンマで区切られていない', Str);
 				}
@@ -155,27 +211,40 @@ JSON.parse = (function(){
 		//文字列を解析
 		//呼ばれた時のStr.indexは最初の"の位置
 		parseStr: function(Str){
-			var r = '', s = '';
-			while(++Str.index <= Str.end){
-				s = Str[Str.index];
-				switch(s){
-					case '"': return r;
-					case '\':
+			var r = '', s = '', c, start = Str.index+1;
+			while(++Str.index){
+				c = Str.charCodeAt(Str.index);
+				switch(c){
+					case 0x22: //"
+						return r + Str.slice(start, Str.index);
+					case 0x5c: //\
+						r += Str.slice(start, Str.index);
 						s = Str.next();
 						if(Esc_char.hasKey(s)){
 							s = Esc_char[s];
 						}else if(s == 'u'){
-							//uの後が正しい文字コードかチェックするように 間違っていた場合はエラーに
 							s = _unescape(Str);
 							if(s == '') err('不正なUnicode エスケープシーケンス', Str);
 						}else{
-							//err('不正なエスケープシーケンス', Str);
-							continue;
+							err('不正なエスケープシーケンス', Str);
 						}
+						start = Str.index + 1;
+						r += s;
+						break;
+					case NaN: err('文字列が"で閉じられていない', Str);
+					default:
+						if(c <= 0x1F && !opts.relaxed) err('文字列中に制御文字が含まれている', Str);
 				}
-				r += s;
 			}
-			err('文字列が"で閉じられていない', Str);
+		},//*/
+		//Relaxed Mode 文字列を解析 シングルクォート
+		//呼ばれた時のStr.indexは最初の'の位置
+		parseStr_singleQuote: function(Str){
+			var start = Str.index + 1;
+			while(++Str.index <= Str.end){
+				if(Str[Str.index] == "'") return Str.slice(start, Str.index);
+			}
+			err("文字列が'で閉じられていない", Str);
 		},
 		//数値を解析
 		//呼ばれた時のStr.indexは数値の始まり[0-9\-]の位置
@@ -194,7 +263,7 @@ JSON.parse = (function(){
 			*/
 			var start = Str.index,
 			s = Str[start],
-			p = e = isZero = false;
+			p = false, e = false, isZero = false;
 
 			if(s == '-') s = Str.next();
 			if(s == '0') isZero = true;
@@ -206,7 +275,7 @@ JSON.parse = (function(){
 			while(s){
 				if(isZero){
 					s = Str.next();
-					if(s | 0 || s == '0') err('不正な数値 0が先行している', Str);
+					if((s | 0 || s == '0') && !opts.relaxed) err('不正な数値 0が先行している', Str);
 					isZero = false;
 				}
 				while((s | 0 || s == '0') && (s = Str.next()));
@@ -229,7 +298,35 @@ JSON.parse = (function(){
 			}
 			err('不正な数値', Str);
 		},
-		//オブジェクト・配列の値を解析する
+		//Relaxed Mode コメントを解析する
+		//呼ばれた時のStr.indexは/の位置
+		//戻り値はコメントと空白をスキップした次の文字
+		parseComment : function(Str){
+			var s;
+			do{
+				s = Str.next();
+				switch(s){
+					case '/': // Single Line Comment //
+						while(++Str.index <= Str.end){
+							s = Str[Str.index];
+							if(s == Esc_char.n || s == Esc_char.r) break;
+						}
+						break;
+					case '*': // Multi-line Comment /* */
+						var index = Str.indexOf('*/', Str.index + 1);
+						if(index != -1){
+							Str.index = index + 1;
+							break;
+						}
+						err('コメントが*/で閉じられていない', Str);
+					default:
+						err('不正なコメント', Str);
+				}
+				s = Str.nextStr();
+			}while(s == '/');
+			return s;
+		},
+		//値を解析する
 		//呼ばれた時のStr.indexは値の最初の文字の位置
 		parseValue: function(Str){
 			/*
@@ -240,8 +337,8 @@ JSON.parse = (function(){
 			*/
 			var s = Str[Str.index];
 			switch(s){
-				case '{': return parseObj(Str);
 				case '"': return parseStr(Str);
+				case '{': return parseObj(Str);
 				case '[': return parseArr(Str);
 				case 'f'://false
 					if(Str.next(4) == 'alse') return false;
@@ -252,8 +349,16 @@ JSON.parse = (function(){
 				case 'n'://null
 					if(Str.next(3) == 'ull') return null;
 					break;
-				default://number or error
+				default://number or error or Relaxed Mode(comment or string)
 					if(s | 0 || s == '0' || s == '-') return parseNumber(Str);
+					if(opts.relaxed){
+						if(s == '/'){
+							s = parseComment(Str);
+							if(s) return parseValue(Str);
+						}else if(s == "'"){
+							return parseStr_singleQuote(Str);
+						}
+					}
 			}
 			err('不正な値', Str);
 		},
@@ -318,25 +423,12 @@ JSON.parse = (function(){
 			};
     	
 			return '[UTF-8 error]';
-		}
+		},
+		opts: null
 	};
 
-	return function(text, reviver, esc){
-		switch(typeof text){
-			case 'string': break;
-			case 'number':
-			case 'null':
-			case 'boolean': return text;
-			case 'object':
-				switch(nameOf(text)){
-					case 'String': break;
-					case 'Number': return text;
-				}
-			case 'undefined':
-			default:
-				println('parse error>引数が不正');
-				return;
-		}
+	return function(text, reviver, opts){
+		text = new String(text);
 		function walk(obj, key, path){
 			var value = obj[key];
 			if(typeof value == 'object'){
@@ -350,17 +442,35 @@ JSON.parse = (function(){
 			}
 			return reviver.call(obj, key, value, path);
 		}
-		esc = isUndefined(esc) || isNull(esc) ? true : esc;
-		if(!esc){
-			if(this.check(text)){
-				text = text.replace(/\\/g, '\\\\');
+		opts = nameOf(opts) == 'Object' ? opts : {};
+		F.opts = {
+			decode: opts.hasKey('decode') ? opts.decode : true,
+			eval: opts.hasKey('eval') ? opts.eval : false,
+			relaxed: opts.hasKey('relaxed') ? opts.relaxed : false
+		};
+		if(F.opts.eval){
+			if(JSON.check(text)){
+				if(opts.decode){
+					//eval()で消えてしまう文字と\nを置換
+					text = text.replace(/\\([\/n]|u[0-9a-fA-F]{4})/g, function(a, b){
+						switch(b[0]){
+							case 'u': return '\' + a;
+							case '/': return b;
+							case 'n': return F.Esc_char.n;
+							default: return a;
+						}
+					});
+				}else{
+					text = text.replace(/\\/g, '\\\\');
+				}
 				var r = eval('(' + text + ')');
 				return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
 			}
-			println('parse error>JSON文字列ではない');
-			return false;
+			println('JSON.parse error>JSON文字列ではない');
+			return;
 		}
-		var Str = /^[\s -~]+$/.test(text) ? new StringBuffer(text) : new String(text);
+		//ASCIIのみならStringBuffer 違うならStringを使う
+		var Str = /^[\s -~]+$/.test(text) ? new StringBuffer(text) : text;
 		Str.index = -1;
 		Str.end = Str.length - 1;
 		//次の文字を取得する lenを指定した場合はlenの長さの文字列を取得
@@ -378,20 +488,23 @@ JSON.parse = (function(){
 				switch(r = this[this.index]){
 					case ' ':
 					case F.Esc_char.t:
-					case F.Esc_char.n:
 					case F.Esc_char.r:
+					case F.Esc_char.n:
 						continue;
 					default: return r;
 				}
 			}
 			return '';
 		};
-		
-		var r;
+
 		try{
 			Str.nextStr();
-			r = F.parseValue(Str);
-			if(Str.nextStr()){ //残りが空白のみなら空文字になる
+			var r = F.parseValue(Str);
+			var s = Str.nextStr();
+			if(s == '/'){
+				s = parseComment(Str);
+			}
+			if(s){ //残りが空白のみなら空文字になる
 				F.err('不正な文字列', Str);
 			}
 		}catch(e){
@@ -424,12 +537,15 @@ JSON.stringify = (function(){
 		toUnicode: function(s){
 			var sb = new StringBuffer(s);
 			var sb_len = sb.length;
-			var len = 0;
 			var result = '';
-			var n1, n2, n3, n4;
+			var len, n1, n2, n3, n4, unicode;
 			for(var i = 0; i < sb_len; i += len){
 				n1 = sb.charCodeAt(i);
-				if (n1 <= 0x7f) {
+				if(n1 <= 0x1f){
+					len = 1;
+					unicode = n1;
+				}
+				else if (n1 <= 0x7f) {
 					len = 1;
 					result += sb[i];
 					continue;
@@ -480,8 +596,8 @@ JSON.stringify = (function(){
 			switch(nameOf(value) || typeof value){
 				case 'string':
 				case 'String':
-					var tmp = opts.esc ? _escape(value) : value;
-					return opts.strQuot[0] + tmp + opts.strQuot[1];
+					var tmp = opts.encode ? _escape(value) : value;
+					return opts.strQuote[0] + tmp + opts.strQuote[1];
 				case 'Object':
 					var s = [], sp = _space + p.indent, v, key;
 					var i;
@@ -492,9 +608,9 @@ JSON.stringify = (function(){
 								if(value.hasKey(key)){
 									v = toStr(value, key, sp, path + '["' + key + '"]');
 									if(!isUndefined(v)){
-										s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+										s.add(opts.keyQuote[0] + (opts.encode ? _escape(key) : key) + opts.keyQuote[1] + opts.colon + v);
 									}else if(!opts.skipFunc && typeof value[key] == 'function'){
-										s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + 'null');
+										s.add(opts.keyQuote[0] + (opts.encode ? _escape(key) : key) + opts.keyQuote[1] + opts.colon + 'null');
 									}
 								}
 							}
@@ -502,7 +618,7 @@ JSON.stringify = (function(){
 							for(key in value){
 								v = toStr(value, key, sp, path + '["' + key + '"]');
 								if(!isUndefined(v)){
-									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+									s.add(opts.keyQuote[0] + (opts.encode ? _escape(key) : key) + opts.keyQuote[1] + opts.colon + v);
 								}
 							}
 							//function型のメンバ
@@ -510,7 +626,7 @@ JSON.stringify = (function(){
 								var methods = value.getMethods(), key;
 								for(var i = 0; i < methods.length; i++){
 									key = methods[i];
-									if(!Object.hasKey(key)) s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + 'null');
+									if(!Object.hasKey(key)) s.add(opts.keyQuote[0] + (opts.encode ? _escape(key) : key) + opts.keyQuote[1] + opts.colon + 'null');
 								}
 							}
 						}
@@ -547,7 +663,7 @@ JSON.stringify = (function(){
 							if(typeof value[key] != 'undefined'){
 								v = toStr(value, key, sp, path + '["' + key + '"]');
 								if(!isUndefined(v)){
-									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+									s.add(opts.keyQuote[0] + (opts.encode ? _escape(key) : key) + opts.keyQuote[1] + opts.colon + v);
 								}
 							}
 						}
@@ -556,7 +672,7 @@ JSON.stringify = (function(){
 							if(typeof value[key] != 'undefined'){
 								v = toStr(value, key, sp, path + '["' + key + '"]');
 								if(!isUndefined(v)){
-									s.add(opts.keyQuot[0] + (opts.esc ? _escape(key) : key) + opts.keyQuot[1] + opts.colon + v);
+									s.add(opts.keyQuote[0] + (opts.encode ? _escape(key) : key) + opts.keyQuote[1] + opts.colon + v);
 								}
 							}
 						}
@@ -565,8 +681,8 @@ JSON.stringify = (function(){
 					return '{' + sp + s.join(opts.comma + sp) + p.n + _space + '}';
 			}
 			if(typeof value.toString == 'function'){
-				var tmp = opts.esc ? _escape(value.toString()) : value.toString();
-				return opts.strQuot[0] + tmp + opts.strQuot[1];
+				var tmp = opts.encode ? _escape(value.toString()) : value.toString();
+				return opts.strQuote[0] + tmp + opts.strQuote[1];
 			}
 			return '{}';
     	
@@ -583,15 +699,6 @@ JSON.stringify = (function(){
 		opts: null
 	};
 	return function (value, replacer, space, opts){
-		if(nameOf(opts) != 'Object') opts = {};
-		opts = {
-			esc: opts.hasKey('esc') ? opts.esc : true,
-			keyQuot: opts.hasKey('keyQuot') && nameOf(opts.keyQuot) == 'Array' && opts.keyQuot.length >= 2 ? opts.keyQuot : ['"', '"'],
-			strQuot: opts.hasKey('strQuot') && nameOf(opts.strQuot) == 'Array' && opts.strQuot.length >= 2 ? opts.strQuot : ['"', '"'],
-			colon: opts.hasKey('colon') && (nameOf(opts.colon) == 'String' || typeof opts.colon == 'string') ? opts.colon : ':',
-			comma: opts.hasKey('comma') && (nameOf(opts.comma) == 'String' || typeof opts.comma == 'string') ? opts.comma : ',',
-			skipFunc: opts.hasKey('skipFunc') ? opts.skipFunc : true
-		};
 		var n = '', indent = '';
 		switch(nameOf(space) || typeof space){
 			case 'string':
@@ -602,6 +709,16 @@ JSON.stringify = (function(){
 		if(indent != ''){
 			n = "\n";
 		}
+
+		if(nameOf(opts) != 'Object') opts = {};
+		F.opts = {
+			encode: opts.hasKey('encode') ? opts.encode : true,
+			keyQuote: opts.hasKey('keyQuote') && nameOf(opts.keyQuote) == 'Array' && opts.keyQuote.length >= 2 ? opts.keyQuote : ['"', '"'],
+			strQuote: opts.hasKey('strQuote') && nameOf(opts.strQuote) == 'Array' && opts.strQuote.length >= 2 ? opts.strQuote : ['"', '"'],
+			colon: opts.hasKey('colon') && (nameOf(opts.colon) == 'String' || typeof opts.colon == 'string') ? opts.colon : indent ? ': ' : ':',
+			comma: opts.hasKey('comma') && (nameOf(opts.comma) == 'String' || typeof opts.comma == 'string') ? opts.comma : ',',
+			skipFunc: opts.hasKey('skipFunc') ? opts.skipFunc : true
+		};
 		F.p = {
 			replacer: replacer,
 			space: space,
@@ -609,14 +726,13 @@ JSON.stringify = (function(){
 			indent: indent,
 			repType: nameOf(replacer) || typeof replacer
 		};
-		F.opts = opts;
 		var r = F.toStr({'': value}, '', '', '');
 		F.p = null;
 		F.opts = null;
 		return r;
 	};
 })();
-JSON.load = function(path, reviver, esc){
+JSON.load = function(path, reviver, opts){
 	try{
 		if(!(new File(path).exists())){
 			throw '指定されたパスが存在しません';
@@ -627,7 +743,7 @@ JSON.load = function(path, reviver, esc){
 		for(var i = sl.length-1; i >= 0; i--){
 			if(/^\s*\/\//.test(sl[i])) sl.delete(i);
 		}
-		var r = this.parse(sl.text, reviver, esc);
+		var r = this.parse(sl.text, reviver, opts);
 	}catch(e){
 		println('JSON.load error>' + e);
 		return;//undefinedを返す
@@ -638,7 +754,7 @@ JSON.save = function(path, value, replacer, space, opts){
 	try{
 		space = isUndefined(space) || isNull(space) ? "\t" : space;
 		opts = nameOf(opts) == 'Object' ? opts : {};
-		opts.esc = true;//コメントの誤認識を防ぐため文字列を改行させない
+		opts.encode = true;//コメントの誤認識を防ぐため文字列を改行させない
 		var json = this.stringify(value, replacer, space, opts);
 		var sl = new Strings(json);
 		sl.saveToFile(path);
