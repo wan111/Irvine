@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=PornHub.com
-//version=0.23
+//version=0.24
 //hint=http://(www\.)?pornhub\.com/view_video\.php\?viewkey=
 //match=http://(www\.)?pornhub\.com/view_video\.php\?viewkey=
 //author=wan
@@ -63,7 +63,7 @@ function(){
 		return plaintext;
 	};
 	
-	if(http.data.match('flashvars = {([^\}]+)')){
+	if(http.data.match(/'flashvars'\s*:\s*\{([^\}]+)/)){
 		var flashvars = RegExp.$1;
 		var encrypted = false;
 		if(flashvars.match('"encrypted":true')) encrypted = true;
