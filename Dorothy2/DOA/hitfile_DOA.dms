@@ -1,0 +1,56 @@
+//Dorothy2
+//caption=hitfile.net_DOA
+//version=0.1
+//hint=
+//match=http://hitfile.net/(download/free/)?\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+	common_load('http', 'utf8');
+	
+this.main = function(url){
+	/^http:\/\/hitfile.net\/(download\/free\/)?(\w+)/.test(url);
+	var id = RegExp.$2;
+	url = new URL('http://hitfile.net/download/free/' + id);
+	var http = new Http();
+	http.setRequestHeader('Cookie', 'user_lang=en');
+	if(!http.get(url.url)){
+		if(http.code == 302 && http.location == url.expand('/' + id)){
+			var url = url.expand('/turbolight?file=' + id);
+			http.autoRedirect = true;
+			if(http.get(url) && /name="payment" value="free disabled"/.test(http.data)){
+				DOA.status = DOA_NG;
+				DOA.comment = 'premium only';
+				return;
+			}
+			DOA.status = DOA_UK;
+			return;
+		}
+		DOA.status = DOA_BS;
+		DOA.comment = http.code;
+		return;
+	}
+	if(/File was not found. It could possibly be deleted./.test(http.data) ||
+	   /File not found. Probably it was deleted./.test(http.data)){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$0;
+		return;
+	}
+	if(/Download file(\s|&nbsp;|<br>)*<span class=[^>]+>([^<]+)/.test(http.data)){
+		DOA.status = DOA_OK;
+		DOA.name = new Utf8(RegExp.$2).toSJIS();
+		if(/File size:<\/b>\s*([^<]+)\s*</.test(http.data)){
+			DOA.size = RegExp.$1;
+		}
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+this._ = function(){
+	
+};
+}

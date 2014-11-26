@@ -1,0 +1,122 @@
+//Dorothy2
+//caption=hitfile.net_w
+//version=0.1
+//hint=
+//match=http://hitfile.net/(download/free/)?\w+
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('http', 'utf8', 'jinput', 'l_sleep', 'character_references');
+	/^http:\/\/hitfile.net\/(download\/free\/)?(\w+)/.test(urlinfo.url);
+	var id = RegExp.$2;
+	var url = new URL('http://hitfile.net/download/free/' + id);
+	
+	var http = new Http();
+	http.setRequestHeader('Cookie', 'user_lang=en');
+	
+	if(!http.get(url.url)){
+		if(http.code == 302 && http.location == url.expand('/' + id)){
+			var url = url.expand('/turbolight?file=' + id);
+			http.autoRedirect = true;
+			if(http.get(url) && /name="payment" value="free disabled"/.test(http.data)){
+				println('error>premium only');
+			}
+			exit();
+		}
+		http.retry_or_die('error>' + http.code);
+	}
+	if(/File was not found. It could possibly be deleted./.test(http.data) ||
+	   /File not found. Probably it was deleted./.test(http.data)){
+		println(RegExp.$0);
+		exit();
+	}
+	if(!/Download file(\s|&nbsp;|<br>)*<span class=[^>]+>([^<]+)/.test(http.data)){
+		println('error>ファイル名が見つからない');
+		exit();
+	}
+	var name = new Utf8(RegExp.$2).toSJIS();
+
+	if(/You have reached the limit of connections/.test(http.data)){
+		println(RegExp.$0);
+		if(!/limit:\s*(\d+)/.test(http.data)){
+			println('waitが不明');
+			exit();
+		}
+		var wait = RegExp.$1;
+		println('wait: ' + wait + 'sec');
+		l_sleep(wait * 1000);
+		return retry();
+	}
+	for(var flag = false;; flag = true){
+		if(!/img alt="Captcha" src="([^"]+)"/.test(http.data)){
+			if(flag) break;
+			println('error>Captcha imgが見つからない');
+			http.capture();
+			exit();
+		}
+		var imgurl = RegExp.$1;
+		if(flag) println('Captcha 不正解');
+		if(!/value\s*=\s*'([^']*)'\s*name\s*=\s*'captcha_type'/.test(http.data)){
+			println('captcha_typeが見つからない');
+			exit();
+		}
+		var cap_type = RegExp.$1;
+		if(!/value\s*=\s*'([^']*)'\s*name\s*=\s*'captcha_subtype'/.test(http.data)){
+			println('captcha_subtypeが見つからない');
+			exit();
+		}
+		var cap_subtype = RegExp.$1;
+		if(!http.get(imgurl)){
+			println('Captcha画像が取得できなかった');
+			http.retry_or_die();
+		}
+		
+		var htaOpt = {
+			title: Dorothy.matchFile,
+			image: http.data,
+			height: 180
+		};
+    	
+		var code = (new JInput ()).inputText (htaOpt);
+		if (code == null) {
+			exit();
+		}
+		
+		var postdata = 'captcha_type=' + cap_type + '&captcha_subtype=' + cap_subtype + '&captcha_response=' + code;
+		println('post data>' + postdata);
+		if(!http.post(url.url + '#', postdata)){
+			http.retry_or_die('post error>' + http.responseHeader.code);
+		}
+	}
+
+	if(!/minLimit\s*:\s*(\d+(\s*\d+\s*[-+*\/]\s*\d+)*)\s*,/.test(http.data)){
+		println('minLimitが見つからない');
+		exit();
+	}
+	var wait = eval(RegExp.$1);
+
+	println('wait: ' + wait + 'sec');
+	l_sleep(wait *  1000);
+	
+	var url3 = new URL('http://hitfile.net/download/getLinkTimeout/' + id);
+
+	http.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+	if(!http.get(url3.url)){
+		http.retry_or_die();
+	}
+	
+	if(!/<h1><a href='([^']+)'/.test(http.data)){
+		println('DLリンクが見つかりません');
+		http.capture();
+		http.retry_or_die();
+	}
+	var url4 = new URL(http.expandUrl(RegExp.$1));
+	Dorothy.fileName = character_references(name);
+	urlinfo.url = url4.url;
+	headers.host = url4.host;
+	headers.Cookie = http.responseHeader.cookie.data;
+	headers.referer = url.url;
+}
