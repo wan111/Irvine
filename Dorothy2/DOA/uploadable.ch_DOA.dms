@@ -1,0 +1,38 @@
+//Dorothy2
+//caption=uploadable.ch_DOA
+//version=0.1
+//hint=
+//match=http://(www.)?uploadable.ch/file/\w+
+//author=wan
+//path=DOA
+//priority=500
+//end
+function(){
+	common_load('http');
+this.main = function(url){
+	var http = new Http();
+	if(!http.get(url)){
+		DOA.status = DOA_BS;
+		DOA.comment = http.code;
+		return;
+	}
+	if(/<div id="file_name" title="[^"]+">([^<]+)<span class="filename_normal">\(([^\)]+)\)/.test(http.data)){
+		DOA.status = DOA_OK;
+		DOA.name = RegExp.$1;
+		DOA.size = RegExp.$2;
+		return;
+	}
+	if(/File not available(<\/h1>)?\s*The file could not be found.\s*Please check the download link./.test(http.data) ||
+	   /This file is no longer available./.test(http.data)){
+		DOA.status = DOA_NG;
+		DOA.comment = RegExp.$0.replace(/<[^>]+>/g, ' ');
+		return;
+	}
+	DOA.status = DOA_UK;
+};
+
+
+this._ = function(){
+	
+};
+}
