@@ -1,0 +1,622 @@
+//Dorothy2
+//caption=JSON spec
+//version=0.50
+//hint=http://yasmine.dorothy.test/common/spec/json_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+
+common_load('json');
+
+function _undefined(){}
+describe('JSON Object', function(){
+	expect(nameOf(JSON)).toBe('JSON');
+});
+
+var mode = ['', 'eval', 'relaxed'];
+for(var i in mode){
+	var opts = {eval: false, relaxed: false};
+	if(mode[i]) opts[mode[i]] = true;
+	describe('JSON.parse ' + mode[i], function(){
+		describe('JSONValues', function(){
+			cases([
+				['"a b c"', 'a b c'],
+				['""', ''],
+				['123', 123],
+				['true', true],
+				['false', false],
+				['null', null]
+			]).it('primitive values', function(text, value){
+				expect(JSON.parse(text, null, opts)).toBe(value);
+			});
+	
+			cases([
+				["0", 0],
+				["-0", 0],
+				["123", 123],
+				["-123", -123],
+				["1.23", 1.23],
+				["-1.23", -1.23],
+				["0.0", 0],
+				["-0.0", 0],
+				["100.00", 100],
+				["-100.00", -100],
+				["0e2", 0],
+				["-0e2", 0],
+				["123E+2", 12300],
+				["-123e+2", -12300],
+				["1.23e002", 123],
+				["-1.23e+002", -123],
+				["0.0e2", 0],
+				["-0.0e2", 0],
+				["100.00E-2", 1],
+				["-100.00e-002", -1]
+			]).it('JSONNumbers', function(text, value){
+				expect(JSON.parse(text, null, opts)).toBe(value);
+			});
+			cases([
+				[' "abc" ', 'abc'],
+				[' true', true],
+				['false ', false],
+				[' null ', null]
+			]).it('Whitespace', function(text, value){
+				expect(JSON.parse(text, null, opts)).toBe(value);
+			});
+			cases([
+				['\"', '"'],
+				['\\', '\'],
+				['\/', '/'],
+				['\b', "\b"],
+				['\f', "\f"],
+				['\n', String.fromCharCode(0x0A)],
+				['\r', "\r"],
+				['\t', "\t"],
+				['\u0000', String.fromCharCode(0)],
+				['\u001F', String.fromCharCode(0x1F)],
+				['\u00A9', String.fromCharCode(0xC2, 0xA9)]
+			]).it('JSONString Escape Sequences', function(text, value){
+				if(opts.eval && text[1] == 'u'){
+					expect(JSON.parse('"' + text + '"', null, opts)).toBe(text);
+				}else{
+					expect(JSON.parse('"' + text + '"', null, opts)).toBe(value);
+				}
+			});
+			cases([
+				['[]', []],
+				['{}', {}],
+				['{"":null}', {"": null}],
+				['[{}]', [{}]],
+				['{"a":1, "b" : "aa", "c":true,"d":false,"e":null, "f":[]}', {a:1, b:"aa", c:true, d:false, e:null, f:[]}],
+				['[1,"a" , true, false, null, {}]', [1, "a", true, false, null, {}]],
+				['{"a":{"b":[[true], {"c": 1}]}}', {a:{b:[[true], {c:1}]}}],
+				['[{"a":[null]}, [[1]]]', [{a:[null]}, [[1]]]],
+				['{"a\tb":"\r"}', {"a\tb": "\r"}]
+			]).it('object', function(text, value){
+				expect(JSON.parse(text, null, opts)).toEqual(value);
+			});
+		});
+		describe('Bad JSONValues', function(){
+			it('throwError', function(){
+				var text = _undefined();
+				opts.throwError = true;
+				expect(function(){JSON.parse(text, null, opts);}).toThrow();
+				opts.throwError = false;
+				expect(JSON.parse(text, null, opts)).toBeUndefined();
+			});
+			opts.throwError = true;
+			cases([
+				"\b",
+				"\f",
+				String.fromCharCode(0x0A),
+				"\r",
+				"\t"
+			]).it('Control characters', function(text){
+				if(opts.relaxed){
+					expect(JSON.parse('"' + text + '"', null, opts)).toBe(text);
+				}else{
+					expect(function(){JSON.parse('"' + text + '"', null, opts);}).toThrow();
+				}
+			});
+			cases([
+				'"aaa"bbb"',
+				'"\z"',
+				'"\u00A"'
+			]).it('Bad Escape Sequences', function(text){
+				expect(function(){JSON.parse(text, null, opts);}).toThrow();
+			});
+			cases([
+				'tru e',
+				'fal se',
+				'n ull',
+				'12 3'
+			]).it('Bad Whitespace', function(text){
+				expect(function(){JSON.parse(text, null, opts);}).toThrow();
+			});
+			cases([
+				'00',
+				'0123',
+				'00.1',
+				'123e',
+				'123e-',
+				'123e1.2',
+				'123e.2',
+				'123.',
+				'.123',
+				'1.2.3',
+				'e2',
+				'-e2'
+			]).it('Bad Numbers', function(text){
+				if(opts.relaxed && text[0] == '0'){
+					expect(JSON.parse(text, null, opts)).toBe(parseFloat(text));
+				}else{
+					expect(function(){JSON.parse(text, null, opts);}).toThrow();
+				}
+			});
+			cases([
+				'{[]}',
+				'{"a"}',
+				'{"a":1 "b":2}',
+				"{'a':1}",
+				'{/*a*/"a":1}',
+				'{"a" 1}',
+				'[,1]',
+				'[1 "a"]',
+				'[[]',
+				'{"a":{}'
+				
+			]).it('Bad object', function(text){
+				if(!opts.relaxed || !(text[1] == "'" || text[1] == '/')){
+					expect(function(){JSON.parse(text, null, opts);}).toThrow();
+				}
+			});
+		});
+		describe('reviver', function(){
+			it('replace value', function(){
+				var text = '{"a": 1, "b": 2}';
+				var rev = function(k, v){return k == 'b' ? null : v;};
+				expect(JSON.parse(text, rev, opts)).toEqual({"a": 1, "b": null});
+				rev = function(k, v){return typeof v == 'number' ? ++v : v;};
+				expect(JSON.parse(text, rev, opts)).toEqual({"a": 2, "b": 3});
+			});
+			it('replace value by undefined', function(){
+				var text = '{"a": 1, "b": 2}';
+				var rev = function(k, v){if(k != 'b') return v;};
+				expect(JSON.parse(text, rev, opts)).toEqual({"a": 1});
+				text = '[0, 1, 2]';
+				rev = function(k, v){if(k != 1) return v;};
+				expect(JSON.parse(text, rev, opts)).toEqual([0, _undefined(), 2]);
+			});
+			it('order(beginning with the most nested property)', function(){
+				var text = '{"a": [{"b": {"c":1}}, 2]}';
+				var keys = [];
+				var rev = function(k, v){keys.push(k); return v;};
+				JSON.parse(text, rev, opts);
+				expect(keys).toEqual(["c", "b", "0", "1", "a", ""]);
+			});
+			it('check this', function(){
+				var text = '{"a": {"b": [1, 2]}}';
+				var value = {"a": {"b": [1, 2]}};
+				var rev = function(k, v){return this[k] === v ? v : null;};
+				expect(JSON.parse(text, rev, opts)).toEqual({"a": {"b": [1, 2]}});
+			});
+			it('check root(wrapper object)', function(){
+				var text = '{"a":1}';
+				var root;
+				var rev = function(k, v){if(k == ''){root = this;} return v;};
+				var o = JSON.parse(text, rev, opts);
+				expect(root).toEqual({"": {"a": 1}});
+				expect(o).toBe(root[""]);
+			});
+			it('check path(non-standard)', function(){
+				var text = '{"a": [{"b":1}]}';
+				var paths = [];
+				var rev = function(k, v, path){paths.push(path); return v;};
+				JSON.parse(text, rev, opts);
+				expect(paths).toEqual(['["a"][0]["b"]', '["a"][0]', '["a"]', '']);
+			});
+		});
+		if(opts.relaxed){
+			describe('Relaxed Mode', function(){
+				it('Single Line Comment, Multi-Line Comment', function(){
+					var text = [
+					'//comment',
+					'/*a',
+					'b',
+					'c',
+					'd*/',
+					'{//aaa',
+					'	/* bb*/"a"/*aa */:/* a*/ 1,//a',
+					'	///*',
+					'	"b":/* */true,',
+					'	//*/',
+					'	//"c": null,',
+					'	"d": "aa"',
+					'} //aaaa',
+					' '
+					].join("\n");
+					var value = {"a": 1, "b": true, "d": "aa"};
+					expect(JSON.parse(text, null, opts)).toEqual(value);
+				});
+				cases([
+					'111/* */222',
+					'1/* ',
+					'1/ * */',
+					'1/ /'
+				]).it('Bad Comment', function(text){
+					expect(function(){JSON.parse(text, null, opts);}).toThrow();
+				});
+				cases([
+					"\b",
+					"\f",
+					String.fromCharCode(0x0A),
+					"\r",
+					"\t"
+				]).it('Control characters', function(text){
+					expect(JSON.parse('"' + text + '"', null, opts)).toBe(text);
+				});
+				it('leading zero', function(){
+					expect(JSON.parse('0123', null, opts)).toBe(123);
+				});
+				it('string in single qutoes', function(){
+					var text = 'aa"bb\b\f\t\n\r';
+					expect(JSON.parse("'" + text + "'", null, opts)).toBe(text);
+				});
+				cases([
+					["{'#_$abc09': 1}", {'#_$abc09': 1}],
+					['{_$abc09: 2}', {_$abc09: 2}]
+				]).it('Property name', function(text, value){
+					expect(JSON.parse(text, null, opts)).toEqual(value);
+				});
+				cases([
+					"{'_$abc\\'09': 3}",
+					'{#_$abc09: 4}'
+				]).it('Bad Property name', function(text){
+					expect(function(){JSON.parse(text, null, opts);}).toThrow();
+				});
+			});
+		}
+	});
+}
+
+describe('JSON.stringify', function(){
+	cases([
+		['', '""'],
+		['aaa', '"aaa"'],
+		[0, '0'],
+		[123, '123'],
+		[-123, '-123'],
+		[0.5, '0.5'],
+		[-0.5, '-0.5'],
+		[Number.POSITIVE_INFINITY, 'null'],
+		[Number.NEGATIVE_INFINITY, 'null'],
+		[1.7E309, 'null'],
+		[true, 'true'],
+		[false, 'false'],
+		[null, 'null']
+	]).it('values', function(value, text){
+		expect(JSON.stringify(value)).toBe(text);
+	});
+	cases([
+		['"', '"\""'],
+		["\b", '"\b"'],
+		["\f", '"\f"'],
+		[String.fromCharCode(0x0A), '"\n"'],
+		["\r", '"\r"'],
+		["\t", '"\t"'],
+		[String.fromCharCode(0x00), '"\u0000"'],
+		[String.fromCharCode(0x1F), '"\u001F"'],
+		[' ', '" "']
+	]).it('escape sequences', function(value, text){
+		expect(JSON.stringify(value)).toBe(text);
+	});
+	it('Unicode Escape Sequence(non-standard)', function(){
+		var value = String.fromCharCode(0xC2, 0xA9);
+		expect(JSON.stringify(value)).toBe('"\u00A9"');
+	});
+	cases([
+		[new String('aaa'), '"aaa"'],
+		[new Number(123), '123'],
+		[new Boolean(true), 'true']
+	]).it('wrapper object', function(value, text){
+		expect(JSON.stringify(value)).toBe(text);
+	});
+	cases([
+		[ [], '[]'],
+		[ {}, '{}'],
+		[ {"": null}, '{"":null}'],
+		[ [{}], '[{}]'],
+		[ {a:1, b:"aa", c:true, d:false, e:null, f:[]}, '{"a":1,"b":"aa","c":true,"d":false,"e":null,"f":[]}'],
+		[ [1, "a", true, false, null, {}], '[1,"a",true,false,null,{}]'],
+		[ {a:{b:[[true], {c:1}]}}, '{"a":{"b":[[true],{"c":1}]}}'],
+		[ [{a:[null]}, [[1]]], '[{"a":[null]},[[1]]]'],
+		[ {"a\tb": "\r"}, '{"a\tb":"\r"}']
+	]).it('object', function(value, text){
+		expect(JSON.parse(text, null, opts)).toEqual(value);
+	});
+	cases([
+		[_undefined(), _undefined()],
+		[{a: 1, b: _undefined()}, '{"a":1}'],
+		[[1, _undefined()], '[1,null]']
+	]).it('undefined', function(value, text){
+		expect(JSON.stringify(value)).toBe(text);
+	});
+	cases([
+		[function(){}, _undefined()],
+		[{a:1, b:function(){}}, '{"a":1}'],
+		[[1, function(){}], '[1,null]']
+	]).it('function', function(value, text){
+		expect(JSON.stringify(value)).toBe(text);
+	});
+	cases([
+		[new Strings("aaa\nbbb\nccc"), '"aaa\r\nbbb\r\nccc\r\n"'],
+		[new StringBuffer("aaabbbccc"), '"aaabbbccc"']
+	]).it('Strings, StringBuffer(non-standard)', function(value, text){
+		expect(JSON.stringify(value)).toBe(text);
+	});
+	it('Date', function(){
+		var d = new Date(0);
+		expect(JSON.stringify(d)).toBe('"1970-01-01T00:00:00.000Z"');
+	});
+	describe('circular reference(cyclic object)', function(){
+		var cyclic = {
+			a: {b: null},
+			c: {d: {e: null}},
+			f: [null],
+			g: [[null]]
+		};
+		cyclic.a.b = cyclic.a;
+		cyclic.c.d.e = cyclic.c;
+		cyclic.f[0] = cyclic.f;
+		cyclic.g[0][0] = cyclic.g;
+	
+		cases([
+			cyclic.a,
+			cyclic.c,
+			cyclic.f,
+			cyclic.g
+		]).it('throw Error(standard)', function(value){
+			expect(function(){JSON.stringify(value, null, null, {throwError: true});}).toThrow();
+		});
+		cases([
+			[cyclic.a, '{"b":{}}'],
+			[cyclic.c, '{"d":{"e":{}}}'],
+			[cyclic.f, '[[]]'],
+			[cyclic.g, '[[[]]]']
+		]).it('convert cyclic object to {} or [] (non-standard))', function(value, text){
+			expect(JSON.stringify(value)).toBe(text);
+		});
+
+		cyclic.a.b = null;
+		cyclic.c.d.e = null;
+		cyclic.c.d = null;
+		cyclic.f[0] = null;
+		cyclic.g[0][0] = null;
+		cyclic = null;
+	});
+	it('toJSON', function(){
+		obj={
+			a: 1,
+			b: {
+				toJSON: function(k){
+					if(k == 'b' && this == obj.b) return 'abc';
+				}
+			}
+		};
+		expect(JSON.stringify(obj)).toBe('{"a":1,"b":"abc"}');
+	});
+	describe('replacer function', function(){
+		it('replace value', function(){
+			var value = {"a": 1, "b": 2};
+			var rep = function(k, v){return k == 'b' ? null : v;};
+			expect(JSON.stringify(value, rep)).toBe('{"a":1,"b":null}');
+		});
+		it('replace value by object', function(){
+			var value = {"a": 1, "b": 2};
+			var rep = function(k, v){return k == 'b' ? [1, 'a', true] : v;};
+			expect(JSON.stringify(value, rep)).toBe('{"a":1,"b":[1,"a",true]}');
+		});
+		it('replace value by undefined', function(){
+			var value = {"a": 1, "b": 2};
+			var rep = function(k, v){if(k != 'b') return v;};
+			expect(JSON.stringify(value, rep)).toBe('{"a":1}');
+			value = [0, 1, 2];
+			rep = function(k, v){if(k != 1) return v;};
+			expect(JSON.stringify(value, rep)).toBe('[0,null,2]');
+		});
+		it('replace value by function', function(){
+			var value = {"a": 1, "b": 2};
+			var rep = function(k, v){return k == 'b' ? function(){} : v;};
+			expect(JSON.stringify(value, rep)).toBe('{"a":1}');
+			value = [0, 1, 2];
+			rep = function(k, v){return k == 1 ? function(){} : v;};
+			expect(JSON.stringify(value, rep)).toBe('[0,null,2]');
+		});
+		it('replace function by null', function(){
+			var value = {"a": 1, "b": function(){}};
+			var rep = function(k, v){return typeof v == 'function' ? null : v;};
+			expect(JSON.stringify(value, rep)).toBe('{"a":1,"b":null}');
+		});
+		it('replace root object', function(){
+			var value = {"a": 1, "b": 2};
+			var rep = function(k, v){return k == '' ? 'root' : v;};
+			expect(JSON.stringify(value, rep)).toBe('"root"');
+		});
+		it('order(beginning with the wrapper object)', function(){
+			var value = {"a": [{"b": {toJSON: function(){return {"c":1};} }}, 2]};
+			var keys = [];
+			var rep = function(k, v){keys.push(k); return v;};
+			JSON.stringify(value, rep);
+			expect(keys).toEqual(["", "a", "0", "b", "c", "1"]);
+		});
+		it('check this', function(){
+			var value = {"a": {"b": [1, 2]}};
+			var rep = function(k, v){return this[k] === v ? v : null;};
+			expect(JSON.stringify(value, rep)).toEqual('{"a":{"b":[1,2]}}');
+		});
+		it('check root(wrapper object)', function(){
+			var value = {"a":1};
+			var root;
+			var rep = function(k, v){if(k == ''){root = this;} return v;};
+			JSON.stringify(value, rep);
+			expect(root[""]).toBe(value);
+		});
+		it('check path(non-standard)', function(){
+			var value = {"a": [{"b":1}]};
+			var paths = [];
+			var rep = function(k, v, path){paths.push(path); return v;};
+			JSON.stringify(value, rep);
+			expect(paths).toEqual(['', '["a"]', '["a"][0]', '["a"][0]["b"]']);
+		});
+	});
+	describe('replacer array', function(){
+		it('do nothing when value is array', function(){
+			var value = ["a", "b", "c"];
+			rep = [0, "a"];
+			expect(JSON.stringify(value, rep)).toBe('["a","b","c"]');
+		});
+		it('white list', function(){
+			var value = {"a": 1, "b": 2, "c": 3};
+			var rep = ["a", "c"];
+			expect(JSON.stringify(value, rep)).toBe('{"a":1,"c":3}');
+		});
+		it('sort', function(){
+			var value = {"a": 1, "b": 2, "c": 3};
+			var rep = ["c", "b", "a"];
+			expect(JSON.stringify(value)).toBe('{"a":1,"b":2,"c":3}');
+			expect(JSON.stringify(value, rep)).toBe('{"c":3,"b":2,"a":1}');
+		});
+		it('type', function(){
+			var value = {"1":1, "a":2, "true":3, "null":4, "undefined":5};
+			var rep = [1, "a", true, null, _undefined()];
+			expect(JSON.stringify(value, rep)).toBe('{"1":1,"a":2}');
+		});
+	});
+	describe('space', function(){
+		var lf = String.fromCharCode(0x0A);
+		it('string', function(){
+			var space = '　';
+			var value = {"a": 1, "b": {"c": true, "d": [false, null]}};
+			var text = [
+				'{',
+				'_"a": 1,',
+				'_"b": {',
+				'__"c": true,',
+				'__"d": [',
+				'___false,',
+				'___null',
+				'__]',
+				'_}',
+				'}'
+			].join(lf);
+			expect(JSON.stringify(value, null, space)).toBe(text.replace(/_/g, space));
+			space = new String(space);
+			expect(JSON.stringify(value, null, space)).toBe(text.replace(/_/g, space));
+			expect(JSON.stringify(value, null, "")).toBe('{"a":1,"b":{"c":true,"d":[false,null]}}');
+			expect(JSON.stringify(value, null, space.multiply(20))).toBe(text.replace(/_/g, space.multiply(10)));
+		});
+		it('number', function(){
+			var space = 1;
+			var value = {"a": 1, "b": {"c": true, "d": [false, null]}};
+			var text = [
+				'{',
+				'_"a": 1,',
+				'_"b": {',
+				'__"c": true,',
+				'__"d": [',
+				'___false,',
+				'___null',
+				'__]',
+				'_}',
+				'}'
+			].join(lf);
+			expect(JSON.stringify(value, null, space)).toBe(text.replace(/_/g, ' '.multiply(space)));
+			space = new Number(space);
+			expect(JSON.stringify(value, null, space)).toBe(text.replace(/_/g, ' '.multiply(space)));
+			expect(JSON.stringify(value, null, 0)).toBe('{"a":1,"b":{"c":true,"d":[false,null]}}');
+			expect(JSON.stringify(value, null, 20)).toBe(text.replace(/_/g, ' '.multiply(10)));
+		});
+		it('else', function(){
+			var space = true;
+			var value = {"a": 1, "b": 2};
+			var text = '{"a":1,"b":2}';
+			expect(JSON.stringify(value, null, space)).toBe(text);
+		});
+	});
+	it('IrvineFolderData', function(){
+		common_load('DorothyEx');
+		expect(function(){JSON.stringify(folderdata);}).not.toThrow();
+	});
+	it('opts(non-standard)', function(){
+		var opts = {
+			encode: false,
+			keyQuotes: ['(', ')'],
+			strQuotes: ["'", "'"],
+			colon: '->',
+			comma: ''
+		};
+		var value = {a: 1, b: "a\ta"};
+		var text = [
+			"{",
+			" (a)->1",
+			" (b)->'a	a'",
+			"}"
+		].join(String.fromCharCode(0x0A));
+		expect(JSON.stringify(value, null, 1, opts)).toBe(text);
+	});
+});
+
+describe('JSON.save, JSON.load', function(){
+	common_load('DorothyEx');
+	var value = {a: 1, b: "aa", c: true, d: false, e: null, f: {g: [1, "a", true, false, null, [], {}]} };
+	var text = [
+		'{',
+		'	"a": 1,',
+		'	"b": "aa",',
+		'	"c": true,',
+		'	"d": false,',
+		'	"e": null,',
+		'	"f": {',
+		'		"g": [',
+		'			1,',
+		'			"a",',
+		'			true,',
+		'			false,',
+		'			null,',
+		'			[],',
+		'			{}',
+		'		]',
+		'	}',
+		'}',
+		''
+	].join("\n");
+	var file = new File(new Directory(DorothyEx.getSaveFolder()).includePathDelimiter() + 'JSON_test.json');
+	for(var i = 0; file.exists() && i < 100; i++){
+		file.filename = file.changeExt('') + '(' + i + ')' + file.extractExt();
+	}
+	it('relative path', function(){
+		var path = file.extractName();
+		expect(JSON.save(path, value)).toBeTruthy();
+		expect(file.exists()).toBeTruthy();
+		try{
+			file.open('r');
+			expect(file.read()).toBe(text);
+			file.close();
+			expect(JSON.load(path)).toEqual(value);
+		}finally{
+			file.close();
+			file.remove();
+		}
+	});
+	it('not specified path', function(){
+		file.filename = file.extractPath() + 'yasmine.json';
+		if(!file.exists()){
+			expect(JSON.save(null, value)).toBeTruthy();
+			expect(file.exists()).toBeTruthy();
+			expect(JSON.load()).toEqual(value);
+			file.remove();
+		}else{
+			throw '同名のファイルがある';
+		}
+	});
+});
