@@ -1,0 +1,98 @@
+//Dorothy2
+//caption=DorothyEx
+//version=0.41
+//hint=http://yasmine.dorothy.test/common/spec/DorothyEx_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+common_load('DorothyEx');
+var isRentan = Dorothy.hasKey('rVersion');
+var is2A = false, is2Set = false, isDOA = false;
+if(typeof OnHttpRequest == 'function'){
+	is2A = true;
+}else if(typeof frmDOA == 'object'){
+	isDOA = true;
+}else{
+	is2Set = true;
+}
+describe('dorothy', function(){
+	it('platform', function(){
+		expect(DorothyEx.isDorothy2A).toBe(is2A);
+		expect(DorothyEx.isDorothy2Set).toBe(is2Set);
+		expect(DorothyEx.isDOA).toBe(isDOA);
+	});
+	it('getVersion', function(){
+		if(isRentan){
+			expect(DorothyEx.getVersionDorothy2A()).toBe(Dorothy.rVersion);
+			expect(DorothyEx.getVersionDorothy2Set()).toBe(Dorothy.rVersion);
+			expect(DorothyEx.getVersionDOA()).toBe(Dorothy.rVersion);
+		}else{
+			expect(DorothyEx.getVersionDorothy2A()).toBe('0.31');
+			expect(DorothyEx.getVersionDorothy2Set()).toBe('0.19');
+			expect(DorothyEx.getVersionDOA()).toBe('0.26');
+		}
+	});
+});
+/*
+folderdata.Post queueÉIÉvÉVÉáÉìê›íËçœÇ›
+Root (C:\)
+Ñ§ÑüDefault (default)
+    Ñ§ÑüDorothy2 (dorothy2)
+        Ñ§Ñütest (test)
+            Ñ§Ñüyasmine (yasmine)
+                Ñ§DorothyEx_spec.dms (DorothyEx)
+*/
+describe('queue folder', function(){
+	it('Path', function(){
+		var path = '/Default/Dorothy2/test/yasmine';
+		expect(DorothyEx.queueFolder).toBe(path);
+	});
+});
+describe('getSaveFolder', function(){
+	var fpath, ipath;
+	beforeEach(function(){
+		fpath = folderdata.Folder;
+		ipath = item.folder;
+	});
+	afterEach(function(){
+		folderdata.Folder = fpath;
+		item.folder = ipath;
+	});
+	it('Dorothy2Set path', function(){
+		if(!is2Set) pending();
+		expect(item.folder).toBe('DorothyEx');
+		expect(DorothyEx.getSaveFolder()).toBe(Dorothy.userPath);
+	});
+	it('DOA path', function(){
+		if(!isDOA) pending();
+		expect(item.folder).toBe('DorothyEx');
+		expect(DorothyEx.getSaveFolder()).toBe('C:\default\dorothy2\test\yasmine\DorothyEx\');
+	});
+	it('Dorothy2A relative path', function(){
+		if(!is2A) pending();
+		expect(item.folder).toBe('DorothyEx');
+		expect(DorothyEx.getSaveFolder()).toBe('C:\default\dorothy2\test\yasmine\DorothyEx\');
+		folderdata.Folder = 'test\';
+		expect(DorothyEx.getSaveFolder()).toBe('C:\default\dorothy2\test\test\DorothyEx\');
+		folderdata.Folder = 'D:\test';
+		expect(DorothyEx.getSaveFolder()).toBe('D:\test\DorothyEx\');
+	});
+	it('Dorothy2A absolute path', function(){
+		if(!is2A) pending();
+		expect(item.folder).toBe('DorothyEx');
+		item.folder = 'E:\' + item.folder;
+		expect(DorothyEx.getSaveFolder()).toBe('E:\DorothyEx\');
+		item.folder = '';
+		folderdata.Folder = 'C:';
+		expect(DorothyEx.getSaveFolder()).toBe('C:\');
+	});
+});
+yasmine.saveLog = function () {
+	var file = 'C:\default\dorothy2\test\yasmine\DorothyEx\yasmine_log.txt';
+
+	this.log ('save log file: ' + file);
+	this._log.saveToFile (file);
+
+	return file;
+};
