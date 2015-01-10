@@ -474,18 +474,25 @@ JSON =
 			return result;
 		},
 		getOwnProperties: function(obj){
-			var keys, key, r = [];
+			var keys, key,
+				r = [],
+				defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/,
+				isPlainObject = nameOf(obj) == 'Object';
 			if(typeof obj.getKeys == 'function'){
 				keys = obj.getKeys();
 				for(var i = 0; i < keys.length; i++){
 					key = keys[i];
-					if((typeof Object[key] != 'undefined' || key == 'constructor') && typeof obj[key] == 'function') continue;
+		
+					if(isPlainObject){
+						if(Object.hasKey(key)) continue;
+					}else{
+						if(defaultMethods.test(key)) continue;
+					}
 					r.push(key);
 				}
-			}
-			if(!r.length){
-				for(var key in obj){
-					if(typeof obj[key] != 'undefined') r.push(key);
+			}else{
+				for(key in obj){
+					r.push(key);
 				}
 			}
 			return r;
@@ -512,6 +519,7 @@ JSON =
 						case 'String':
 						case 'StringList':
 						case 'StringBuffer':
+						case 'Cookie':
 							var r = this.opts.encode ? this._escape(value.toString()) : value;
 							return this.opts.strQuotes[0] + r + this.opts.strQuotes[1];
 						case 'Number': return isFinite(value) ? value.toString() : 'null';
@@ -556,7 +564,6 @@ JSON =
 								this.cache.pop();//Œ»Ý‚ÌŠK‘w‚ðŠÜ‚ÞãˆÊŠK‘w‚Ì‚Ý‚ðƒ`ƒFƒbƒN‚Ì‘ÎÛ‚É‚·‚é
 							}else if(this.opts.throwError){
 								this.cache = null;
-								this.cache = [];
 								throw 'Error JSON.stringify: ’l‚ªzŠÂŽQÆ‚É‚È‚Á‚Ä‚¢‚é';
 							}
 							sp = this.lf + sp;
@@ -604,6 +611,7 @@ JSON =
 
 			var r = this.toStr({'': value}, '', '', '');
 			this.opts = null;
+			this.cache = null;
 			return r;
 		}
 	};
