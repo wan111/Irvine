@@ -1,0 +1,201 @@
+//Dorothy2
+//caption=extend_spec
+//version=0.1
+//hint=http://yasmine.dorothy.test/common/spec/extend_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+
+common_load('extend');
+_undefined = {u}.u;
+describe('extend', function(){
+	cases([
+		[ {a: 1}, {b: 2, c: true, d: null, e: _undefined}, {a: 1, b: 2, c: true, d: null} ],
+		[ {a: 1}, {a: 'a'}, {a: 'a'} ],
+		[ {a: 'a'}, ['a', true, null], {a: 'a', 0: 'a', 1: true, 2: null} ],
+		[ {}, null, {} ],
+		[ {}, 'abc', {} ],
+		[ null, {a: 1}, {a: 1} ],
+		[ 123, {a: 1}, {a: 1} ]
+	]).it('plain object', function(dest, src, merge){
+		var obj = extend(dest, src);
+		expect(obj).not.toBe(src);
+		expect(obj).toEqual(merge);
+	});
+	cases([
+		[ ['a'], [1, 'b', false, null], [1, 'b', false, null] ],
+		[ [1, 2], [1, 2], [1, 2] ],
+		[ [], null, [] ],
+		[ [], 'abc', [] ],
+		[ [1], {a: 'abc', b: 123}, [1] ]
+	]).it('array', function(dest, src, merge){
+		var obj = extend(dest, src);
+		expect(dest).not.toBe(src);
+		expect(dest).toBe(obj);
+		expect(dest.slice(0)).toEqual(merge.slice(0));
+		if(nameOf(src) == 'Object'){
+			for(var i in src){
+				expect(dest.hasKey(i)).toBeTruthy();
+			}
+		}
+	});
+	cases([
+		[ {} ,{a: 1, b: 'a', c: true, d: null, e: new String('abc')} ],
+		[ [] ,[1, 'a', true, null, new String('abc')] ]
+	]).it('copy', function(dest, src){
+		var copy = extend(dest, src);
+		expect(copy).toEqual(src);
+		expect(copy).not.toBe(src);
+	});
+	it('merge', function(){
+		var merge = {a: 1, b: 'a', c: null, d: true};
+		expect(extend({}, {a: 1}, {b: 'a'}, {c: null}, {d: true}, {e: _undefined})).toEqual(merge);
+	});
+	cases([
+		[ false, {a: {c: 3}} ],
+		[ true, {a: {b: [1, 2], c: 3}} ]
+	]).it('deep', function(deep, merge){
+		var src = {a: {b: [1, 2]}};
+		var src2 = {a: {c: 3}};
+
+		var obj = extend(deep, {}, src);
+		expect(obj).not.toBe(src);
+		expect(obj).toEqual(src);
+		expect(obj.a === src.a).toBe(!deep);
+		expect(obj.a.b === src.a.b).toBe(!deep);
+		obj = extend(deep, {}, src, src2);
+		expect(obj).toEqual(merge);
+	});
+	//javascriptではenumerable属性がtrueの物のみをコピーすべきだがDMonkeyはenumerable属性の設定が不正確なので無視
+	//オブジェクトが直接引数に渡された場合は走査 オブジェクトや配列の値の場合は複製する
+	//function型のプロパティはfor..inで列挙できないのでgetKeysかgetMethodsで取得する だがArrayやStrings等はそれでは値を取得できないのでfor..inを使う
+	cases([
+		new String('abc'),
+		new StringBuffer('abc')
+	]).it('String, StringBuffer', function(src){
+		expect(extend({}, src)).toEqual({0: 'a', 1: 'b', 2: 'c'});
+		expect(extend([], src)).toEqual(['a', 'b', 'c']);
+		expect(extend({}, {a: src})).toEqual({a: src});
+		expect(extend([], [src])).toEqual([src]);
+	});
+	it('function', function(){
+		var src = {a: function(){}, b: 1};
+		var copy = extend({}, src);
+		expect(copy).toEqual(src);
+		expect(copy).not.toBe(src);
+	});
+	it('prototype', function(){
+		function f(){}
+		f.prototype.c = function(){};
+		f.prototype.d = 1;
+
+		var src = {e: function(){}, f: "a"};
+
+		expect(extend({}, f.prototype, src)).toEqual({c: f.prototype.c, d: f.prototype.d, e: src.e, f: src.f});
+	});
+	cases([
+		new Number(123),
+		new Boolean(true),
+		new RegExp('abc'),
+		new Date('2000/10/10 00:00:00'),
+		new URL('http://000:111@www.test.com:8080/aaa/bbb.ccc?ddd=eee'),
+		(function(){
+			var c = new Cookie;
+			c.parse('expires=Sun Oct 10 2010 10:10:10 GMT;domain=test.com;path=/;test=aaa;');
+			return c;
+		})()
+	]).it('Global Objects', function(src){
+		var obj = extend({}, src);
+		expect(obj).toEqual(jasmine.objectContaining(src));
+		obj = extend(true, {}, {a: src});
+		expect(obj.a === src).toBeFalsy();
+		expect(nameOf(obj.a)).toBe(nameOf(src));
+	});
+	it('cyclic objects', function(){
+		var o = {
+			a: [new String('a'), new String('b'), new StringBuffer('a'), new StringBuffer('b')],
+			b: [null, new Number(1), null, []],
+			c: new Boolean(false),
+			d: new RegExp('aaa'),
+			e: new Date(),
+			f: null,
+			g: {a: null},
+			b2: null,
+			c2: null,
+			d2: null,
+			e2: null
+		};
+		o.b[0] = o.b;
+		o.b[2] = o.b[1];
+		o.b[3][0] = o.b;
+		o.f = o;
+		o.g.a = o;
+		o.b2 = o.b;
+		o.c2 = o.c;
+		o.d2 = o.d;
+		o.e2 = o.e;
+
+		var copy = extend(true, {}, o);
+		expect(copy).not.toBe(o);
+		expect(copy).toEqual(o);
+
+		//String,StringBufferオブジェクト同士の==での比較は別のオブジェクトであってもtrueとなる
+		expect(copy.a[0]).toBe(o.a[1]);
+		expect(copy.a[2]).toBe(o.a[3]);
+
+		expect(copy.b[0]).not.toBe(o.b[0]);
+		expect(copy.b[2]).not.toBe(o.b[2]);
+		expect(copy.b[3][0]).not.toBe(o.b[3][0]);
+		expect(copy.f).not.toBe(o.f);
+		expect(copy.g.a).not.toBe(o.g.a);
+		expect(copy.b2).not.toBe(o.b2);
+		expect(copy.c2).not.toBe(o.c2);
+		expect(copy.d2).not.toBe(o.d2);
+		expect(copy.e2).not.toBe(o.e2);
+
+		expect(copy.a[0].toString()).not.toBe(copy.a[1].toString());
+		expect(copy.a[2].toString()).not.toBe(copy.a[3].toString());
+
+		expect(copy.b[0]).toBe(copy.b);
+		expect(copy.b[2]).toBe(copy.b[1]);
+		expect(copy.b[3][0]).toBe(copy.b);
+		expect(copy.f).toBe(copy);
+		expect(copy.g.a).toBe(copy);
+		expect(copy.b2).toBe(copy.b);
+		expect(copy.c2).toBe(copy.c);
+		expect(copy.d2).toBe(copy.d);
+		expect(copy.e2).toBe(copy.e);
+
+		o.b[0] = copy.b[0] = null;
+		o.b[2] = copy.b[2] = null;
+		o.b[3][0] = copy.b[3][0] = null;
+		o.f = copy.f = null;
+		o.g.a = copy.g.a = null;
+		o.b2 = copy.b2 = null;
+		o.c2 = copy.c2 = null;
+		o.d2 = copy.d2 = null;
+		o.e2 = copy.e2 = null;
+
+		//cache済みのobjectを渡す
+		var a = {};
+		var b = {a: a};
+		var c = extend(true, {}, a, b);
+		expect(c).toBe(c.a);
+		expect(c).not.toBe(a);
+
+		//destに対して循環参照
+		a = extend(true, a, b);
+		expect(a).toBe(a.a);
+
+	});
+	it('IrvineFolderData', function(){
+		var o = {};
+		for(var i in folderdata){
+			if(typeof folderdata[i] != 'undefined') o[i] = folderdata[i];
+		}
+		var obj = {};
+		expect(function(){extend(true, obj, folderdata);}).not.toThrow();
+		expect(obj).toEqual(o);
+	});
+});

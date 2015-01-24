@@ -1,284 +1,152 @@
 //Dorothy2
 //caption=extend
-//version=0.5
+//version=0.1
 //hint=
 //match=
 //author=wan
 //path=common
 //end
-function extend(/*deep, dest, source*/){
-	function _extend(deep, dest, src){
-		for(var key in src){
-			if(deep && typeof src[key] == 'object'){
-				if(circular.check(src[key])){
-					switch(nameOf(src[key])){
-						case 'Object':
-							dest[key] = typeof dest[key] != 'undefined' && nameOf(dest[key]) == 'Object' ? dest[key] : {};
-							circular.cache.push([dest[key], src[key]]);
-							dest[key] = _extend(deep, dest[key], src[key]);
-							continue;
-						case 'Array':
-							dest[key] = typeof dest[key] != 'undefined' && nameOf(dest[key]) == 'Array' ? dest[key] : [];
-							circular.cache.push([dest[key], src[key]]);
-							dest[key] = _extend(deep, dest[key], src[key]);
-							continue;
-						case 'Number':
-							dest[key] = new Number(src[key].toString());
-							break;
-						case 'String':
-							dest[key] = new String(src[key].toString());
-							continue;
-						case 'Boolean':
-							dest[key] = new Boolean(src[key].toString());
-							break;
-						case 'RegExp':
-							var reg = new RegExp(src[key].source);
-							reg.ignoreCase= src[key].ignoreCase;
-							reg.global= src[key].global;
-							reg.multiline= src[key].multiline;
-							dest[key] = reg;
-							break;
-						case 'Date':
-							dest[key] = new Date(src[key].getTime());
-							break;
-						case 'URL':
-							dest[key] = new URL(src[key].url);
-							break;
-						case 'Cookie':
-							var cookie = new Cookie;
-							cookie.parse(src[key].toString());
-							dest[key] = cookie;
-							break;
-						case 'StringList':
-							var sl = new Strings(src[key].text);
-							sl.sorted = src[key].sorted;
-							sl.caseSensitive = src[key].caseSensitive;
-							sl.duplicates = src[key].duplicates;
-							dest[key] = sl;
-							break;
-						case 'StringBuffer':
-							dest[key] = new StringBuffer(src[key].text);
-							continue;
-						default:
-							dest[key] = src[key];
-							break;
-					}
-					circular.cache.push([dest[key], src[key]]);
-				}else{
-					dest[key] = circular.obj;
-				}
+
+function getOwnProperties(obj, forIn){
+	var keys, key,
+		r = [],
+		defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/,
+		isPlainObject = nameOf(obj) == 'Object';
+	if(!forIn && typeof obj.getKeys == 'function'){
+		keys = obj.getKeys();
+		for(var i = 0; i < keys.length; i++){
+			key = keys[i];
+			if(typeof obj[key] == 'undefined') continue;
+
+			if(isPlainObject){
+				if(Object.hasKey(key)) continue;
 			}else{
-				dest[key] = src[key];
+				if(defaultMethods.test(key)) continue;
+			}
+			r.push(key);
+		}
+	}
+	//folderdata等はgetKeysで取得できないため
+	if(!r.length){
+		for(key in obj){
+			if(typeof obj[key] != 'undefined'){
+				r.push(key);
 			}
 		}
-		//function型のメンバ 参照渡し
-		if(nameOf(src) == 'Object'){
-			var methods = src.getMethods(), key;
-			for(var i = 0; i < methods.length; i++){
-				key = methods[i];
-				if(!Object.hasKey(key)) dest[key] = src[key];
-			}
-		}
-		return dest;
 	}
-	//循環参照,重複している参照渡しの確認
-	var circular = {
-		cache: [],
-		obj: {},
-		check: function(dest, src){
-			for(var i in cache){
-				if(cache[i][1] === src){
-					this.obj = cache[i][0];
-					return false;
-				}
-			}
-			return true;
-		}
-	};
-
-	var deep = false, destination, source, len = arguments.length, i = 1;
-	if(typeof arguments[0] == 'boolean'){
-		deep = arguments[0];
-		i++;
-	}
-
-	if(len == i){
-		destination = this;
-		i--;
-	}else{
-		destination = arguments[i-1];
-		if(typeof destination != 'object') destination = {};
-	}
-	var sourceName;
-	for(; i < len; i++){
-		source = arguments[i];
-		sourceName = nameOf(source);
-		if((sourceName == 'Object' || sourceName == 'Array')){
-			if(destination == source) continue;
-			circular.check(destination, source);
-			destination = _extend(deep, destination, source);
-		}
-	}
-	return destination;
+	return r;
 },
-//型が同じ場合のみ上書き
-function extend2(/*deep, dest, source*/){
-	function _extend(deep, dest, src){
-		var destType, destName, srcType, srcName;
-		for(var key in src){
-			destType = typeof dest[key];
-			srcType = typeof src[key];
-			srcName = nameOf(src[key]);
-			destName = null;
-			if(destType != 'undefined'){
-				destName = nameOf(dest[key]);
-				//型が同一か確認
-				if(!(destType == srcType && destName == srcName)){
-					println('型不一致>' + key);
-					if(destType != 'object' && srcType == 'object'){
-						//オブジェクト->プリミティブ型
-						switch(destType){
-							case 'string':
-								if(srcName == 'String') dest[key] = src[key].valueOf();
-								break;
-							case 'number':
-								if(srcName == 'Number') dest[key] = src[key].valueOf();
-								break;
-							case 'boolean':
-								if(srcName == 'Boolean') dest[key] = src[key].valueOf();
-								break;
-						}
-					}else if(destType == 'object' && srcType != 'object'){
-						//プリミティブ型->オブジェクト
-						switch(srcType){
-							case 'string':
-								if(destName == 'String') dest[key] = new String(src[key].toString());
-								break;
-							case 'number':
-								if(destName == 'Number') dest[key] = new Number(src[key].toString());
-								break;
-							case 'boolean':
-								if(destName == 'Boolean') dest[key] = new Boolean(src[key].toString());
-								break;
-						}
-					}
+
+function extend(/*[deep,] [destination,] source1[, source2[, ...]]*/){
+	function _extend(deep, destination, source){
+		var dest, src, key, index, ex,
+			isStrObj = source === String || source === StringBuffer,
+			keys = getOwnProperties(source, (nameOf(source) == 'Array' || isStrObj));
+
+		for(var i = 0; i < keys.length; i++){
+			key = keys[i];
+			src = source[key];
+			if(deep && typeof src == 'object'){
+				if((index = cache.indexOf(src)) != -1){
+					destination[key] = cache.dest[index];
 					continue;
 				}
-			}
-
-			if(deep && srcType == 'object'){
-				if(circular.check(src[key])){
-					switch(srcName){
-						case 'Object':
-							dest[key] = destName == 'Object' ? dest[key] : {};
-							circular.cache.push([dest[key], src[key]]);
-							dest[key] = _extend(deep, dest[key], src[key]);
+				ex = false;
+				switch(nameOf(src)){
+					case 'Object':
+						dest = typeof destination[key] != 'undefined' && nameOf(destination[key]) == 'Object' ? destination[key] : {};
+						ex = true;
+						break;
+					case 'Array':
+						dest = typeof destination[key] != 'undefined' && nameOf(destination[key]) == 'Array' ? destination[key] : [];
+						ex = true;
+						break;
+					case 'Number':
+						dest = new Number(src.valueOf());
+						break;
+					case 'Boolean':
+						dest = new Boolean(src.valueOf());
+						break;
+					case 'RegExp':
+						dest = new RegExp();
+						for(var j in dest) dest[j] = src[j];
+						break;
+					case 'Date':
+						dest = new Date(src.getTime());
+						dest.format = src.format;
+						break;
+					case 'StringList':
+						dest = new Strings(src.text);
+						dest.sorted = src.sorted;
+						dest.caseSensitive = src.caseSensitive;
+						dest.duplicates = src.duplicates;
+						break;
+					case 'URL':
+						dest = new URL(src.url);
+						break;
+					case 'Cookie':
+						dest = new Cookie();
+						dest.parse(src.toString());
+						break;
+					default:
+						if(src === String){
+							destination[key] = new String(src.toString());
 							continue;
-						case 'Array':
-							dest[key] = destName == 'Array' ? dest[key] : [];
-							circular.cache.push([dest[key], src[key]]);
-							dest[key] = _extend(deep, dest[key], src[key]);
+						}else if(src === StringBuffer){
+							destination[key] = new StringBuffer(src.text);
 							continue;
-						case 'Number':
-							dest[key] = new Number(src[key].toString());
-							break;
-						case 'String':
-							dest[key] = new String(src[key].toString());
-							continue;
-						case 'Boolean':
-							dest[key] = new Boolean(src[key].toString());
-							break;
-						case 'RegExp':
-							var reg = new RegExp(src[key].source);
-							reg.ignoreCase= src[key].ignoreCase;
-							reg.global= src[key].global;
-							reg.multiline= src[key].multiline;
-							dest[key] = reg;
-							break;
-						case 'Date':
-							dest[key] = new Date(src[key].getTime());
-							break;
-						case 'URL':
-							dest[key] = new URL(src[key].url);
-							break;
-						case 'Cookie':
-							var cookie = new Cookie;
-							cookie.parse(src[key].toString());
-							dest[key] = cookie;
-							break;
-						case 'StringList':
-							var sl = new Strings(src[key].text);
-							sl.sorted = src[key].sorted;
-							sl.caseSensitive = src[key].caseSensitive;
-							sl.duplicates = src[key].duplicates;
-							dest[key] = sl;
-							break;
-						case 'StringBuffer':
-							dest[key] = new StringBuffer(src[key].text);
-							continue;
-						default:
-							dest[key] = src[key];
-							break;
-					}
-					circular.cache.push([dest[key], src[key]]);
-				}else{
-					dest[key] = circular.obj;
+						}else{
+							dest = src;
+						}
 				}
+				cache.dest.push(dest);
+				cache.src.push(src);
+				if(ex) dest = _extend(deep, dest, src);
+				destination[key] = dest;
 			}else{
-				dest[key] = src[key];
+				destination[key] = src;
 			}
 		}
-		//function型のメンバ 参照渡し
-		if(nameOf(src) == 'Object'){
-			var methods = src.getMethods(), key;
-			for(var i = 0; i < methods.length; i++){
-				destType = typeof dest[key];
-				key = methods[i];
-				if(!Object.hasKey(key) && (destType == 'function' || destType == 'undefined')) dest[key] = src[key];
-			}
-		}
-		return dest;
+		return destination;
 	}
-	//循環参照,重複している参照渡しの確認
-	var circular = {
-		cache: [],
-		obj: {},
-		check: function(src){
-			for(var i in cache){
-				if(cache[i][1] === src){
-					this.obj = cache[i][0];
-					return false;
+
+	var source,
+		destination = arguments[0],
+		deep = false,
+		index = 1,
+		len = arguments.length;
+		cache = {
+			dest: [],
+			src: [],
+			indexOf: function(obj){
+				var len = this.src.length;
+				for(var i = 0; i < len; i++){
+					if(this.src[i] === obj || this.dest[i] === obj) return i;
 				}
+				return -1;
 			}
-			return true;
-		}
-	};
+		};
 
-	var deep = false, destination, source, len = arguments.length, i = 1;
-	if(typeof arguments[0] == 'boolean'){
-		deep = arguments[0];
-		i++;
+	if(typeof destination == 'boolean'){
+		deep = destination;
+		destination = arguments[index];
+		index++;
 	}
-
-	if(len == i){
+	if(len == index){
 		destination = this;
-		i--;
-	}else{
-		destination = arguments[i-1];
-		if(typeof destination != 'object') destination = {};
+		index--;
 	}
-	var destinationName = nameOf(destination);
-	var sourceName;
-	for(; i < len; i++){
-		source = arguments[i];
-		sourceName = nameOf(source);
-		if((sourceName == 'Object' || sourceName == 'Array') && destinationName == sourceName){
-			if(destination == source) continue;
-			circular.check(destination, source);
+	if(typeof destination != 'object' || (destination === String || destination === StringBuffer)){
+		destination = {};
+	}
+
+	for(;index < len; ++index){
+		source = arguments[index];
+		if(typeof source == 'object' && !(destination === source)){
+			cache.dest.push(destination);
+			cache.src.push(source);
 			destination = _extend(deep, destination, source);
 		}
 	}
 	return destination;
-},
-Object.prototype.extend = extend,
-Object.prototype.extend2 = extend2;
+}
