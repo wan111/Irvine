@@ -545,7 +545,17 @@ describe('JSON.stringify', function(){
 	});
 	it('IrvineFolderData', function(){
 		common_load('DorothyEx');
-		expect(function(){JSON.stringify(folderdata);}).not.toThrow();
+		var o = {};
+		var sort = [];
+		for(var i in folderdata){
+			if(typeof folderdata[i] != 'undefined'){
+				o[i] = folderdata[i];
+				sort.push(i);
+			}
+		}
+		var text;
+		expect(function(){text = JSON.stringify(folderdata, sort);}).not.toThrow();
+		expect(text).toBe(JSON.stringify(o, sort));
 	});
 	it('opts(non-standard)', function(){
 		var opts = {
