@@ -490,7 +490,9 @@ JSON =
 					}
 					r.push(key);
 				}
-			}else{
+			}
+			//folderdata“™‚ÍgetKeys‚ÅŽæ“¾‚Å‚«‚È‚¢‚½‚ß
+			if(!r.length){
 				for(key in obj){
 					r.push(key);
 				}
