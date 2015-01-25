@@ -1,16 +1,17 @@
 //Dorothy2
 //caption=DorothyEx
-//version=0.1
+//version=0.11
 //hint=
 //match=
 //author=wan
 //path=common
 //end
+
 (function(){
 DorothyEx = {};
 DorothyEx.queueFolder = '';
 DorothyEx.isDorothy2A = false;
-DorothyEx.isDorothy2Set = false;
+DorothyEx.isDorothy2set = false;
 DorothyEx.isDOA = false;
 DorothyEx.isRentan = typeof Dorothy.rVersion != 'undefined';;
 switch(WScript.ScriptName){
@@ -19,13 +20,13 @@ switch(WScript.ScriptName){
 		DorothyEx.isDorothy2A = true;
 		DorothyEx.queueFolder = /queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '';
 		break;
-	case 'Dorothy2Set.dms':
+	case 'Dorothy2R_listmenu.dms':
+		Dorothy.url = item.url;
+	case 'Dorothy2set.dms':
 	case 'Dorothy2ListMenu.dms':
 	case 'Dorothy2R_set.dms':
-	case 'Dorothy2R_listmenu.dms':
-		DorothyEx.isDorothy2Set = true;
+		DorothyEx.isDorothy2set = true;
 		DorothyEx.queueFolder = Irvine.Current.Path;
-		if(DorothyEx.isRentan) Dorothy.url = item.url;
 		break;
 	case 'DOA.dms':
 	case 'xor100813_2.dms':
@@ -34,11 +35,15 @@ switch(WScript.ScriptName){
 		DorothyEx.isDOA = true;
 		DorothyEx.queueFolder = DOA.CurrentQueueFolder;
 		Dorothy.temp = dorothy2_temp;
+		break;
+	default:
+		alert('DorothyExエラー 不明な実行環境: ' + WScript.ScriptName);
+		exit();
 }
 /*
 if((typeof SettingForm != 'undefined' && typeof OnMainMenuClick == 'function') ||
    (typeof OnListMenuClick == 'function' && (typeof Dorothy.url == 'string' || typeof _ == 'object') )){
-	DorothyEx.isDorothy2Set = true;
+	DorothyEx.isDorothy2set = true;
 	DorothyEx.queueFolder = Irvine.Current.Path;
 }else if(typeof frmDOA == 'object' && nameOf(frmDOA) == 'VCLForm' && typeof OnListMenuClick == 'function'){
 	DorothyEx.isDOA = true;
@@ -69,8 +74,8 @@ DorothyEx._getVersion = (function(){
 DorothyEx.getVersionDorothy2A = function(){
 	return this.isRentan ? Dorothy.rVersion : (this.isDorothy2A ? Dorothy.version : this._getVersion((new irvinePath).scripts + 'Dorothy2A.dms'));
 };
-DorothyEx.getVersionDorothy2Set = function(){
-	return this.isRentan ? Dorothy.rVersion : this._getVersion((new irvinePath).scripts + 'Dorothy2Set.dms');
+DorothyEx.getVersionDorothy2set = function(){
+	return this.isRentan ? Dorothy.rVersion : this._getVersion((new irvinePath).scripts + 'Dorothy2set.dms');
 };
 DorothyEx.getVersionDOA = function(){
 	return this.isRentan ? Dorothy.rVersion : this._getVersion((new irvinePath).scripts + 'DOA.dms');
@@ -79,7 +84,7 @@ DorothyEx.getVersionDOA = function(){
 DorothyEx.getSaveFolder = function(){
 	if(this.isDOA){
 		var item = typeof item != 'undefined' ? item : new IrvineItem();
-	}else if(this.isDorothy2Set){
+	}else if(this.isDorothy2set){
 		return Dorothy.userPath;
 	}
 	var ipath = item.folder;
