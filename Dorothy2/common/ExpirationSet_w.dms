@@ -1,0 +1,381 @@
+//Dorothy2
+//caption=Expiration用設定
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=common
+//priority=
+//end
+(function(){
+
+void function ExpirationSet(ini){
+	this.ini = ini;
+	var frm = this.frm = new VCLForm();
+	var frm2 = this.frm2 = new VCLForm();
+	frm.loadFromText(this.frm_dfm);
+	frm2.loadFromText(this.frm2_dfm);
+
+	//thisを自身に固定する
+//Invalid pointer operation. エラーになる事があるので止め
+//	for(var key in this.prototype){
+//		if(key != 'bind' && typeof this[key] == 'function') this[key] = this.bind(this[key]);
+//	}
+
+	frm.menuDeleteItem.onClick = this.bind(this.itemDelete);
+	frm.popDeleteItem.onClick = this.bind(this.itemDelete);
+	frm.menuSellectAllItem.onClick = this.bind(this.itemSelectAll);
+	frm.popSelectAllItem.onClick = this.bind(this.itemSelectAll);
+	frm.menuEditItem.onClick = this.bind(this.itemEdit);
+	frm.popEditItem.onClick = this.bind(this.itemEdit);
+	frm.menuEdit.onClick = this.bind(this.menuUpdate);
+	frm.OKBtn.onClick = this.bind(this.save);
+	frm.onClose = this.bind(this.listClear);
+
+	var list = frm.ListView1;
+	list.onContextPopup = this.bind(this.menuUpdate);
+	list.onKeyDown = this.bind(this._listOnKeyDown);
+	list.onDblClick = this.bind(this.itemEdit);
+
+};
+ExpirationSet.prototype.frm_dfm = "
+object Form1: TForm1
+	Position = poScreenCenter
+	Width = 676
+	Height = 350
+	Caption = 'Expiration'
+	Color = clBtnFace
+	Font.Charset = SHIFTJIS_CHARSET
+	Font.Color = clWindowText
+	Font.Height = -12
+	Font.Name = 'ＭＳ Ｐゴシック'
+	Font.Style = []
+	OldCreateOrder = False
+	DesignSize = (
+		676
+		350)
+	PixelsPerInch = 96
+	TextHeight = 12
+	Menu = MainMenu1
+	object MainMenu1: TMainMenu
+		Left = 32
+		Top = 8
+		object menuEdit: TMenuItem
+			Caption = '編集(&E)'
+			object menuSellectAllItem: TMenuItem
+				Caption = 'すべて選択(&A)'
+				Enabled = True
+			end
+			object menuEditItem: TmenuItem
+				Caption = '編集(&E)'
+				Enabled = False
+			end
+			object menuDeleteItem: TmenuItem
+				Caption = '削除(&D)'
+				Enabled = False
+			end
+		end
+	end
+	object ListView1: TListView
+		Left = 0
+		Top = 0
+		Width = 667
+		Height = 254
+		Anchors = [akLeft, akTop, akRight, akBottom]
+		Checkboxes = False
+		Columns = <
+			item
+				Width = 170
+				Caption = 'baseUrl'
+			end
+			item
+				Width = 116
+				Caption = '有効期限'
+			end
+			item
+				Width = 150
+				Caption = 'url'
+			end
+			item
+				Width = 80
+				Caption = 'proxy'
+			end
+			item
+				Width = 140
+				Caption = 'name'
+			end>
+		MultiSelect = True
+		ReadOnly = True
+		RowSelect = True
+		PopupMenu = PopupMenu1
+		TabOrder = 0
+		ViewStyle = vsReport
+	end
+	object PopupMenu1: TPopupMenu
+		object popSelectAllItem: TMenuItem
+			Caption = 'すべて選択(&A)'
+			Enabled = True
+		end
+		object popEditItem: TMenuItem
+			Caption = '編集(&E)'
+			Enabled = False
+		end
+		object popDeleteItem: TMenuItem
+			Caption = '削除(&D)'
+			Enabled = False
+		end
+	end
+	object OKBtn: TButton
+		Left = 230
+		Top = 264
+		Width = 75
+		Height = 25
+		Caption = 'OK'
+		Default = False
+		Anchors = [akBottom, akRight]
+		ModalResult = 1
+		TabOrder = 1
+	end
+	object CancelBtn: TButton
+		Left = 340
+		Top = 264
+		Width = 75
+		Height = 25
+		Anchors = [akBottom, akRight]
+		Cancel = True
+		Caption = 'キャンセル'
+		ModalResult = 2
+		TabOrder = 2
+	end
+end
+";
+ExpirationSet.prototype.frm2_dfm = "
+object Form2: TForm2
+	Position = poScreenCenter
+	BorderStyle = bsDialog
+	Caption = '設定'
+	ClientHeight = 240
+	ClientWidth = 313
+	Color = clBtnFace
+	Font.Charset = SHIFTJIS_CHARSET
+	Font.Color = clWindowText
+	Font.Height = -12
+	Font.Name = 'ＭＳ Ｐゴシック'
+	Font.Style = []
+	PixelsPerInch = 96
+	TextHeight = 12
+	object Label1: TLabel
+		Left = 8
+		Top = 8
+		Width = 30
+		Height = 12
+		Caption = 'baseUrl'
+	end
+	object Label2: TLabel
+		Left = 8
+		Top = 48
+		Width = 30
+		Height = 12
+		Caption = '有効期限'
+	end
+	object Label3: TLabel
+		Left = 8
+		Top = 88
+		Width = 30
+		Height = 12
+		Caption = 'url'
+	end
+	object Label4: TLabel
+		Left = 8
+		Top = 128
+		Width = 30
+		Height = 12
+		Caption = 'proxy'
+	end
+	object Label5: TLabel
+		Left = 8
+		Top = 168
+		Width = 30
+		Height = 12
+		Caption = 'name'
+	end
+	object EditBaseUrl: TEdit
+		Left = 8
+		Top = 24
+		Width = 300
+		Height = 20
+		TabOrder = 2
+	end
+	object EditDate: TEdit
+		Left = 8
+		Top = 64
+		Width = 300
+		Height = 20
+		TabOrder = 3
+	end
+	object EditUrl: TEdit
+		Left = 8
+		Top = 104
+		Width = 300
+		Height = 20
+		TabOrder = 4
+	end
+	object EditProxy: TEdit
+		Left = 8
+		Top = 144
+		Width = 300
+		Height = 20
+		TabOrder = 5
+	end
+	object EditName: TEdit
+		Left = 8
+		Top = 184
+		Width = 300
+		Height = 20
+		TabOrder = 6
+	end
+ 
+	object OKBtn: TButton
+		Left = 79
+		Top = 208
+		Width = 75
+		Height = 25
+		Caption = 'OK'
+		Default = True
+		ModalResult = 1
+		TabOrder = 0
+	end
+	object CancelBtn: TButton
+		Left = 159
+		Top = 208
+		Width = 75
+		Height = 25
+		Cancel = True
+		Caption = 'Cancel'
+		ModalResult = 2
+		TabOrder = 1
+	end
+end
+";
+ExpirationSet.prototype.bind = function(func){
+	var self = this;
+	return function(){
+		return func.apply(self, arguments);
+	};
+};
+ExpirationSet.prototype.itemAdd = function(caption, date, url, proxy, name){
+	var item = this.frm.ListView1.Items.add();
+	item.Caption = caption;
+	item.date = date;
+	item.url = url;
+	item.proxy = proxy;
+	item.name = name;
+
+	item.SubItems.add(item.date);
+	item.SubItems.add(item.url);
+	item.SubItems.add(item.proxy);
+	item.SubItems.add(item.name);
+};
+//選択されているアイテムを削除
+ExpirationSet.prototype.itemDelete = function(){
+	var list = this.frm.ListView1;
+	while(list.SelCount > 0){
+		list.Selected.delete();
+	}
+	list.update();
+};
+ExpirationSet.prototype.itemSelectAll = function(){
+	var items = this.frm.ListView1.Items;
+	for(var i in items) items[i].Selected = true;
+};
+ExpirationSet.prototype.itemEdit = function(){
+	var frm2 = this.frm2;
+	var list = this.frm.ListView1;
+	if(list.SelCount != 1) return;
+	var item = list.Selected;
+
+	frm2.ActiveControl = frm2.EditBaseUrl;
+	frm2.EditBaseUrl.Text = item.Caption;
+	frm2.EditDate.Text = item.date;
+	frm2.EditUrl.Text = item.url;
+	frm2.EditProxy.Text = item.proxy;
+	frm2.EditName.Text = item.name;
+	if(frm2.showModal() == 1){
+		item.Caption = /^https?:\/\/.+?\..+/.test(frm2.EditBaseUrl.Text) ? frm2.EditBaseUrl.Text : item.Caption;
+		item.date = /^\d{4}\/\d{2}\/\d{2} \d{1,2}:\d{2}:\d{2}$/.test(frm2.EditDate.Text) ? frm2.EditDate.Text : item.date;
+		item.url = /^https?:\/\/.+?\..+/.test(frm2.EditUrl.Text) ? frm2.EditUrl.Text : item.url;
+		item.proxy = frm2.EditProxy.Text;
+		item.name = frm2.EditName.Text;
+
+		item.SubItems[0] = item.date;
+		item.SubItems[1] = item.url;
+		item.SubItems[2] = item.proxy;
+		item.SubItems[3] = item.name;
+		list.update();
+	}
+};
+ExpirationSet.prototype.listClear = function(){
+	this.frm.ListView1.Items.clear();
+};
+ExpirationSet.prototype.showForm = function(ini){
+	if(nameOf(ini) != 'Ini'){
+		ini = nameOf(this.ini) == 'Ini' ? this.ini : new Ini(Dorothy.userIniPath);
+	}
+	this.ini = ini;
+	var keys = ini.readSection('Expiration');
+	var key;
+	for(var i = 0; i < keys.length; i++){
+		key = keys[i];
+		this.itemAdd(
+			key, //baseUrl
+			new Date(ini.read('Expiration', key, '')).toString(), //date
+			ini.read('Expiration2', key, ''), //url
+			ini.read('Expiration3', key, ''), //proxy
+			ini.read('Expiration4', key, '') //name
+		);
+	}
+	return this.frm.showModal() == 1;
+};
+ExpirationSet.prototype.menuUpdate = function(){
+	var frm = this.frm;
+	var sel = frm.ListView1.SelCount > 0;
+	var singleSel = frm.ListView1.SelCount == 1;
+	frm.menuDeleteItem.Enabled = sel;
+	frm.popDeleteItem.Enabled = sel;
+	frm.menuEditItem.Enabled = singleSel;
+	frm.popEditItem.Enabled = singleSel;
+};
+//iniを書き換える ini.update()はしない
+ExpirationSet.prototype.save = function(){
+	var ini  = this.ini;
+	var items = this.frm.ListView1.Items;
+	var item;
+	var timezone = new Date().getTimezoneOffset() * 60 * 1000;
+	ini.eraseSection('Expiration');
+	ini.eraseSection('Expiration2');
+	ini.eraseSection('Expiration3');
+	ini.eraseSection('Expiration4');
+	for(var i in items){
+		item = items[i];
+		ini.write('Expiration',  item.Caption, new Date(item.date).getTime() + timezone);
+		ini.write('Expiration2', item.Caption, item.url);
+		ini.write('Expiration3', item.Caption, item.proxy);
+		ini.write('Expiration4', item.Caption, item.name);
+	}
+};
+ExpirationSet.prototype._listOnKeyDown = function(Sender, Key, Shift){
+	//Delete
+	if(Key == 46){
+		this.itemDelete();
+	}
+	//Ctrl + A
+	if(Key == 65 && Shift == 'ssCtrl'){
+		this.itemSelectAll();
+	}
+	//Enter
+	if(Key == 13){
+		this.itemEdit(false);
+	}
+};
+
+})();
