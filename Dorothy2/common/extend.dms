@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=extend
-//version=0.1
+//version=0.2
 //hint=
 //match=
 //author=wan
@@ -37,28 +37,33 @@ function getOwnProperties(obj, forIn){
 	return r;
 },
 
-function extend(/*[deep,] [destination,] source1[, source2[, ...]]*/){
-	function _extend(deep, destination, source){
-		var dest, src, key, index, ex,
+function extend(/*[deep,] [same,] [destination,] source1[, source2[, ...]]*/){
+	function _extend(deep, same, destination, source){
+		var dest, src, key, index, ex, destType, srcType, isUndef,
 			isStrObj = source === String || source === StringBuffer,
 			keys = getOwnProperties(source, (nameOf(source) == 'Array' || isStrObj));
 
 		for(var i = 0; i < keys.length; i++){
 			key = keys[i];
 			src = source[key];
+			isUndef = typeof destination[key] == 'undefined';
+			dest = isUndef ? null : destination[key];
+			destType = nameOf(dest) || typeof dest;
+			srcType = nameOf(src) || typeof src;
+			if(same && !isUndef && destType != srcType) continue;
 			if(deep && typeof src == 'object'){
 				if((index = cache.indexOf(src)) != -1){
 					destination[key] = cache.dest[index];
 					continue;
 				}
 				ex = false;
-				switch(nameOf(src)){
+				switch(srcType){
 					case 'Object':
-						dest = typeof destination[key] != 'undefined' && nameOf(destination[key]) == 'Object' ? destination[key] : {};
+						dest = destType == 'Object' ? dest : {};
 						ex = true;
 						break;
 					case 'Array':
-						dest = typeof destination[key] != 'undefined' && nameOf(destination[key]) == 'Array' ? destination[key] : [];
+						dest = destType == 'Array' ? dest : [];
 						ex = true;
 						break;
 					case 'Number':
@@ -101,7 +106,7 @@ function extend(/*[deep,] [destination,] source1[, source2[, ...]]*/){
 				}
 				cache.dest.push(dest);
 				cache.src.push(src);
-				if(ex) dest = _extend(deep, dest, src);
+				if(ex) dest = _extend(deep, same, dest, src);
 				destination[key] = dest;
 			}else{
 				destination[key] = src;
@@ -113,6 +118,7 @@ function extend(/*[deep,] [destination,] source1[, source2[, ...]]*/){
 	var source,
 		destination = arguments[0],
 		deep = false,
+		same = false,
 		index = 1,
 		len = arguments.length;
 		cache = {
@@ -131,6 +137,11 @@ function extend(/*[deep,] [destination,] source1[, source2[, ...]]*/){
 		deep = destination;
 		destination = arguments[index];
 		index++;
+		if(typeof destination == 'boolean'){
+			same = true;
+			destination = arguments[index];
+			index++;
+		}
 	}
 	if(len == index){
 		destination = this;
@@ -143,9 +154,10 @@ function extend(/*[deep,] [destination,] source1[, source2[, ...]]*/){
 	for(;index < len; ++index){
 		source = arguments[index];
 		if(typeof source == 'object' && !(destination === source)){
+			if(same && (nameOf(destination) || typeof destination) != (nameOf(source) || typeof source)) continue;
 			cache.dest.push(destination);
 			cache.src.push(source);
-			destination = _extend(deep, destination, source);
+			destination = _extend(deep, same, destination, source);
 		}
 	}
 	return destination;
