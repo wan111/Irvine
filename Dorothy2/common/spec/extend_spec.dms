@@ -67,9 +67,40 @@ describe('extend', function(){
 		obj = extend(deep, {}, src, src2);
 		expect(obj).toEqual(merge);
 	});
-	//javascriptではenumerable属性がtrueの物のみをコピーすべきだがDMonkeyはenumerable属性の設定が不正確なので無視
+	cases([
+		[ 
+			{a: 1, b: 'a', c: {}, d: new Number(1), e: 'a', f: function(){}},
+			{a: 'a', b: 'b', c: [], d: new Number(2), e: new String('a'), f: null, g: 0},
+			{a: 1, b: 'b', c: {}, d: new Number(2), e: 'a', f: function(){}, g: 0}
+		],
+		[
+			[1, 'a', {}, new Number(1), 'a', function(){}],
+			['a', 'b', [], new Number(2), new String('a'), null, 0],
+			[1, 'b', {}, new Number(2), 'a', function(){}, 0]
+		],
+		[
+			{a: 1},
+			[1],
+			{a: 1}
+		]
+	]).it('same', function(dest, src, merge){
+		var obj = extend(false, true, dest, src);
+		var v1, v2, type1, type2;
+		for(var i in merge){
+			v1 = merge[i];
+			v2 = obj[i];
+			type1 = typeof v1;
+			type2 = typeof v2;
+			if(type1 == 'function'){
+				expect(type2 == 'function').toBeTruthy();
+			}else{
+				expect(type1 == type2 && nameOf(v1) == nameOf(v2) && v1.toString() == v2.toString()).toBeTruthy();
+			}
+		}
+	});
+	//javascriptではenumerable属性がtrueの物のみをコピーすべきだがDMonkeyはenumerable属性の設定が不明なので無視
 	//オブジェクトが直接引数に渡された場合は走査 オブジェクトや配列の値の場合は複製する
-	//function型のプロパティはfor..inで列挙できないのでgetKeysかgetMethodsで取得する だがArrayやStrings等はそれでは値を取得できないのでfor..inを使う
+	//function型のプロパティはfor..inで列挙できないのでgetKeysで列挙する だがArrayやStrings等はそれでは値を取得できないのでfor..inで列挙する
 	cases([
 		new String('abc'),
 		new StringBuffer('abc')

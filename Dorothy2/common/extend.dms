@@ -7,158 +7,160 @@
 //path=common
 //end
 
-function getOwnProperties(obj, forIn){
-	var keys, key,
-		r = [],
-		defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/,
-		isPlainObject = nameOf(obj) == 'Object';
-	if(!forIn && typeof obj.getKeys == 'function'){
-		keys = obj.getKeys();
-		for(var i = 0; i < keys.length; i++){
-			key = keys[i];
-			if(typeof obj[key] == 'undefined') continue;
-
-			if(isPlainObject){
-				if(Object.hasKey(key)) continue;
-			}else{
-				if(defaultMethods.test(key)) continue;
-			}
-			r.push(key);
-		}
-	}
-	//folderdata“™‚ÍgetKeys‚ÅŽæ“¾‚Å‚«‚È‚¢‚½‚ß
-	if(!r.length){
-		for(key in obj){
-			if(typeof obj[key] != 'undefined'){
+extend = (function(){
+	function getOwnProperties(obj, forIn){
+		var keys, key,
+			r = [],
+			defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/,
+			isPlainObject = nameOf(obj) == 'Object';
+		if(!forIn && typeof obj.getKeys == 'function'){
+			keys = obj.getKeys();
+			for(var i = 0; i < keys.length; i++){
+				key = keys[i];
+				if(typeof obj[key] == 'undefined') continue;
+	
+				if(isPlainObject){
+					if(Object.hasKey(key)) continue;
+				}else{
+					if(defaultMethods.test(key)) continue;
+				}
 				r.push(key);
 			}
 		}
+		//folderdata“™‚ÍgetKeys‚ÅŽæ“¾‚Å‚«‚È‚¢‚½‚ß
+		if(!r.length){
+			for(key in obj){
+				if(typeof obj[key] != 'undefined'){
+					r.push(key);
+				}
+			}
+		}
+		return r;
 	}
-	return r;
-},
 
-function extend(/*[deep,] [same,] [destination,] source1[, source2[, ...]]*/){
-	function _extend(deep, same, destination, source){
-		var dest, src, key, index, ex, destType, srcType, isUndef,
-			isStrObj = source === String || source === StringBuffer,
-			keys = getOwnProperties(source, (nameOf(source) == 'Array' || isStrObj));
-
-		for(var i = 0; i < keys.length; i++){
-			key = keys[i];
-			src = source[key];
-			isUndef = typeof destination[key] == 'undefined';
-			dest = isUndef ? null : destination[key];
-			destType = nameOf(dest) || typeof dest;
-			srcType = nameOf(src) || typeof src;
-			if(same && !isUndef && destType != srcType) continue;
-			if(deep && typeof src == 'object'){
-				if((index = cache.indexOf(src)) != -1){
-					destination[key] = cache.dest[index];
-					continue;
+	return function(/*[deep,] [same,] [destination,] source1[, source2[, ...]]*/){
+		function _extend(deep, same, destination, source){
+			var dest, src, key, index, ex, destType, srcType, isUndef,
+				isStrObj = source === String || source === StringBuffer,
+				keys = getOwnProperties(source, (nameOf(source) == 'Array' || isStrObj));
+	
+			for(var i = 0; i < keys.length; i++){
+				key = keys[i];
+				src = source[key];
+				isUndef = typeof destination[key] == 'undefined';
+				dest = isUndef ? null : destination[key];
+				destType = nameOf(dest) || typeof dest;
+				srcType = nameOf(src) || typeof src;
+				if(same && !isUndef && destType != srcType) continue;
+				if(deep && typeof src == 'object'){
+					if((index = cache.indexOf(src)) != -1){
+						destination[key] = cache.dest[index];
+						continue;
+					}
+					ex = false;
+					switch(srcType){
+						case 'Object':
+							dest = destType == 'Object' ? dest : {};
+							ex = true;
+							break;
+						case 'Array':
+							dest = destType == 'Array' ? dest : [];
+							ex = true;
+							break;
+						case 'Number':
+							dest = new Number(src.valueOf());
+							break;
+						case 'Boolean':
+							dest = new Boolean(src.valueOf());
+							break;
+						case 'RegExp':
+							dest = new RegExp();
+							for(var j in dest) dest[j] = src[j];
+							break;
+						case 'Date':
+							dest = new Date(src.getTime());
+							dest.format = src.format;
+							break;
+						case 'StringList':
+							dest = new Strings(src.text);
+							dest.sorted = src.sorted;
+							dest.caseSensitive = src.caseSensitive;
+							dest.duplicates = src.duplicates;
+							break;
+						case 'URL':
+							dest = new URL(src.url);
+							break;
+						case 'Cookie':
+							dest = new Cookie();
+							dest.parse(src.toString());
+							break;
+						default:
+							if(src === String){
+								destination[key] = new String(src.toString());
+								continue;
+							}else if(src === StringBuffer){
+								destination[key] = new StringBuffer(src.text);
+								continue;
+							}else{
+								dest = src;
+							}
+					}
+					cache.dest.push(dest);
+					cache.src.push(src);
+					if(ex) dest = _extend(deep, same, dest, src);
+					destination[key] = dest;
+				}else{
+					destination[key] = src;
 				}
-				ex = false;
-				switch(srcType){
-					case 'Object':
-						dest = destType == 'Object' ? dest : {};
-						ex = true;
-						break;
-					case 'Array':
-						dest = destType == 'Array' ? dest : [];
-						ex = true;
-						break;
-					case 'Number':
-						dest = new Number(src.valueOf());
-						break;
-					case 'Boolean':
-						dest = new Boolean(src.valueOf());
-						break;
-					case 'RegExp':
-						dest = new RegExp();
-						for(var j in dest) dest[j] = src[j];
-						break;
-					case 'Date':
-						dest = new Date(src.getTime());
-						dest.format = src.format;
-						break;
-					case 'StringList':
-						dest = new Strings(src.text);
-						dest.sorted = src.sorted;
-						dest.caseSensitive = src.caseSensitive;
-						dest.duplicates = src.duplicates;
-						break;
-					case 'URL':
-						dest = new URL(src.url);
-						break;
-					case 'Cookie':
-						dest = new Cookie();
-						dest.parse(src.toString());
-						break;
-					default:
-						if(src === String){
-							destination[key] = new String(src.toString());
-							continue;
-						}else if(src === StringBuffer){
-							destination[key] = new StringBuffer(src.text);
-							continue;
-						}else{
-							dest = src;
-						}
+			}
+			return destination;
+		}
+	
+		var source,
+			destination = arguments[0],
+			deep = false,
+			same = false,
+			index = 1,
+			len = arguments.length;
+			cache = {
+				dest: [],
+				src: [],
+				indexOf: function(obj){
+					var len = this.src.length;
+					for(var i = 0; i < len; i++){
+						if(this.src[i] === obj || this.dest[i] === obj) return i;
+					}
+					return -1;
 				}
-				cache.dest.push(dest);
-				cache.src.push(src);
-				if(ex) dest = _extend(deep, same, dest, src);
-				destination[key] = dest;
-			}else{
-				destination[key] = src;
+			};
+	
+		if(typeof destination == 'boolean'){
+			deep = destination;
+			destination = arguments[index];
+			index++;
+			if(typeof destination == 'boolean'){
+				same = true;
+				destination = arguments[index];
+				index++;
+			}
+		}
+		if(len == index){
+			destination = this;
+			index--;
+		}
+		if(typeof destination != 'object' || (destination === String || destination === StringBuffer)){
+			destination = {};
+		}
+		var destType = nameOf(destination);
+		for(;index < len; ++index){
+			source = arguments[index];
+			if(typeof source == 'object' && !(destination === source)){
+				if(same && destType != nameOf(source)) continue;
+				cache.dest.push(destination);
+				cache.src.push(source);
+				destination = _extend(deep, same, destination, source);
 			}
 		}
 		return destination;
-	}
-
-	var source,
-		destination = arguments[0],
-		deep = false,
-		same = false,
-		index = 1,
-		len = arguments.length;
-		cache = {
-			dest: [],
-			src: [],
-			indexOf: function(obj){
-				var len = this.src.length;
-				for(var i = 0; i < len; i++){
-					if(this.src[i] === obj || this.dest[i] === obj) return i;
-				}
-				return -1;
-			}
-		};
-
-	if(typeof destination == 'boolean'){
-		deep = destination;
-		destination = arguments[index];
-		index++;
-		if(typeof destination == 'boolean'){
-			same = true;
-			destination = arguments[index];
-			index++;
-		}
-	}
-	if(len == index){
-		destination = this;
-		index--;
-	}
-	if(typeof destination != 'object' || (destination === String || destination === StringBuffer)){
-		destination = {};
-	}
-
-	for(;index < len; ++index){
-		source = arguments[index];
-		if(typeof source == 'object' && !(destination === source)){
-			if(same && (nameOf(destination) || typeof destination) != (nameOf(source) || typeof source)) continue;
-			cache.dest.push(destination);
-			cache.src.push(source);
-			destination = _extend(deep, same, destination, source);
-		}
-	}
-	return destination;
-}
+	};
+})();
