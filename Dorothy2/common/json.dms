@@ -153,7 +153,7 @@ JSON =
 			if(s == '-') s = Str.next();
 			if(s == '0') isZero = true;
 			else if(!(s | 0)) this.err('数値ではない', Str);
-			//this.err[00, -00, 0123, 00.0, -00.0, 00e+1, 0123e1, 0123.0, 0123.1e1] ok[0e+1, 0e000, 0.000]
+			//err[00, -00, 0123, 00.0, -00.0, 00e+1, 0123e1, 0123.0, 0123.1e1] ok[0e+1, 0e000, 0.000]
 			//先頭から複数連続した0は禁止する
 			//0の直後に指数と小数がある場合を除いて0から始まる数値は禁止する
 			//00, 0[1-9] になった時点でエラー
@@ -247,7 +247,7 @@ JSON =
 			}
 			this.err('不正な値', Str);
 		},
-		//rentanさんのUt8.dmsから拝借しました
+		//rentanさんのutf8.dmsから拝借しました
 		_unescape: function(Str){
 			// \uXXXX ... \u0000～\uffff
 			var r = '',
@@ -366,7 +366,7 @@ JSON =
 				this.index += len;
 				return s;//終端に達した場合は空文字
 			};
-			//次の文字を取得する 空白の場合スキップする
+			//空白をスキップして次の文字を取得する
 			Str.nextStr = function(){
 				var r;
 				while(++this.index <= this.end){
@@ -389,7 +389,7 @@ JSON =
 				if(s == '/'){
 					s = this.parseComment(Str);
 				}
-				if(s){ //残りが空白のみなら空文字になる
+				if(s){ //残りが何も無いなら空文字になる
 					this.err('不正な文字列', Str);
 				}
 			}catch(e){
@@ -421,7 +421,7 @@ JSON =
 			if(/^[\s -~]+$/.test(s)) return s;
 			return this.toUnicode(s);
 		},
-		//rentanさんのUt8.dmsから拝借しました
+		//rentanさんのutf8.dmsから拝借しました
 		toUnicode: function(s){
 			var sb = new StringBuffer(s);
 			var sb_len = sb.length;
@@ -524,11 +524,11 @@ JSON =
 						case 'Cookie':
 							var r = this.opts.encode ? this._escape(value.toString()) : value;
 							return this.opts.strQuotes[0] + r + this.opts.strQuotes[1];
-						case 'Number': return isFinite(value) ? value.toString() : 'null';
+						case 'Number': return isFinite(value) ? value.toString() : 'null';//非数(infinity等)の場合はnullとする
 						case 'Boolean': return value.toString();
 						case 'Date':
 							var r, oldFormat = value.format;
-							value.format = 'yyyy-mm-dd"T"hh:mm:ss.zzz"Z"';
+							value.format = 'yyyy-mm-dd"T"hh:mm:ss.zzz"Z"';//ISO 8601 Extended Format
 							r = value.toUTCString();
 							value.format = oldFormat;
 							return this.opts.strQuotes[0] + r + this.opts.strQuotes[1];
@@ -639,7 +639,7 @@ JSON =
 		var reg_value = /\s*("[^"\\\b\f\n\t]*"|true|false|null|-?(0|[1-9]\d*)(\.\d+)?([eE][+\-]?\d+)?)\s*/g;
 		var reg_object = /\s*(\{((@:@,)*@:@)?\s*\}|\[((@,)*@)?\s*\])\s*/g;
 
-		text = new String(text).replace(/@/g, '_').replace(reg_escape, '@');//あらかじめ@を_に置換 エスケープ文字を全て@に置換
+		text = new String(text).replace(/@/g, '_').replace(reg_escape, '@');//@を_に置換してからエスケープ文字を全て@に置換
 		if(text.indexOf('\') != -1) return false;//不正なエスケープ文字
 
 		text = text.replace(reg_value, '@');//値を全て@に置換
