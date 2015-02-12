@@ -655,7 +655,7 @@ JSON =
 		path = path || Dorothy.matchFile + '.json';
 		if(!/^[a-z]:/i.test(path)){
 			common_load('DorothyEx');
-			path = DorothyEx.getSaveFolder() + path;
+			path = DorothyEx.getSaveFolder() + path.replace('^\s*\\', '');
 		}
 		opts = nameOf(opts) == 'Object' ? opts : {};
 		if(!opts.hasKey('relaxed')) opts.relaxed = true;
@@ -677,7 +677,7 @@ JSON =
 		path = path || Dorothy.matchFile + '.json';
 		if(!/^[a-z]:/i.test(path)){
 			common_load('DorothyEx');
-			path = DorothyEx.getSaveFolder() + path;
+			path = DorothyEx.getSaveFolder() + path.replace('^\s*\\', '');
 		}
 		try{
 			space = isUndefined(space) || isNull(space) ? "\t" : space;
