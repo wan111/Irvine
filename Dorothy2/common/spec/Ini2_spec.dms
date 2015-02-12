@@ -1,0 +1,336 @@
+//Dorothy2
+//caption=Ini2 spec
+//version=0.1
+//hint=http://yasmine.dorothy.test/common/spec/Ini2_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+
+common_load('Ini2', 'DorothyEx');
+describe('Ini2', function(){
+	var path = DorothyEx.getUserPath() + 'Ini2_test.ini';
+	var path2 = DorothyEx.getUserPath() + 'Ini2_test2.ini';
+	
+	var dir = new Directory(DorothyEx.getUserPath());
+	if(!dir.exists()) dir.make();
+	
+	var iniText = [
+		'z=aaa',
+		';test',
+		'[test]',
+		'a=123',
+		'b=abc',
+		'c=true',
+		'd = false',
+		' e=null',
+		'f=',
+		'=',
+		'',
+		'	;test2',
+		' [ test 2 ]',
+		';[comment1]',
+		'comment2',
+		'g 1=a=b',
+		';h=1',
+		'',
+		'[test=3]',
+		'',
+		'i=[abc]',
+		'[]',
+		'[comment',
+		'[j=1'
+	].join("\n");
+
+	var iniText2 = [
+		'[]',
+		'[j=1',
+		'',
+		'[test]',
+		'=',
+		'a=123',
+		'b=abc',
+		'c=true',
+		'd=false',
+		'e=null',
+		'f=',
+		'',
+		'[test 2]',
+		'g 1=a=b',
+		'',
+		'[test=3]',
+		'i=[abc]',
+		''
+	].join("\n");
+
+	var sl = new Strings(iniText);
+	sl.saveToFile(path);
+	var ini;
+	beforeEach(function(){
+		ini = new Ini2(path);
+	});
+	it('load', function(){
+		var data = ini.data;
+		ini.filename = path2;//存在しないファイルの指定
+		expect(ini.load()).toBe(ini);
+		expect(ini.data).toEqual({});
+		ini.filename = path;
+		ini.load();
+		expect(ini.data).toEqual(data);
+		expect(ini.data).not.toBe(data);
+	});
+	it('data', function(){
+		var obj = {
+			test: {
+				a: '123',
+				b: 'abc',
+				c: 'true',
+				d: 'false',
+				e: 'null',
+				f: '',
+				'': ''
+			},
+			'test 2': {'g 1': 'a=b'},
+			'test=3': {i: '[abc]'},
+			'': {'[j': "1"}
+		};
+		expect(ini.data).toEqual(obj);
+	});
+	it('filename', function(){
+		expect(ini.filename).toBe(path);
+		ini = new Ini2();
+		expect(ini.filename).toBe(DorothyEx.getUserIniPath());
+	});
+	cases([
+		['test', 'a', '123'],
+		['test', 'b', 'abc'],
+		['test', 'c', 'true'],
+		['test', 'd', 'false'],
+		['test', 'e', 'null'],
+		['test', 'f', ''],
+		['test', '', ''],
+		['test 2', 'g 1', 'a=b'],
+		['test 2', 'h', false],
+		['test 2', '[test', false],
+		['test=3', 'i', '[abc]'],
+		['', '[j', '1'],
+		['', 'z', false],
+		['comment', 'j', false]
+	]).it('read', function(sec, key, v){
+		expect(ini.read(sec, key, false)).toBe(v);
+	});
+	it('throwError', function(){
+		expect(function(){ini.read();}).toThrow();
+		expect(function(){ini.read('test');}).toThrow();
+		expect(function(){ini.read('test', 'a');}).toThrow();
+
+		expect(function(){ini.write();}).toThrow();
+		expect(function(){ini.write('test');}).toThrow();
+		expect(function(){ini.write('test', 'a');}).toThrow();
+
+		expect(function(){ini.deleteKey();}).toThrow();
+		expect(function(){ini.deleteKey('test');}).toThrow();
+
+		expect(function(){ini.eraseSection();}).toThrow();
+		expect(function(){ini.readSection();}).toThrow();
+	});
+	it('readSections', function(){
+		var r = ini.readSections();
+		var arr = [];
+		expect(r).toEqual(jasmine.any(Strings));
+		r.sort();
+		for(var i in r) arr.push(r[i]);
+		expect(arr).toEqual(['', 'test', 'test 2', 'test=3']);
+	});
+	cases([
+		['test', ['', 'a', 'b', 'c', 'd', 'e', 'f']],
+		['test 2', ['g 1']],
+		['test=3', ['i']],
+		['', ['[j']],
+		['null', []]
+	]).it('readSection', function(sec, keys){
+		var r = ini.readSection(sec);
+		var arr = [];
+		expect(r).toEqual(jasmine.any(Strings));
+		r.sort();
+		for(var i in r) arr.push(r[i]);
+		expect(arr).toEqual(keys);
+	});
+	cases([
+		['test', true],
+		['test 2', true],
+		['test=3', true],
+		['', true],
+		['comment1', false],
+		['abc', false],
+		['comment', false],
+		['j', false]
+	]).it('sectionExists', function(sec, bool){
+		expect(ini.sectionExists(sec)).toBe(bool);
+	});
+	it('getFileName', function(){
+		expect(ini.getFileName()).toBe(path);
+	});
+	it('setFileName', function(){
+		expect(ini.setFileName(new File(path2).extractName())).toBe(ini);
+		expect(ini.getFileName()).toBe(path2);
+		expect(ini.filename).toBe(path2);
+		ini.filename = path;
+	});
+	it('write', function(){
+		expect(ini.write('test', 'a', '234')).toBe(ini);
+		ini.write('test 2', '', 'aaa');
+		ini.write('test4', 'k', '');
+		expect(ini.read('test', 'a', '')).toBe('234');
+		expect(ini.read('test 2', '', '')).toBe('aaa');
+		expect(ini.read('test4', 'k', '_')).toBe('');
+		expect(ini.sectionExists('test4')).toBeTruthy();
+		var obj = {
+			test: {a: '234', b: 'abc', c: 'true', d: 'false', e: 'null', f: '', '': ''},
+			'test 2': {'g 1': 'a=b', '': 'aaa'},
+			'test=3': {i: '[abc]'},
+			'': {'[j': "1"},
+			'test4': {k: ''}
+		};
+		expect(ini.data).toEqual(obj);
+	});
+	it('eraseSection', function(){
+		expect(ini.eraseSection('test')).toBe(ini);
+		ini.eraseSection('');
+		expect(ini.sectionExists('test')).toBeFalsy();
+		expect(ini.sectionExists('')).toBeFalsy();
+		var r = ini.readSections();
+		r.sort();
+		var arr = [];
+		for(var i in r) arr.push(r[i]);
+		expect(arr).toEqual(['test 2', 'test=3']);
+		var obj = {
+			'test 2': {'g 1': 'a=b'},
+			'test=3': {i: '[abc]'}
+		};
+		expect(ini.data).toEqual(obj);
+	});
+	it('deleteKey', function(){
+		expect(ini.deleteKey('test', 'a')).toBe(ini);
+		expect(ini.deleteKey('null', 'aa')).toBe(ini);
+		ini.deleteKey('test', '');
+		ini.deleteKey('', '[j');
+		expect(ini.read('test', 'a', false)).toBeFalsy();
+		expect(ini.read('test', '', false)).toBeFalsy();
+		expect(ini.read('', '[j', false)).toBeFalsy();
+		var obj = {
+			test: {b: 'abc', c: 'true', d: 'false', e: 'null', f: ''},
+			'test 2': {'g 1': 'a=b'},
+			'test=3': {i: '[abc]'},
+			'': {}
+		};
+		expect(ini.data).toEqual(obj);
+	});
+
+	it('getData', function(){
+		var data = ini.getData();
+		expect(data).not.toBe(ini.data);
+		expect(data).toEqual(ini.data);
+		
+		var data2 = ini.getData({test: {a: 'aaa', newkey: 234}, newsec: {a: 1}});
+		data.test.newkey = 234;
+		data.newsec = {a: 1};
+		expect(data2).toEqual(data);
+		expect(data2.test.a).toBe('123');
+		expect(data2.test.newkey).toBe(234);
+	});
+	it('setData', function(){
+		var obj = {
+			sec1: {a: 1, b: 'a', c: true, d: null},
+			sec2: {}
+		};
+		expect(ini.setData(obj)).toBe(ini);
+		expect(ini.data).not.toBe(obj);
+		expect(ini.data).toEqual(obj);
+		var r = ini.readSections();
+		var arr = [];
+		r.sort();
+		for(var i in r) arr.push(r[i]);
+		expect(arr).toEqual(['sec1', 'sec2']);
+		expect(ini.read('sec1', 'a', '')).toBe(1);
+		expect(ini.read('sec1', 'b', '')).toBe('a');
+		expect(ini.read('sec1', 'c', '')).toBe(true);
+		expect(ini.read('sec1', 'd', '')).toBe(null);
+		expect(ini.readSection('sec2').length).toBe(0);
+	});
+	it('typeConversion', function(){
+		var def = {
+			test: {a: 0, b: '', c: false, d: true, e: null, f: true, '': false, newkey1: 1},
+			'test 2': {'g 1': null},
+			'test=3': {i: 0},
+			newsec: {},
+			newsec2: {newkey2: 1}
+		};
+		var r = {
+			test: {a: 123, b: 'abc', c: true, d: false, e: null, f: true, '': false, newkey1: 1},
+			'test 2': {'g 1': null},
+			'test=3': {i: 0},
+			'': {'[j': '1'},
+			newsec: {},
+			newsec2: {newkey2: 1}
+		};
+		ini.typeConversion(def);
+		expect(ini.data).toEqual(r);
+		ini = new Ini2(path, def);
+		expect(ini.data).toEqual(r);
+		ini = new Ini2(path2, def);
+		expect(ini.data).toEqual(def);
+		expect(ini.data).not.toBe(def);
+	});
+	it('update', function(){
+		ini.filename = path2;
+		ini.update();
+		var sl = new Strings();
+		sl.loadFromFile(path2);
+		expect(new File(path2).exists()).toBeTruthy();
+		expect(sl.text).toBe(iniText2);
+
+		ini.filename = path;
+		ini.write('test', 'a', 234);
+		ini.write('test', 'e', true);
+		ini.write('test 2', 'newkeyB', 'aaa');
+		ini.write('test 2', 'newkeyA', 'aaa');
+		ini.write('newsec', 'k', 123);
+		ini.deleteKey('test', '');
+		ini.deleteKey('test=3', 'i');
+		ini.eraseSection('');
+		ini.update();
+		var txt = [
+			'z=aaa',
+			';test',
+			'[test]',
+			'a=234',
+			'b=abc',
+			'c=true',
+			'd = false',
+			' e=true',
+			'f=',
+			'',
+			'	;test2',
+			' [ test 2 ]',
+			';[comment1]',
+			'comment2',
+			'g 1=a=b',
+			'newkeyA=aaa',
+			'newkeyB=aaa',
+			';h=1',
+			'',
+			'[test=3]',
+			'',
+			'[comment',
+			'',
+			'[newsec]',
+			'k=123',
+			''
+		].join("\n");
+		sl.loadFromFile(path);
+		expect(sl.text).toBe(txt);
+	});
+	new File(path).remove();
+	new File(path2).remove();
+});
