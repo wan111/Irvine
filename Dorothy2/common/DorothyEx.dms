@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DorothyEx
-//version=0.11
+//version=0.12
 //hint=
 //match=
 //author=wan
@@ -116,6 +116,12 @@ DorothyEx.getSaveFolder = function(){
 		}
 	}
 	return new Directory(path).path;
+};
+DorothyEx.getUserPath = function(){
+	return this.isDOA ? Dorothy.path + 'user' + Dorothy.matchFile + '\' : Dorothy.userPath;
+};
+DorothyEx.getUserIniPath = function(){
+	return this.isDOA ? this.getUserPath() + Dorothy.matchFile + '.ini' : Dorothy.userIniPath;
 };
 DorothyEx.setFolderData = function(){
 	if(this.isDorothy2A) return;
