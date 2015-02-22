@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=xvideos_w
-//version=0.11
+//version=0.12
 //hint=http://(www\.|jp\.|flashservice\.)?xvideos\.(com|jp)/
 //match=http://(www\.|jp\.|flashservice\.)?xvideos\.(com|jp)/
 //author=wan
@@ -24,7 +24,7 @@ function(){
 	}
 	var video_id = RegExp.$4;
 	
-	var url = new URL('http://www.xvideos.com/video' + video_id);
+	var url = new URL('http://www.xvideos.com/video' + video_id + '/');
 	
 	var http = download(url.url, true);
 	if(http.responseHeader.code != 200){
@@ -54,7 +54,7 @@ function(){
 
 	var title = 'unknown', tags = [], name = '', models = [], duration;
 	
-	if(http.data.match('<h2>([^<]+)\s?<span class="duration">- ([^<]+)</span')){
+	if(http.data.match('<h2>([^<]+?)\s?<span class="duration">- ([^<]+)</span')){
 		title = RegExp.$1;
 		duration = RegExp.$2;
 	}
