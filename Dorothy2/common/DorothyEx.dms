@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DorothyEx
-//version=0.12
+//version=0.13
 //hint=
 //match=
 //author=wan
@@ -13,7 +13,7 @@ DorothyEx.queueFolder = '';
 DorothyEx.isDorothy2A = false;
 DorothyEx.isDorothy2set = false;
 DorothyEx.isDOA = false;
-DorothyEx.isRentan = typeof Dorothy.rVersion != 'undefined';;
+DorothyEx.isRentan = typeof Dorothy.rVersion != 'undefined';
 switch(WScript.ScriptName){
 	case 'Dorothy2A.dms':
 	case 'Dorothy2R_a.dms':
@@ -21,7 +21,6 @@ switch(WScript.ScriptName){
 		DorothyEx.queueFolder = /queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '';
 		break;
 	case 'Dorothy2R_listmenu.dms':
-		Dorothy.url = item.url;
 	case 'Dorothy2set.dms':
 	case 'Dorothy2ListMenu.dms':
 	case 'Dorothy2R_set.dms':
@@ -34,7 +33,6 @@ switch(WScript.ScriptName){
 	case 'Dorothy2R_doa_tree.dms':
 		DorothyEx.isDOA = true;
 		DorothyEx.queueFolder = DOA.CurrentQueueFolder;
-		Dorothy.temp = dorothy2_temp;
 		break;
 	default:
 		alert('DorothyExエラー 不明な実行環境: ' + WScript.ScriptName);
@@ -80,7 +78,7 @@ DorothyEx.getVersionDorothy2set = function(){
 DorothyEx.getVersionDOA = function(){
 	return this.isRentan ? Dorothy.rVersion : this._getVersion((new irvinePath).scripts + 'DOA.dms');
 };
-
+//実行環境別にアイテムの保存場所を取得する 相対パスの場合は絶対パスになるまで上位キューフォルダから取得していく
 DorothyEx.getSaveFolder = function(){
 	if(this.isDOA){
 		var item = typeof item != 'undefined' ? item : new IrvineItem();
@@ -117,12 +115,14 @@ DorothyEx.getSaveFolder = function(){
 	}
 	return new Directory(path).path;
 };
+//Dorothy.userPath Dorothy.userIniPathが使えないDOA用
 DorothyEx.getUserPath = function(){
 	return this.isDOA ? Dorothy.path + 'user' + Dorothy.matchFile + '\' : Dorothy.userPath;
 };
 DorothyEx.getUserIniPath = function(){
 	return this.isDOA ? this.getUserPath() + Dorothy.matchFile + '.ini' : Dorothy.userIniPath;
 };
+//DOA Dorothy2set でもfolderdataを使えるようにする
 DorothyEx.setFolderData = function(){
 	if(this.isDorothy2A) return;
 	var toDateTime = function(str){
@@ -250,6 +250,107 @@ DorothyEx.setFolderData = function(){
 	folderdata.UseRollBack         = folder.Values['userollback'] == 1;
 	folderdata.ViewIndex           = folder.Values['viewindex'];
 };
+//環境別の差異がなるべく少なくなる様に再定義する
+DorothyEx.define = function(){
+	if(this.isRentan){
+		Global.common_reload = function(){
+			for (var i = 0; i < arguments.length; i++) {
+				common_xload (arguments [i]);
+			}
+		};
+	}
+	if(this.isDorothy2A){
+		if(this.isRentan){
+			Global.reset = function(){
+				for(var i = 0 ; i < arguments.length ; i++){
+					println(arguments[i]);
+				}
+				var url = new URL(Dorothy.oldUrl);
+				urlinfo.url = url.url;
+				headers.host = url.host;
+			};
+			
+		}
+		dorothy2_path                = Dorothy.path;
+		dorothy2_temp                = dorothy2_path + 'temp\';
+		dorothy2_document            = dorothy2_path + 'document\';
+		dorothy2_common              = dorothy2_path + 'common\';
+		dorothy2_program             = dorothy2_path + 'program\';
+		dorothy2_setting             = dorothy2_path + 'setting\';
+		dorothy2_system              = dorothy2_path + 'system\';
+		dorothy2_project             = dorothy2_path + 'project\';
+		dorothy2_projectdata         = dorothy2_path + 'projectdata\';
+		dorothy2_bin                 = dorothy2_path + 'bin\';
+		dorothy2_user                = dorothy2_path + 'user\';
+		dorothy2_system_menu         = dorothy2_system + 'menu\';
+		dorothy2_system_menu_new     = dorothy2_system_menu + 'new\';
+		dorothy2_system_menu_setting = dorothy2_system_menu + 'setting\';
+		dorothy2_system_menu_edit    = dorothy2_system_menu + 'edit\';
+		dorothy2_system_menu_project = dorothy2_system_menu + 'project\';
+		dorothy2_system_menu_tool    = dorothy2_system_menu + 'tool\';
+		dorothy2_system_menu_set     = dorothy2_system_menu + 'set\';
+		dorothy2_system_menu_package = dorothy2_system_menu + 'package\';
+		dorothy2_system_menu_help    = dorothy2_system_menu + 'help\';
+		dorothy2_system_ini          = dorothy2_system + 'ini\';
+		irvine_script_path           = (new irvinePath).scripts;
+		Dorothy.url = Dorothy.oldUrl;
+	}else if(this.isDOA){
+		if(this.isRentan){
+			irvine_script_path = (new irvinePath).scripts;
+		}else{
+			Dorothy.programDir = dorothy2_program;
+			Dorothy.version = this.getVersionDOA();
+			Dorothy.temp = dorothy2_temp;
+		}
+		Dorothy.userPath = dorothy2_user + Dorothy.matchFile + '\';
+		Dorothy.userIniPath = Dorothy.userPath + Dorothy.matchFile + '.ini';
+	}else if(this.isDorothy2set){
+		if(!this.isRentan){
+			void function print_debug(str){
+				if(debug) println(str);
+			};
+		}
+		if(typeof OnMainMenuClick === 'function'){
+			if(!this.isRentan){
+				void function program_load(name){
+					return file_load('program\' + name + '.dms');
+				};
+				void function user_load(name){
+					return file_load('user\' + Dorothy.matchFile + '\' + name);//'
+				};
+				void function user_program_load(){
+					for(var i = 0 ; i < arguments.length ; i++){
+						try{
+							eval( file_load('user\' + Dorothy.matchFile + '\' + arguments[i] + '.dms') );
+						}
+						catch(e){
+							println(e+' '+Dorothy.matchFile + '\' + arguments[i]+'.dms');
+							eval( file_load('user\' + Dorothy.matchFile + '\' + arguments[i] + '.dms') );
+						}
+					}
+				};
+			}
+			//無理矢理 選択アイテム取得
+			item = new IrvineItem;
+			var count = Irvine.ItemCount;
+			for(var i = 0; i < count; i++){
+				if(Irvine.GetItemSelected(i)){
+					item.data = Irvine.GetItemData(i);
+					if(item.url.indexOf('ttp://') == 0){
+						item.url = 'h' + item.url;
+					}
+					break;
+				}
+			}
+			Dorothy.url = item.url;
+		}else{
+			if(this.isRentan){
+				irvine_script_path = (new irvinePath).scripts;
+				Dorothy.url = item.url;
+			}
+		}
+	}
+};
 DorothyEx.doaSetitem = function(){
 	if(typeof item == 'undefined' || typeof DOA_IT == 'undefined') return false;
 
@@ -277,5 +378,5 @@ DorothyEx.doaSetitem = function(){
 //------------------------------------------------------------------------------
 
 DorothyEx.setFolderData();
-
+DorothyEx.define();
 })();
