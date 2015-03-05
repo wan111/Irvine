@@ -148,6 +148,8 @@ extend = (function(){
 			destination = this;
 			index--;
 		}
+		//Stringオブジェクト同士,StringBufferオブジェクト同士の比較は常にtrueとなるバグを利用
+		//またこれらはブラケット表記法ではプロパティにアクセスできないので{}とする
 		if(typeof destination != 'object' || (destination === String || destination === StringBuffer)){
 			destination = {};
 		}
