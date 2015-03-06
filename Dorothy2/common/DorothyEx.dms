@@ -302,8 +302,8 @@ DorothyEx.define = function(){
 			Dorothy.version = this.getVersionDOA();
 			Dorothy.temp = dorothy2_temp;
 		}
-		Dorothy.userPath = dorothy2_user + Dorothy.matchFile + '\';
-		Dorothy.userIniPath = Dorothy.userPath + Dorothy.matchFile + '.ini';
+		//Dorothy.userPath = dorothy2_user + Dorothy.matchFile + '\';
+		//Dorothy.userIniPath = Dorothy.userPath + Dorothy.matchFile + '.ini';
 	}else if(this.isDorothy2set){
 		if(!this.isRentan){
 			void function print_debug(str){
