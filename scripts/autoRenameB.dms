@@ -1,0 +1,28 @@
+/*
+スクリプト初期化データ
+guid={F91500C9-8BDC-4E9F-A01F-7713EF6CB37B}
+caption=autoRenameB(単独版)
+version=0.1
+hint=OnStartThreadイベントのautoRenameA.dmsと一緒に使用してください Dorothy2を使う場合はDorothy2子スクリプト版を使用してください
+event=OnHttpRequest
+match=
+author=wan
+synchronize=0
+*/
+
+function OnHttpRequest(urlinfo,headers,item,folderdata,optiondata){
+/*
+  HTTP(S)リクエストイベント
+  ※synchronize=1 以外の場合にIrvine.Api/UrlManager/Folder/Itemを使用しないでください
+  ※ダイアログを呼びださないでください
+*/
+	item.comment = item.comment.replace(/{34686344-1C41-4E59-B201-6CFBFAF7101D}=(\d);/, '');
+	switch(RegExp.$1){
+		case '0':
+			item.filename = '';
+			break;
+		case '1':
+			item.filename = item.filename.replace(/\.irvpart$/, '');
+			break;
+	}
+}

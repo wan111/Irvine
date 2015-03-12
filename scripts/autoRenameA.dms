@@ -1,0 +1,63 @@
+/*
+スクリプト初期化データ
+guid={34686344-1C41-4E59-B201-6CFBFAF7101D}
+caption=autoRenameA
+version=0.1
+hint=既存ファイルを保護するために処理中のファイルを独自のファイル名にする autoRenameB.dmsと一緒に使用してください
+event=OnStartThread
+match=
+author=wan
+synchronize=0
+*/
+
+function OnStartThread(urlinfo,item,folderdata,options){
+/*
+  ダウンロードスレッド開始イベント
+  ※synchronize=1 以外の場合にIrvine.Api/UrlManager/Folder/Itemを使用しないでください
+  ※ダイアログを呼びださないでください
+*/
+
+	//フォルダの保存先を相対パスにしている場合は
+	//事前にフォルダ設定の「POSTする文字列」に queue=キューフォルダ名 を設定しておいてください
+	function getSaveFolder(){
+		var ipath = item.folder;
+		if(/^[a-z]:/i.test(ipath)){
+			ipath += '\';
+			return new Directory(ipath).path;
+		}
+	
+		var path = folderdata.Folder + '\' + ipath,
+			qPath = new RegIni('\software\wildforce\irvine').read('path', 'option', '').replace(/\\[^\\]+$/, '\\queue\\'),
+			irvQPath = /queue\s*=\s*(\/[^;]+)/.test(folderdata.Post) ? RegExp.$1 : '',
+			ini;
+		//絶対パスになるまで順に上位キューフォルダのiniから保存パスを取得
+		while(!/^[a-z]:/i.test(path)){
+			irvQPath = irvQPath.slice(0, irvQPath.lastIndexOf('/'));
+			ini = new Ini(new Directory(qPath + irvQPath).path + 'queue.ini');
+			path = ini.read('queue', 'folder', '') + '\' + path;
+			if(!irvQPath) break;
+		}
+		return new Directory(path).path;
+	}
+
+	var id = '{34686344-1C41-4E59-B201-6CFBFAF7101D}';
+	var suffix = '.irvpart';
+	if(item.filename){
+		item.filename += suffix;
+		item.comment += id + '=1;';//「別名で保存」指定有り
+	}else{
+		var tempName = urlinfo.url.slice(urlinfo.url.lastIndexOf('/') + 1).replace(/\?/g, '_') || 'index.html';
+		item.filename = tempName + suffix;
+		//リジューム無しの場合は別ファイルにする 最終的な重複処理はIrvineに任せる
+		if(!folderdata.UseResume){
+			var path = getSaveFolder(),
+				f = new File(path + tempName + suffix);
+			for(var i = 0; f.exists(); i++){
+				f.path = format('%s%s[%d]%s', path, tempName, i, suffix);
+			}
+			item.filename = f.extractName();
+		}
+		item.comment = id + '=0;';//「別名で保存」指定無し
+	}
+	return true;
+}
