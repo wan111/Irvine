@@ -1,0 +1,45 @@
+//project file
+{
+	'head':
+	{
+		'caption':'autoRename',
+		'version':'program\autoRenameB.dms',
+		'folder_name':'autoRename',
+		'memo':
+"処理中ファイルに拡張子.irvpartを付加する事で既存ファイルが
+リジューム対象になってしまう問題を回避します。
+OnStartThreadのautoRenameA.dmsでファイル名に.irvpartを付加
+autoRenameB.dmsで「別名で保存」に指定が有る場合は
+item.filenameから付加した拡張子のみを削除し
+指定が無かった場合はitem.filenameを空にします
+
+フォルダ設定の
+  「ファイル名の?以降を削除する」
+  「ファイル名にハッシュ値をつける」
+  「数字のファイル名のみ」
+  「ファイル名に日時をつける」
+のオプションは使用できなくなります。
+
+使用方法:
+ OnStartThreadでautoRenameA.dmsを有効にする
+ Dorothy2で使用する場合
+   Dorothy2の設定からautoRenameBを有効にする
+ 単独で使用する場合
+   OnHttpRequestのautoRenameB(単独版)を有効にする
+   item.filenameや.commentを変更するスクリプトが有る場合
+   そのスクリプトよりも先に実行するようにして下さい
+"
+	},
+	'data':
+	[
+		{
+			'type':'file',
+			'Addition':
+			[
+				'program\autoRenameB.dms',
+				'..\scripts\autoRenameA.dms',
+				'..\scripts\autoRenameB.dms'
+			]
+		}
+	]
+}
