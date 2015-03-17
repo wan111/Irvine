@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={34686344-1C41-4E59-B201-6CFBFAF7101D}
 caption=autoRenameA
-version=0.1
+version=0.11
 hint=既存ファイルを保護するために処理中のファイルを独自のファイル名にする autoRenameB.dmsと一緒に使用してください
 event=OnStartThread
 match=
@@ -52,9 +52,9 @@ function OnStartThread(urlinfo,item,folderdata,options){
 	var suffix = '.irvpart';
 	if(item.filename){
 		item.filename += suffix;
-		item.comment += id + '=1;';//「別名で保存」指定有り
+		item.comment = id + '=1;' + item.comment;//「別名で保存」指定有り
 	}else{
-		var tempName = urlinfo.url.slice(urlinfo.url.lastIndexOf('/') + 1).replace(/\\\/:\*\?"<>\|/g, '_').replace(/#.*$/, '') || 'index.html';
+		var tempName = urlinfo.url.slice(urlinfo.url.lastIndexOf('/') + 1).replace(/[\\\/:\*\?"<>\|]/g, '_').replace(/#.*$/, '') || 'index.html';
 		item.filename = tempName + suffix;
 		//最終的な重複処理はIrvineに任せる
 		//同名のファイルがあればリネーム
@@ -72,7 +72,7 @@ function OnStartThread(urlinfo,item,folderdata,options){
 				item.filename = f.extractName();
 			}
 		}
-		item.comment = id + '=0;';//「別名で保存」指定無し
+		item.comment = id + '=0;' + item.comment;//「別名で保存」指定無し
 	}
 	return true;
 }
