@@ -1,0 +1,495 @@
+//Dorothy2
+//caption=calcJS
+//version=0.1
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+/*
+calcJS(input, o)
+説明:
+	文字列を式として評価します
+	評価結果はなるべくJavaScriptと同じ結果になる様に修正しています
+	評価に失敗した場合は例外を投げます
+引数:
+	input: 文字列
+	o: 式に変数が含まれている場合は o[変数名] の値を使用します
+戻り値: 評価した結果(number, string, boolean, null, undefined)
+対応している物:
+	値:
+		string: '～'  "～"
+		number: 整数 小数 指数 16進数 NaN Infinity
+		boolean: true  false
+		null
+		undefined
+		変数
+	演算子:
+		多項演算子: *  /  %  +  -  <<  >>  >>>  <  <=  >  >=  ==  !=  ===  !==  &  ^  |  &&  ||
+		括弧: ( )
+		単項演算子: ++  --  !  ~  +  -
+*/
+function calcJS(input, o){
+	function err(e, token){
+		var s = 'Error calcJS: input(' + token.index + ')=>' + e + ' (token: "' + token + '", symbol: "' + token.symbol + '")';
+		//s += "\n" + 'input: ' + input;
+		//s += "\n" + 'stack: ' + stack;
+		//println(s);
+		throw s;
+	}
+	function toInteger(v){
+		return v > 0 ? Math.floor(v) : Math.ceil(v);
+	}
+	function toNumber(v){
+		return typeof v === 'number' ? v : isNull(v) ? 0 : isFinite(v) ? parseFloat(v) : NaN;
+	}
+	function getTokens(input){
+		//token       : Stringオブジェクト
+		//token.symbol: 記号
+		//token.value : 値(VALの場合のみ)
+		//token.index : tokenの位置
+		var token, index,
+			r = [],
+			str = input,
+			len = str.length,
+			i = 0,
+			flag = false,
+			unaryFlag = true;
+		while(i < len){
+			if(str[i].trim() === ''){
+				++i;
+				continue;
+			}
+			token = new String(str.slice(i).match(/^(0x[\da-fA-F]+|\d+(\.\d+)?([eE][+-]?\d+)?)|^([~*\/%^()]|!={0,2}|\+\+?|--?|[<>]=|<<?|>{1,3}|===?|&&?|\|\|?)|^([$A-Za-z][$\w]*)|^('([^\\']+|\\.)*')|^("([^\\"]+|\\.)*")/));
+			token.index = i;
+			token.symbol = 'unknown';
+			index = RegExp.lastIndex;
+			flag = false;
+			if(RegExp.$1){
+				token.symbol = VAL;
+				token.value = parseFloat(token);
+			}else if(RegExp.$4){
+				token.symbol = RegExp.$4;
+				flag = true;
+				switch(token){
+					case '+':
+					case '-':
+						if(unaryFlag) token.symbol += 'n';
+						break;
+					case '~':
+					case '!':
+						if(!unaryFlag) err('不正な単項演算子の組み合わせ', token);
+						break;
+					case ')':
+					case '++':
+					case '--':
+						flag = false;
+						break;
+				}
+			}else if(RegExp.$5){
+				token.symbol = VAL;
+				switch(token){
+					case 'true':
+					case 'false':
+						token.value = token == 'true';
+						break;
+					case 'null':
+						token.value = null;
+						break;
+					case 'NaN':
+						token.value = NaN;
+						break;
+					default:
+						token.symbol = ID;
+				}
+			}else if(RegExp.$6 || RegExp.$8){
+				token.symbol = VAL;
+				token.value = token.slice(1, -1);
+				if(token.indexOf('\') != -1){
+					common_load('utf8');
+					token.value = new Utf8(token.value).unescape().toUTF8();
+				}
+			}else{
+				token.text = str[i];
+				err('不明なトークン', token);
+			}
+			unaryFlag = flag;
+			r.push(token);
+			i += index;
+		}
+		token = new String();
+		token.symbol = END;
+		token.index = i;
+		r.push(token);
+		return r;
+	}
+	function reduce(){
+		var a, b, l, v,
+			not = false,
+			i = stack.length - 1,
+			r = stack[i];
+		switch(r.symbol){
+			case ID:
+				if(o.hasKey(r)){
+					r.value = o[r];
+				}else if(r === 'undefined'){
+					r.value = _undefined;
+				}else if(r === 'Infinity'){
+					r.value = Infinity;
+				}else{
+					err('変数の値が不明', r);
+				}
+				r.symbol = VAR;
+				break;
+			case VAL:
+				r.symbol = EXPR;
+				break;
+			case EXPR:
+			case VAR:
+				var op = stack[--i];
+				a = r.value;
+				//JavaScriptと同じ結果になる様にする
+				switch(op.symbol){
+					//単項演算子
+					case '!':
+						//DMonkeyでは!NaNはfalseとなる
+						v = isNaN(a) ? true : !a;
+						break;
+					case '~':
+						v = ~toInteger(a);
+						break;
+					case '-n':
+						not = true;
+						//next
+					case '+n':
+						v = isFinite(a) || isNull(a) || a === Infinity || a === -Infinity ? (not ? -a : +a) : NaN;
+						break;
+					case '--':
+						not = true;
+						//next
+					case '++':
+						if(r.symbol != VAR) err('不正な' + (not ? '減分' : '増分') + '演算子(前置)の組み合わせ', r);
+						a = toNumber(a);
+						v = isFinite(a) ? a + (not ? -1 : 1) : a;
+						o[r] = v;
+						break;
+					default:
+						//二項演算子
+						l = stack[--i];
+						if(l.symbol != EXPR && l.symbol != VAR) err('不正な演算子', op);
+						b = a;
+						a = l.value;
+						switch(op.symbol){
+							case '*':
+								a = toNumber(a);
+								b = toNumber(b);
+								if(a === Infinity || a === -Infinity || isNaN(b)){
+									//a*正数=a; a*負数=-a; a*0=NaN; a*NaN=NaN;
+									v = b > 0 ? a : b < 0 ? -a : NaN;
+								}else if(b === Infinity || b === -Infinity || isNaN(a)){
+									v = a > 0 ? b : a < 0 ? -b : NaN;
+								}else{
+									v = a * b;
+								}
+								break;
+							case '/':
+								a = toNumber(a);
+								b = toNumber(b);
+								if(isNaN(a) || isNaN(b)){
+									v = NaN;
+								}else if(a === Infinity || a === -Infinity){
+									v = b === Infinity || b === -Infinity ? NaN : b >= 0 ? a : -a;
+								}else if(b === Infinity || b === -Infinity){
+									v = 0;
+								}else{
+									v = a / b;
+								}
+								break;
+							case '%':
+								a = toNumber(a);
+								b = toNumber(b);
+								if(isNaN(a) || isNaN(b) || b == 0 || a === Infinity || a === -Infinity){
+									v = NaN;
+								}else if(b === Infinity || b === -Infinity){
+									v = a;
+								}else{
+									//結果が丸められるので%は使用しない
+									v = a / b;
+									v = v > 0 ? Math.floor(v) : Math.ceil(v);
+									v = a - v * b;
+								}
+								break;
+							case '+':
+								if(typeof a === 'string' || typeof b === 'string'){
+									a = a === Infinity ? 'Infinity' : a === -Infinity ? '-Infinity' : new String(a);
+									b = b === Infinity ? 'Infinity' : b === -Infinity ? '-Infinity' : new String(b);
+									v = a + b;
+								}else if((isFinite(a) || isNull(a)) && (isFinite(b) || isNull(b))){
+									v = a + b;
+								}else{
+									v = NaN;
+									if(a === Infinity || a === -Infinity){
+										v = a === b || isFinite(b) || isNull(b) ? a : v;
+									}else if(b === Infinity || b === -Infinity){
+										v = b === a || isFinite(a) || isNull(a) ? b : v;
+									}
+								}
+								break;
+							case '-':
+								if((isFinite(a) || isNull(a)) && (isFinite(b) || isNull(b))){
+									v = a - b;
+								}else{
+									v = NaN;
+									if(a === Infinity || a === -Infinity){
+										v = -a === b || isFinite(b) || isNull(b) ? a : v;
+									}else if(b === Infinity || b === -Infinity){
+										v = -b === a || isFinite(a) || isNull(a) ? -b : v;
+									}
+								}
+								break;
+							case '<<':
+								v = toInteger(a) << toInteger(b);
+								break;
+							case '>>':
+								a = toInteger(a);
+								b = toInteger(b);
+								v =  a >> b;
+								//DMonkeyでは>>も論理シフトになっているので0埋めを反転
+								if(a < 0) v |= ~(-1 >> b);
+								break;
+							case '>>>':
+								a = toInteger(a);
+								b = toInteger(b);
+								v = a < 0 && b == 0 ? 0x100000000 + a : a >>> b;
+								break;
+							case '<=':
+								not = !not;
+								//next
+							case '>':
+								not = !not;
+								a = r.value;
+								b = l.value;
+								//next
+							case '>=':
+								not = !not;
+								//next
+							case '<':
+								//数値文字列を数値として比較しない様にする
+								if(typeof a === 'string' && typeof b === 'string'){
+									v = (a + '_') < (b + '_');
+								}else{
+									a = toNumber(a);
+									b = toNumber(b);
+									v = a < b;
+								}
+								if(not && !isNaN(a) && !isNaN(b)) v = !v;
+								break;
+							case '!=':
+								not = true;
+								//next
+							case '==':
+								if(typeof a === 'string' && !isFinite(a) && typeof b != 'number' && typeof b != 'string' ||
+									 typeof b === 'string' && !isFinite(b) && typeof a != 'number' && typeof a != 'string'){
+									v = false;
+								}else{
+									v = a == b;
+								}
+								if(not) v = !v;
+								break;
+							case '!==':
+								//バグがあるため!==は使用しない
+								not = true;
+								//next
+							case '===':
+								//整数値と浮動小数点値が別の型として扱われてしまう
+								if(typeof a === 'number' && typeof b === 'number'){
+									v = a == b;
+								}else{
+									v = a === b;
+								}
+								if(not) v = !v;
+								break;
+							case '&':
+								v = toInteger(a) & toInteger(b);
+								break;
+							case '^':
+								v = toInteger(a) ^ toInteger(b);
+								break;
+							case '|':
+								v = toInteger(a) | toInteger(b);
+								break;
+							case '&&':
+								//NaNが真として扱われてしまう
+								v = isNaN(a) ? a : a && b;
+								break;
+							case '||':
+								v = isNaN(a) ? b : a || b;
+								break;
+							default:
+								err('不明な演算子', op);
+						}
+						r = l;
+						stack.delete(++i);
+				}
+				stack.delete(i);
+				r.value = v;
+				r.symbol = EXPR;
+				break;
+			case ')':
+				l = stack[--i];
+				if(l.symbol === '(') err('空括弧', l);
+				if(stack[--i].symbol === '('){
+					stack.delete(i + 2);
+					stack.delete(i);
+					break;
+				}
+				err('括弧の不一致', r);
+			//後置演算子
+			case '--':
+				not = true;
+				//next
+			case '++':
+				l = stack[--i];
+				if(l.symbol === VAR){
+					a = toNumber(l.value);
+					v = isFinite(a) ? a + (not ? -1 : 1) : a;
+					o[l] = v;
+					l.value = a;
+					l.symbol = EXPR;
+					stack.delete(++i);
+					break;
+				}
+				err('不正な' + (not ? '減分' : '増分') + '演算子(後置)の組み合わせ', l);
+			default:
+				err('不正な式', r);
+		}
+	}
+	var BGN = 'BGN', //始点
+		END = 'END', //終点
+		VAL = 'VAL', //値(数値,文字列,真偽値,null)
+		ID = 'ID', //識別子
+		EXPR = 'EXPR',//非終端記号
+		VAR = 'VAR', //非終端記号 変数
+		ER = 0, // x, Error
+		LT = 1, // <, Less than(shift)
+		GT = 2, // >, Greater than(reduce)
+		EQ = 3, // =, Equal
+		Infinity = Number.POSITIVE_INFINITY,
+		_undefined = (function(){})();
+
+	var tableIndex = {
+		'++' : 2, //前置・後置演算子
+		'--' : 3, //前置・後置演算子
+		'!'  : 4, //単項演算子
+		'~'  : 5, //単項演算子
+		'+n' : 6, //単項演算子
+		'-n' : 7, //単項演算子
+		'*'  : 8,
+		'/'  : 9,
+		'%'  : 10,
+		'+'  : 11,
+		'-'  : 12,
+		'<<' : 13,
+		'>>' : 14,
+		'>>>': 15,
+		'<'  : 16,
+		'<=' : 17,
+		'>'  : 18,
+		'>=' : 19,
+		'==' : 20,
+		'!=' : 21,
+		'===': 22,
+		'!==': 23,
+		'&'  : 24,
+		'^'  : 25,
+		'|'  : 26,
+		'&&' : 27,
+		'||' : 28,
+
+		'('  : 29,
+		')'  : 30
+	};
+	tableIndex[VAL] = 0;
+	tableIndex[ID] = 1;
+	tableIndex[BGN] = tableIndex[END] = 31;
+	tableIndex[EXPR] = 40;
+	tableIndex[VAR] = 41;
+	var table = [
+		//値 ID  ++  --  !   ~   +   -   *   /   %   +   -   <<  >>  >>> <   <=  >   >=  ==  !=  === !== &   ^   |   &&  ||  (   )   終点
+		[ER, ER, ER, ER, ER, ER, ER, ER, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, ER, GT, GT],// 値
+		[ER, ER, GT, GT, ER, ER, ER, ER, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, ER, GT, GT],// ID
+		[ER, LT, ER, ER, ER, ER, ER, ER, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// ++
+		[ER, LT, ER, ER, ER, ER, ER, ER, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// --
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// !(単項)
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// ~(単項)
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// +(単項)
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// -(単項)
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// *
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// /
+		[LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// %
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// +
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// -
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// <<
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// >>
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// >>>
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// <
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// <=
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// >
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// >=
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// ==
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// !=
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// ===
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, GT, GT, GT, GT, LT, GT, GT],// !==
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, GT, LT, GT, GT],// &
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, GT, LT, GT, GT],// ^
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, GT, LT, GT, GT],// |
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, GT, LT, GT, GT],// &&
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, GT, LT, GT, GT],// ||
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, EQ, ER],// (
+		[ER, ER, GT, GT, ER, ER, ER, ER, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, GT, ER, GT, GT],// )
+		[LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, LT, ER, ER] // 始点
+	];
+
+	input = new String(input);
+	o = typeof o === 'object' ? o : {};
+	if(input.trim() === '') return (function(){})();
+
+	var stack = [];
+	//バグ対策 popは使用しない stack.push({}); stack.pop(); でInvalid pointer operation.エラーとなるため
+	stack.pop = null;
+	stack.top = function(){
+		var i = this.length,
+			n = tableIndex[EXPR];
+		while(i-- && tableIndex[this[i].symbol] >= n);
+		return this[i];
+	};
+	var a = new String();
+	a.symbol = BGN;
+	a.index = -1;
+	stack.push(a);
+	var top, relation,
+		i = 0,
+		tokens = getTokens(input),
+		token = tokens[i];
+	while(true){
+		top = stack.top();
+		if(top.symbol === BGN && token.symbol === END){
+			if(stack.length != 2 || stack[1].symbol != EXPR && stack[1].symbol != VAR) err('不明な式', token);
+			return stack[1].value;
+		}
+		relation = table[tableIndex[top.symbol]][tableIndex[token.symbol]];
+		if(relation === GT){
+			reduce();
+		}else if(relation === LT || relation === EQ){
+			stack.push(token);
+			token = tokens[++i];
+		}else if(relation === ER){
+			if(top.symbol === BGN && token.symbol === ')' || top.symbol === '(' && token.symbol === END){
+				err('括弧の不一致', token.symbol === END ? top : token);
+			}
+			err('不正な組み合わせ', token.symbol === END ? top : token);
+		}else{
+			err('不明なエラー', token);
+		}
+	}
+}

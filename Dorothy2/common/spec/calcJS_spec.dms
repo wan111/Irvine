@@ -1,0 +1,644 @@
+//Dorothy2
+//caption=calcJS_spec
+//version=0.1
+//hint=http://yasmine.dorothy.test/common/spec/calcJS_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+
+common_load('calcJS');
+var Infinity = Number.POSITIVE_INFINITY;
+var _undefined = (function(){})();
+var operators = ['*', '/', '%', '+', '-', '<<', '>>', '>>>', '<', '<=', '>', '>=', '==', '!=', '===', '!==', '&', '^', '|', '&&', '||'];
+var unaryOps = ['++n','--n','n++','n--','!','~','+','-'];
+var inputs = [0, 0.0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined];
+//      右 辺
+//    i n p u t
+// 　i
+// 左n
+// 　p
+// 辺u
+// 　t
+//JavaScriptでの結果(Firefox)
+var results = {
+	'*': [
+		[0, 0, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, 0, 0, NaN, NaN, NaN, NaN],
+		[0, 0, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, 0, 0, NaN, NaN, NaN, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, 1, 291, NaN, NaN, NaN, NaN, 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 1.5, 2.25, -2.25, 3, 1.5, 436.5, NaN, NaN, NaN, NaN, 1.5, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[-0, -0, -1.5, -2.25, 2.25, -3, -1.5, -436.5, NaN, NaN, NaN, NaN, -1.5, -0, -0, NaN, -Infinity, Infinity, NaN],
+		[0, 0, 2, 3, -3, 4, 2, 582, NaN, NaN, NaN, NaN, 2, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, 1, 291, NaN, NaN, NaN, NaN, 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 291, 436.5, -436.5, 582, 291, 84681, NaN, NaN, NaN, NaN, 291, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, 1, 291, NaN, NaN, NaN, NaN, 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, 0, 0, NaN, NaN, NaN, NaN],
+		[0, 0, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, 0, 0, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, Infinity, Infinity, -Infinity, Infinity, Infinity, Infinity, NaN, NaN, NaN, NaN, Infinity, NaN, NaN, NaN, Infinity, -Infinity, NaN],
+		[NaN, NaN, -Infinity, -Infinity, Infinity, -Infinity, -Infinity, -Infinity, NaN, NaN, NaN, NaN, -Infinity, NaN, NaN, NaN, -Infinity, Infinity, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]
+	],
+	'/': [
+		[NaN, NaN, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, -0, NaN],
+		[NaN, NaN, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, -0, NaN],
+		[Infinity, Infinity, 1, 0.6666666666666666, -0.6666666666666666, 0.5, 1, 0.003436426116838488, NaN, NaN, NaN, NaN, 1, Infinity, Infinity, NaN, 0, -0, NaN],
+		[Infinity, Infinity, 1.5, 1, -1, 0.75, 1.5, 0.005154639175257732, NaN, NaN, NaN, NaN, 1.5, Infinity, Infinity, NaN, 0, -0, NaN],
+		[-Infinity, -Infinity, -1.5, -1, 1, -0.75, -1.5, -0.005154639175257732, NaN, NaN, NaN, NaN, -1.5, -Infinity, -Infinity, NaN, -0, 0, NaN],
+		[Infinity, Infinity, 2, 1.3333333333333333, -1.3333333333333333, 1, 2, 0.006872852233676976, NaN, NaN, NaN, NaN, 2, Infinity, Infinity, NaN, 0, -0, NaN],
+		[Infinity, Infinity, 1, 0.6666666666666666, -0.6666666666666666, 0.5, 1, 0.003436426116838488, NaN, NaN, NaN, NaN, 1, Infinity, Infinity, NaN, 0, -0, NaN],
+		[Infinity, Infinity, 291, 194, -194, 145.5, 291, 1, NaN, NaN, NaN, NaN, 291, Infinity, Infinity, NaN, 0, -0, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[Infinity, Infinity, 1, 0.6666666666666666, -0.6666666666666666, 0.5, 1, 0.003436426116838488, NaN, NaN, NaN, NaN, 1, Infinity, Infinity, NaN, 0, -0, NaN],
+		[NaN, NaN, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, -0, NaN],
+		[NaN, NaN, 0, 0, -0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, -0, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[Infinity, Infinity, Infinity, Infinity, -Infinity, Infinity, Infinity, Infinity, NaN, NaN, NaN, NaN, Infinity, Infinity, Infinity, NaN, NaN, NaN, NaN],
+		[-Infinity, -Infinity, -Infinity, -Infinity, Infinity, -Infinity, -Infinity, -Infinity, NaN, NaN, NaN, NaN, -Infinity, -Infinity, -Infinity, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]
+	],
+	'%': [
+		[NaN, NaN, 0, 0, 0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, 0, NaN],
+		[NaN, NaN, 0, 0, 0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, 0, NaN],
+		[NaN, NaN, 0, 1, 1, 1, 0, 1, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 1, 1, NaN],
+		[NaN, NaN, 0.5, 0, 0, 1.5, 0.5, 1.5, NaN, NaN, NaN, NaN, 0.5, NaN, NaN, NaN, 1.5, 1.5, NaN],
+		[NaN, NaN, -0.5, -0, -0, -1.5, -0.5, -1.5, NaN, NaN, NaN, NaN, -0.5, NaN, NaN, NaN, -1.5, -1.5, NaN],
+		[NaN, NaN, 0, 0.5, 0.5, 0, 0, 2, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 2, 2, NaN],
+		[NaN, NaN, 0, 1, 1, 1, 0, 1, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 1, 1, NaN],
+		[NaN, NaN, 0, 0, 0, 1, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 291, 291, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, 0, 1, 1, 1, 0, 1, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 1, 1, NaN],
+		[NaN, NaN, 0, 0, 0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, 0, NaN],
+		[NaN, NaN, 0, 0, 0, 0, 0, 0, NaN, NaN, NaN, NaN, 0, NaN, NaN, NaN, 0, 0, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]
+	],
+	'+': [
+		[0, 0, 1, 1.5, -1.5, 2, "01", "00x123", "0abc", "0true", "0false", "0null", 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, "01", "00x123", "0abc", "0true", "0false", "0null", 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[1, 1, 2, 2.5, -0.5, 3, "11", "10x123", "1abc", "1true", "1false", "1null", 2, 1, 1, NaN, Infinity, -Infinity, NaN],
+		[1.5, 1.5, 2.5, 3, 0, 3.5, "1.51", "1.50x123", "1.5abc", "1.5true", "1.5false", "1.5null", 2.5, 1.5, 1.5, NaN, Infinity, -Infinity, NaN],
+		[-1.5, -1.5, -0.5, 0, -3, 0.5, "-1.51", "-1.50x123", "-1.5abc", "-1.5true", "-1.5false", "-1.5null", -0.5, -1.5, -1.5, NaN, Infinity, -Infinity, NaN],
+		[2, 2, 3, 3.5, 0.5, 4, "21", "20x123", "2abc", "2true", "2false", "2null", 3, 2, 2, NaN, Infinity, -Infinity, NaN],
+		["10", "10", "11", "11.5", "1-1.5", "12", "11", "10x123", "1abc", "1true", "1false", "1null", "1true", "1false", "1null", "1NaN", "1Infinity", "1-Infinity", "1undefined"],
+		["0x1230", "0x1230", "0x1231", "0x1231.5", "0x123-1.5", "0x1232", "0x1231", "0x1230x123", "0x123abc", "0x123true", "0x123false", "0x123null", "0x123true", "0x123false", "0x123null", "0x123NaN", "0x123Infinity", "0x123-Infinity", "0x123undefined"],
+		["abc0", "abc0", "abc1", "abc1.5", "abc-1.5", "abc2", "abc1", "abc0x123", "abcabc", "abctrue", "abcfalse", "abcnull", "abctrue", "abcfalse", "abcnull", "abcNaN", "abcInfinity", "abc-Infinity", "abcundefined"],
+		["true0", "true0", "true1", "true1.5", "true-1.5", "true2", "true1", "true0x123", "trueabc", "truetrue", "truefalse", "truenull", "truetrue", "truefalse", "truenull", "trueNaN", "trueInfinity", "true-Infinity", "trueundefined"],
+		["false0", "false0", "false1", "false1.5", "false-1.5", "false2", "false1", "false0x123", "falseabc", "falsetrue", "falsefalse", "falsenull", "falsetrue", "falsefalse", "falsenull", "falseNaN", "falseInfinity", "false-Infinity", "falseundefined"],
+		["null0", "null0", "null1", "null1.5", "null-1.5", "null2", "null1", "null0x123", "nullabc", "nulltrue", "nullfalse", "nullnull", "nulltrue", "nullfalse", "nullnull", "nullNaN", "nullInfinity", "null-Infinity", "nullundefined"],
+		[1, 1, 2, 2.5, -0.5, 3, "true1", "true0x123", "trueabc", "truetrue", "truefalse", "truenull", 2, 1, 1, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, "false1", "false0x123", "falseabc", "falsetrue", "falsefalse", "falsenull", 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, "null1", "null0x123", "nullabc", "nulltrue", "nullfalse", "nullnull", 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, "NaN1", "NaN0x123", "NaNabc", "NaNtrue", "NaNfalse", "NaNnull", NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, "Infinity1", "Infinity0x123", "Infinityabc", "Infinitytrue", "Infinityfalse", "Infinitynull", Infinity, Infinity, Infinity, NaN, Infinity, NaN, NaN],
+		[-Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, "-Infinity1", "-Infinity0x123", "-Infinityabc", "-Infinitytrue", "-Infinityfalse", "-Infinitynull", -Infinity, -Infinity, -Infinity, NaN, NaN, -Infinity, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, "undefined1", "undefined0x123", "undefinedabc", "undefinedtrue", "undefinedfalse", "undefinednull", NaN, NaN, NaN, NaN, NaN, NaN, NaN]
+	],
+	'-': [
+		[0, 0, -1, -1.5, 1.5, -2, -1, -291, NaN, NaN, NaN, NaN, -1, 0, 0, NaN, -Infinity, Infinity, NaN],
+		[0, 0, -1, -1.5, 1.5, -2, -1, -291, NaN, NaN, NaN, NaN, -1, 0, 0, NaN, -Infinity, Infinity, NaN],
+		[1, 1, 0, -0.5, 2.5, -1, 0, -290, NaN, NaN, NaN, NaN, 0, 1, 1, NaN, -Infinity, Infinity, NaN],
+		[1.5, 1.5, 0.5, 0, 3, -0.5, 0.5, -289.5, NaN, NaN, NaN, NaN, 0.5, 1.5, 1.5, NaN, -Infinity, Infinity, NaN],
+		[-1.5, -1.5, -2.5, -3, 0, -3.5, -2.5, -292.5, NaN, NaN, NaN, NaN, -2.5, -1.5, -1.5, NaN, -Infinity, Infinity, NaN],
+		[2, 2, 1, 0.5, 3.5, 0, 1, -289, NaN, NaN, NaN, NaN, 1, 2, 2, NaN, -Infinity, Infinity, NaN],
+		[1, 1, 0, -0.5, 2.5, -1, 0, -290, NaN, NaN, NaN, NaN, 0, 1, 1, NaN, -Infinity, Infinity, NaN],
+		[291, 291, 290, 289.5, 292.5, 289, 290, 0, NaN, NaN, NaN, NaN, 290, 291, 291, NaN, -Infinity, Infinity, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[1, 1, 0, -0.5, 2.5, -1, 0, -290, NaN, NaN, NaN, NaN, 0, 1, 1, NaN, -Infinity, Infinity, NaN],
+		[0, 0, -1, -1.5, 1.5, -2, -1, -291, NaN, NaN, NaN, NaN, -1, 0, 0, NaN, -Infinity, Infinity, NaN],
+		[0, 0, -1, -1.5, 1.5, -2, -1, -291, NaN, NaN, NaN, NaN, -1, 0, 0, NaN, -Infinity, Infinity, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, NaN, NaN, NaN, NaN, Infinity, Infinity, Infinity, NaN, NaN, Infinity, NaN],
+		[-Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, NaN, NaN, NaN, NaN, -Infinity, -Infinity, -Infinity, NaN, -Infinity, NaN, NaN],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]
+	],
+	'<<': [
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 2, 2, -2147483648, 4, 2, 8, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1],
+		[1, 1, 2, 2, -2147483648, 4, 2, 8, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1],
+		[-1, -1, -2, -2, -2147483648, -4, -2, -8, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1],
+		[2, 2, 4, 4, 0, 8, 4, 16, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 2],
+		[1, 1, 2, 2, -2147483648, 4, 2, 8, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1],
+		[291, 291, 582, 582, -2147483648, 1164, 582, 2328, 291, 291, 291, 291, 582, 291, 291, 291, 291, 291, 291],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 2, 2, -2147483648, 4, 2, 8, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	],
+	'>>': [
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+		[2, 2, 1, 1, 0, 0, 1, 0, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[291, 291, 145, 145, 0, 72, 145, 36, 291, 291, 291, 291, 145, 291, 291, 291, 291, 291, 291],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	],
+	'>>>': [
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[4294967295, 4294967295, 2147483647, 2147483647, 1, 1073741823, 2147483647, 536870911, 4294967295, 4294967295, 4294967295, 4294967295, 2147483647, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295],
+		[2, 2, 1, 1, 0, 0, 1, 0, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[291, 291, 145, 145, 0, 72, 145, 36, 291, 291, 291, 291, 145, 291, 291, 291, 291, 291, 291],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	],
+	'<': [
+		[false, false, true, true, false, true, true, true, false, false, false, false, true, false, false, false, true, false, false],
+		[false, false, true, true, false, true, true, true, false, false, false, false, true, false, false, false, true, false, false],
+		[false, false, false, true, false, true, false, true, false, false, false, false, false, false, false, false, true, false, false],
+		[false, false, false, false, false, true, false, true, false, false, false, false, false, false, false, false, true, false, false],
+		[true, true, true, true, false, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, true, false, false],
+		[false, false, false, true, false, true, false, false, true, true, true, true, false, false, false, false, true, false, false],
+		[false, false, false, false, false, false, true, false, true, true, true, true, false, false, false, false, true, false, false],
+		[false, false, false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+		[false, false, false, true, false, true, false, true, false, false, false, false, false, false, false, false, true, false, false],
+		[false, false, true, true, false, true, true, true, false, false, false, false, true, false, false, false, true, false, false],
+		[false, false, true, true, false, true, true, true, false, false, false, false, true, false, false, false, true, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[true, true, true, true, true, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+	],
+	'<=': [
+		[true, true, true, true, false, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[true, true, true, true, false, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[false, false, true, true, false, true, true, true, false, false, false, false, true, false, false, false, true, false, false],
+		[false, false, false, true, false, true, false, true, false, false, false, false, false, false, false, false, true, false, false],
+		[true, true, true, true, true, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[false, false, false, false, false, true, false, true, false, false, false, false, false, false, false, false, true, false, false],
+		[false, false, true, true, false, true, true, false, true, true, true, true, true, false, false, false, true, false, false],
+		[false, false, false, false, false, false, true, true, true, true, true, true, false, false, false, false, true, false, false],
+		[false, false, false, false, false, false, false, false, true, true, true, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false],
+		[false, false, true, true, false, true, true, true, false, false, false, false, true, false, false, false, true, false, false],
+		[true, true, true, true, false, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[true, true, true, true, false, true, true, true, false, false, false, false, true, true, true, false, true, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+		[true, true, true, true, true, true, true, true, false, false, false, false, true, true, true, false, true, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+	],
+	'>': [
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[true, true, false, false, true, false, false, false, false, false, false, false, false, true, true, false, false, true, false],
+		[true, true, true, false, true, false, true, false, false, false, false, false, true, true, true, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[true, true, true, true, true, false, true, false, false, false, false, false, true, true, true, false, false, true, false],
+		[true, true, false, false, true, false, false, true, false, false, false, false, false, true, true, false, false, true, false],
+		[true, true, true, true, true, true, false, false, false, false, false, false, true, true, true, false, false, true, false],
+		[false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, true, true, false, true, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, true, true, false, true, false, false, false, false, false, false, false, false],
+		[true, true, false, false, true, false, false, false, false, false, false, false, false, true, true, false, false, true, false],
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[true, true, true, true, true, true, true, true, false, false, false, false, true, true, true, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+	],
+	'>=': [
+		[true, true, false, false, true, false, false, false, false, false, false, false, false, true, true, false, false, true, false],
+		[true, true, false, false, true, false, false, false, false, false, false, false, false, true, true, false, false, true, false],
+		[true, true, true, false, true, false, true, false, false, false, false, false, true, true, true, false, false, true, false],
+		[true, true, true, true, true, false, true, false, false, false, false, false, true, true, true, false, false, true, false],
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[true, true, true, true, true, true, true, false, false, false, false, false, true, true, true, false, false, true, false],
+		[true, true, true, false, true, false, true, true, false, false, false, false, true, true, true, false, false, true, false],
+		[true, true, true, true, true, true, false, true, false, false, false, false, true, true, true, false, false, true, false],
+		[false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, true, true, true, true, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, true, true, false, true, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, true, true, false, true, true, false, false, false, false, false, false, false],
+		[true, true, true, false, true, false, true, false, false, false, false, false, true, true, true, false, false, true, false],
+		[true, true, false, false, true, false, false, false, false, false, false, false, false, true, true, false, false, true, false],
+		[true, true, false, false, true, false, false, false, false, false, false, false, false, true, true, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[true, true, true, true, true, true, true, true, false, false, false, false, true, true, true, false, true, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+	],
+	'==': [
+		[true, true, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+		[true, true, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+		[false, false, true, false, false, false, true, false, false, false, false, false, true, false, false, false, false, false, false],
+		[false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, true, false, false, false, true, false, false, false, false, false, true, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+		[false, false, true, false, false, false, true, false, false, false, false, false, true, false, false, false, false, false, false],
+		[true, true, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, true],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, true]
+	],
+	'!=': [
+		[false, false, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true],
+		[false, false, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true],
+		[true, true, false, true, true, true, false, true, true, true, true, true, false, true, true, true, true, true, true],
+		[true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, false, true, true, true, false, true, true, true, true, true, false, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true],
+		[true, true, false, true, true, true, false, true, true, true, true, true, false, true, true, true, true, true, true],
+		[false, false, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, false],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, false]
+	],
+	'===': [
+		[true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true]
+	],
+	'!==': [
+		[false, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[false, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, true],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false]
+	],
+	'&': [
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 2, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, 291, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	],
+	'^': [
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, -2, 3, 0, 290, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[1, 1, 0, 0, -2, 3, 0, 290, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[-1, -1, -2, -2, 0, -3, -2, -292, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1],
+		[2, 2, 3, 3, -3, 0, 3, 289, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2],
+		[1, 1, 0, 0, -2, 3, 0, 290, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[291, 291, 290, 290, -292, 289, 290, 0, 291, 291, 291, 291, 290, 291, 291, 291, 291, 291, 291],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, -2, 3, 0, 290, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+	],
+	'|': [
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[1, 1, 1, 1, -1, 3, 1, 291, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+		[1, 1, 1, 1, -1, 3, 1, 291, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+		[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+		[2, 2, 3, 3, -1, 2, 3, 291, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2],
+		[1, 1, 1, 1, -1, 3, 1, 291, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+		[291, 291, 291, 291, -1, 291, 291, 291, 291, 291, 291, 291, 291, 291, 291, 291, 291, 291, 291],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[1, 1, 1, 1, -1, 3, 1, 291, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1, -1, 2, 1, 291, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+	],
+	'&&': [
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+		[null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+		[NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[_undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined, _undefined]
+	],
+	'||': [
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+		[1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
+		[-1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5, -1.5],
+		[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+		["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"],
+		["0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123", "0x123"],
+		["abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc", "abc"],
+		["true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true", "true"],
+		["false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false", "false"],
+		["null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null", "null"],
+		[true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined],
+		[Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity],
+		[-Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity, -Infinity],
+		[0, 0, 1, 1.5, -1.5, 2, "1", "0x123", "abc", "true", "false", "null", true, false, null, NaN, Infinity, -Infinity, _undefined]
+	]
+};
+
+var unary_results = {
+	'++n': [1, 1, 2, 2.5, -0.5, 3, 2, 292, NaN, NaN, NaN, NaN, 2, 1, 1, NaN, Infinity, -Infinity, NaN],
+	'--n': [-1, -1, 0, 0.5, -2.5, 1, 0, 290, NaN, NaN, NaN, NaN, 0, -1, -1, NaN, Infinity, -Infinity, NaN],
+	'n++': [0, 0, 1, 1.5, -1.5, 2, 1, 291, NaN, NaN, NaN, NaN, 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+	'n--': [0, 0, 1, 1.5, -1.5, 2, 1, 291, NaN, NaN, NaN, NaN, 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+	'!': [true, true, false, false, false, false, false, false, false, false, false, false, false, true, true, true, false, false, true],
+	'~': [-1, -1, -2, -2, 0, -3, -2, -292, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1],
+	'+': [0, 0, 1, 1.5, -1.5, 2, 1, 291, NaN, NaN, NaN, NaN, 1, 0, 0, NaN, Infinity, -Infinity, NaN],
+	'-': [-0, -0, -1, -1.5, 1.5, -2, -1, -291, NaN, NaN, NaN, NaN, -1, -0, -0, NaN, -Infinity, Infinity, NaN]
+};
+
+describe('calcJS', function(){
+	cases([
+		['', _undefined],
+		['1230', 1230],
+		['456.789', 456.789],
+		['123e45', 123e45],
+		['123E+45', 123e45],
+		['123e-45', 123e-45],
+		['123.4E+56', 123.4E+56],
+		['0x1a', 26],
+		['""', ''],
+		['"abc"', 'abc'],
+		["'123'", '123'],
+		["\"a'bc\"", "a'bc"],
+		["'a\\'bc'", "a'bc"],
+		["'a\\\"bc'", 'a"bc'],
+		['"a\"bc"', 'a"bc'],
+		['true', true],
+		['false', false],
+		['null', null],
+		['NaN', NaN]
+	]).it('values', function(input, value){
+		expect(calcJS(input)).toBe(value);
+		expect(calcJS('a', {a: value})).toBe(value);
+	});
+	cases([
+		['1.2.3'   , 'Error calcJS: input(3)=>不明なトークン (token: ".", symbol: "unknown")'],
+		['1.'      , 'Error calcJS: input(1)=>不明なトークン (token: ".", symbol: "unknown")'],
+		['.1'      , 'Error calcJS: input(0)=>不明なトークン (token: ".", symbol: "unknown")'],
+		['123e'    , 'Error calcJS: input(3)=>不正な組み合わせ (token: "e", symbol: "ID")'],
+		['1e2e3'   , 'Error calcJS: input(3)=>不正な組み合わせ (token: "e3", symbol: "ID")'],
+		['00x1'    , 'Error calcJS: input(2)=>不正な組み合わせ (token: "x1", symbol: "ID")'],
+		['1x1'     , 'Error calcJS: input(1)=>不正な組み合わせ (token: "x1", symbol: "ID")'],
+		['0x1.2'   , 'Error calcJS: input(3)=>不明なトークン (token: ".", symbol: "unknown")'],
+		["\"abc'"  , 'Error calcJS: input(0)=>不明なトークン (token: """, symbol: "unknown")'],
+		["'abc\""  , "Error calcJS: input(0)=>不明なトークン (token: \"'\", symbol: \"unknown\")"],
+		["'ab'c'"  , "Error calcJS: input(5)=>不明なトークン (token: \"'\", symbol: \"unknown\")"],
+		['"ab"c"'  , 'Error calcJS: input(5)=>不明なトークン (token: """, symbol: "unknown")'],
+		['abc'     , 'Error calcJS: input(0)=>変数の値が不明 (token: "abc", symbol: "ID")'],
+		['0abc'    , 'Error calcJS: input(1)=>不正な組み合わせ (token: "abc", symbol: "ID")'],
+		['@abc'    , 'Error calcJS: input(0)=>不明なトークン (token: "@", symbol: "unknown")'],
+		['True'    , 'Error calcJS: input(0)=>変数の値が不明 (token: "True", symbol: "ID")'],
+		['FALSE'   , 'Error calcJS: input(0)=>変数の値が不明 (token: "FALSE", symbol: "ID")'],
+		['nan'     , 'Error calcJS: input(0)=>変数の値が不明 (token: "nan", symbol: "ID")'],
+		['NULL'    , 'Error calcJS: input(0)=>変数の値が不明 (token: "NULL", symbol: "ID")'],
+		['1 + 2 +' , 'Error calcJS: input(6)=>不正な式 (token: "+", symbol: "+")'],
+		['1 * * 2' , 'Error calcJS: input(2)=>不正な式 (token: "*", symbol: "*")'],
+		['* 1 + 2' , 'Error calcJS: input(0)=>不正な演算子 (token: "*", symbol: "*")'],
+		['()'      , 'Error calcJS: input(0)=>空括弧 (token: "(", symbol: "(")'],
+		['(1)2'    , 'Error calcJS: input(3)=>不正な組み合わせ (token: "2", symbol: "VAL")'],
+		['1(2)'    , 'Error calcJS: input(1)=>不正な組み合わせ (token: "(", symbol: "(")'],
+		['(/ 1)'   , 'Error calcJS: input(1)=>不正な演算子 (token: "/", symbol: "/")'],
+		['(1))'    , 'Error calcJS: input(3)=>括弧の不一致 (token: ")", symbol: ")")'],
+		['((1)'    , 'Error calcJS: input(0)=>括弧の不一致 (token: "(", symbol: "(")'],
+		['1 + (1))', 'Error calcJS: input(7)=>括弧の不一致 (token: ")", symbol: ")")'],
+		['((1) + 1', 'Error calcJS: input(0)=>括弧の不一致 (token: "(", symbol: "(")'],
+		[') + 1'   , 'Error calcJS: input(0)=>括弧の不一致 (token: ")", symbol: ")")'],
+		['1 + ('   , 'Error calcJS: input(4)=>括弧の不一致 (token: "(", symbol: "(")'],
+		['(1)(2)'  , 'Error calcJS: input(3)=>不正な組み合わせ (token: "(", symbol: "(")'],
+		['++1'     , 'Error calcJS: input(2)=>不正な組み合わせ (token: "1", symbol: "VAL")'],
+		['1++'     , 'Error calcJS: input(1)=>不正な組み合わせ (token: "++", symbol: "++")']
+	]).it('invalid input', function(input, msg){
+		expect(function(){calcJS(input);}).toThrow(msg);
+	});
+	cases([
+		['v', {v: 1}, 1],
+		['v', {v: -1}, -1],
+		['1 + v + (v)', {v: 1}, 3],
+		['1 - ((v)) + -v', {v: -1}, 3],
+		['"a" + v + "c"', {v: 'b'}, 'abc']
+	]).it('variable', function(input, o, value){
+		expect(calcJS(input, o)).toBe(value);
+	});
+
+	describe('JavaScriptと同じ結果か', function(){
+		function toStr(v){
+			return typeof v === 'string' ? '"' + v + '"' : new String(v).toString();
+		}
+
+		for(var i = 0; i < operators.length; i++){
+			(function(op){
+				var j = -1;
+				cases(inputs).it('binary operators: ' + op, function(left){
+					++j;
+					var right, r, expr, rs = results[op][j];
+					for(var i = 0; i < inputs.length; i++){
+						right = inputs[i];
+						try{
+							r = calcJS('left ' + op + ' right', {left: left, right: right});
+						}catch(e){
+							r = 'Error(' + e + ')';
+						}
+						expect(r).toBe(rs[i], toStr(left) + ' ' + op + ' ' + toStr(right));
+					}
+				});
+			})(operators[i]);
+		}
+
+		for(var i = 0; i < unaryOps.length; i++){
+			(function(op){
+				var j = -1;
+				cases(inputs).it('unary operators: ' + op, function(value){
+					++j;
+					var r, rs = unary_results[op][j];
+					var o = {v: value};
+					try{
+						switch(op){
+							case '++n':
+							case '--n':
+								r = calcJS(op.slice(0, -1) + 'v', o);
+								expect(o.v).toBe(rs);
+								break;
+							case 'n++':
+							case 'n--':
+								var a = op.slice(1);
+								r = calcJS('v' + a, o);
+								expect(o.v).toBe(unary_results[a + 'n'][j]);
+								expect(function(){calcJS(a + 'n' + a, o);}).toThrow();
+								break;
+							default:
+								r = calcJS(op + 'v', o);
+						}
+					}catch(e){
+						r = 'Error(' + e + ')';
+					}
+					expect(r).toBe(rs, 'v = ' + toStr(value) + '; ' + op + 'v');
+
+				});
+			})(unaryOps[i]);
+		}
+	});
+
+	cases([
+		['1 + ++(v) + 1', {v: 0}, 3, 1],
+		['1 + (v)++ + 1', {v: 0}, 2, 1],
+		['1 + --(v) + 1', {v: 0}, 1, -1],
+		['1 + (v)-- + 1', {v: 0}, 2, -1],
+		['1 + ++((v)) + 1', {v: 0}, 3, 1],
+		['1 + ((v))++ + 1', {v: 0}, 2, 1],
+		['1 + (++(v)) + 1', {v: 0}, 3, 1],
+		['1 + ((v)++) + 1', {v: 0}, 2, 1],
+		['++v - ++v - ++v', {v: 0}, -4, 3]
+	]).it('increment・decrement', function(input, o, value, value2){
+		var r = null;
+		expect(function(){r = calcJS(input, o);}).not.toThrow();
+		expect(r).toBe(value);
+		expect(o.v).toBe(value2);
+	});
+	cases([
+		['--++v'    , 'Error calcJS: input(2)=>不正な組み合わせ (token: "++", symbol: "++")'],
+		['++v++'    , 'Error calcJS: input(3)=>不正な組み合わせ (token: "++", symbol: "++")'],
+		['++(v + 1)', 'Error calcJS: input(3)=>不正な増分演算子(前置)の組み合わせ (token: "v", symbol: "EXPR")'],
+		['(v + 1)++', 'Error calcJS: input(1)=>不正な増分演算子(後置)の組み合わせ (token: "v", symbol: "EXPR")'],
+		['++(1)'    , 'Error calcJS: input(3)=>不正な増分演算子(前置)の組み合わせ (token: "1", symbol: "EXPR")'],
+		['(1)++'    , 'Error calcJS: input(1)=>不正な増分演算子(後置)の組み合わせ (token: "1", symbol: "EXPR")']
+	]).it('invalid increment・decrement', function(input, msg){
+		expect(function(){calcJS(input, {v: 0});}).toThrow(msg);
+	});
+	it('consecutive unary operators', function(){
+		expect(calcJS('-+~!--v', {v: 1})).toBe(2);
+	});
+	it('expression', function(){
+		expect(calcJS("NaN || true && false | ++b ^ !(6 & 5) + (0 === 0.0 !== 'true' != a == 'false' >= null > ~- --b <= 8 < 5) + 4 >>> 0 << 3 >> 8 - 7 + 7 % 0 / 8 * -+~!0", {a: 0, b: 1})).toBe(42);
+	});
+
+});
