@@ -2,7 +2,7 @@
 スクリプト初期化データ
 guid={34686344-1C41-4E59-B201-6CFBFAF7101D}
 caption=autoRenameA
-version=0.11
+version=0.12
 hint=既存ファイルを保護するために処理中のファイルを独自のファイル名にする autoRenameB.dmsと一緒に使用してください
 event=OnStartThread
 match=
@@ -64,11 +64,17 @@ function OnStartThread(urlinfo,item,folderdata,options){
 			if(isResume(path + item.filename, item.DownloadedFilename)){
 				item.filename = new File(item.DownloadedFilename).extractName();
 			}else{
-				var f = new File(path + tempName + suffix);
 				//仮の名前を変更し新規ファイルとする
+				var f = new File(path + tempName + suffix);
+				var m = new Mutex(id + MD5.calc(f.path));
+				m.lock();
 				for(var i = 0; f.exists(); i++){
 					f.path = format('%s%s[%d]%s', path, tempName, i, suffix);
 				}
+				//重複確認の為に空ファイルを作っておく
+				f.open('w');
+				f.close();
+				m.unlock();
 				item.filename = f.extractName();
 			}
 		}
