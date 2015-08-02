@@ -9,7 +9,7 @@
 
 common_load('json');
 
-function _undefined(){}
+var _undefined = (function(){})();
 describe('JSON Object', function(){
 	expect(nameOf(JSON)).toBe('JSON');
 });
@@ -98,7 +98,7 @@ for(var i in mode){
 		});
 		describe('Bad JSONValues', function(){
 			it('throwError', function(){
-				var text = _undefined();
+				var text = _undefined;
 				opts.throwError = true;
 				expect(function(){JSON.parse(text, null, opts);}).toThrow();
 				opts.throwError = false;
@@ -185,7 +185,7 @@ for(var i in mode){
 				expect(JSON.parse(text, rev, opts)).toEqual({"a": 1});
 				text = '[0, 1, 2]';
 				rev = function(k, v){if(k != 1) return v;};
-				expect(JSON.parse(text, rev, opts)).toEqual([0, _undefined(), 2]);
+				expect(JSON.parse(text, rev, opts)).toEqual([0, _undefined, 2]);
 			});
 			it('order(beginning with the most nested property)', function(){
 				var text = '{"a": [{"b": {"c":1}}, 2]}';
@@ -209,11 +209,11 @@ for(var i in mode){
 				expect(o).toBe(root[""]);
 			});
 			it('check path(non-standard)', function(){
-				var text = '{"a": [{"b":1}]}';
+				var text = '{"a": [{"b":1}, 2]}';
 				var paths = [];
 				var rev = function(k, v, path){paths.push(path); return v;};
 				JSON.parse(text, rev, opts);
-				expect(paths).toEqual(['["a"][0]["b"]', '["a"][0]', '["a"]', '']);
+				expect(paths).toEqual([ ["a", 0, "b"], ["a", 0], ["a", 1], ["a"], [] ]);
 			});
 		});
 		if(opts.relaxed){
@@ -335,14 +335,14 @@ describe('JSON.stringify', function(){
 		expect(JSON.parse(text, null, opts)).toEqual(value);
 	});
 	cases([
-		[_undefined(), _undefined()],
-		[{a: 1, b: _undefined()}, '{"a":1}'],
-		[[1, _undefined()], '[1,null]']
+		[_undefined, _undefined],
+		[{a: 1, b: _undefined}, '{"a":1}'],
+		[[1, _undefined], '[1,null]']
 	]).it('undefined', function(value, text){
 		expect(JSON.stringify(value)).toBe(text);
 	});
 	cases([
-		[function(){}, _undefined()],
+		[function(){}, _undefined],
 		[{a:1, b:function(){}}, '{"a":1}'],
 		[[1, function(){}], '[1,null]']
 	]).it('function', function(value, text){
@@ -462,11 +462,11 @@ describe('JSON.stringify', function(){
 			expect(root[""]).toBe(value);
 		});
 		it('check path(non-standard)', function(){
-			var value = {"a": [{"b":1}]};
+			var value = {"a": [{"b":1}, 2]};
 			var paths = [];
 			var rep = function(k, v, path){paths.push(path); return v;};
 			JSON.stringify(value, rep);
-			expect(paths).toEqual(['', '["a"]', '["a"][0]', '["a"][0]["b"]']);
+			expect(paths).toEqual([ [], ["a"], ["a", 0], ["a", 0, "b"], ["a", 1] ]);
 		});
 	});
 	describe('replacer array', function(){
@@ -488,7 +488,7 @@ describe('JSON.stringify', function(){
 		});
 		it('type', function(){
 			var value = {"1":1, "a":2, "true":3, "null":4, "undefined":5};
-			var rep = [1, "a", true, null, _undefined()];
+			var rep = [1, "a", true, null, _undefined];
 			expect(JSON.stringify(value, rep)).toBe('{"1":1,"a":2}');
 		});
 	});

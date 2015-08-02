@@ -316,15 +316,18 @@ JSON =
 				var value = src[key];
 				if(typeof value == 'object'){
 					var isArr = nameOf(value) == 'Array';
+					var l = path.length;
 					for(var i in value){
-						value[i] = walk(value, i + '', path + (isArr ? '[' + i + ']' : '["' + i + '"]'));
+						path[l] = i;
+						value[i] = walk(value, i + '', path);
 						//îzóÒÇÃèÍçáÇÕundefinedÇÃÇ‹Ç‹Ç…Ç∑ÇÈ(javascriptÇÃdeleteââéZéqÇçƒåªÇ≈Ç´Ç»Ç¢ÇΩÇﬂ)
 						if(!isArr && isUndefined(value[i])){
 							value.removeKey(i);
 						}
 					}
+					path.pop();
 				}
-				return reviver.call(src, key, value, path);
+				return reviver.call(src, key, value, [].assign(path));
 			}
 			options = nameOf(options) == 'Object' ? options : {};
 			this.opts = {
@@ -345,7 +348,7 @@ JSON =
 							}
 						});
 						var r = eval('(' + text + ')');
-						return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
+						return typeof reviver == 'function' ? walk({'': r}, '', []) : r;
 					}
 					throw 'Error JSON.parse: JSONï∂éöóÒÇ≈ÇÕÇ»Ç¢';
 				}catch(e){
@@ -381,7 +384,7 @@ JSON =
 				}
 				return '';
 			};
-	    	
+				
 			try{
 				Str.nextStr();
 				var r = this.parseValue(Str);
@@ -397,7 +400,7 @@ JSON =
 				println(e);
 				return;
 			}
-			return typeof reviver == 'function' ? walk({'': r}, '', '') : r;
+			return typeof reviver == 'function' ? walk({'': r}, '', []) : r;
 		}
 	};
 
@@ -505,7 +508,7 @@ JSON =
 			if(typeof value.toJSON == 'function') value = value.toJSON(key);
 			//replacerä÷êî
 			if(this.repType == 'function'){
-				value = this.rep.call(src, key, value, path);
+				value = this.rep.call(src, key, value, [].assign(path));
 			}
 			switch(typeof value){
 				case 'string':
@@ -533,11 +536,13 @@ JSON =
 							value.format = oldFormat;
 							return this.opts.strQuotes[0] + r + this.opts.strQuotes[1];
 						case 'Array':
-							var s = [], sp = space + this.indent;
+							var s = [], sp = space + this.indent, l = path.length;
 							if(this.check(value)){
 								for(var i = 0; i < value.length; i++){
-									s.add(this.toStr(value, i + '', sp, path + '[' + i + ']') || 'null');
+									path[l] = i;
+									s.add(this.toStr(value, i + '', sp, path) || 'null');
 								}
+								path.pop();
 								this.cache.pop();
 							}else if(this.opts.throwError){
 								this.cache = null;
@@ -547,7 +552,7 @@ JSON =
 							sp = this.lf + sp;
 							return s.length ? '[' + sp + s.join(this.opts.comma + sp) + this.lf + space + ']' : '[]';
 						default:
-							var s = [], sp = space + this.indent, v, propertyList, key, type;
+							var s = [], sp = space + this.indent, l = path.length, v, propertyList, key, type;
 							if(this.check(value)){
 								propertyList = this.repType == 'Array' ? this.rep : this.getOwnProperties(value);
 
@@ -557,12 +562,14 @@ JSON =
 									if(type != 'string' && type != 'number' && (type = nameOf(key)) != 'String' && type != 'Number') continue;
 									key = key + '';
 									if(typeof value[key] != 'undefined'){
-										v = this.toStr(value, key, sp, path + '["' + key + '"]');
+										path[l] = key;
+										v = this.toStr(value, key, sp, path);
 										if(!isUndefined(v)){
 											s.add(this.opts.keyQuotes[0] + (this.opts.encode ? this._escape(key) : key) + this.opts.keyQuotes[1] + this.opts.colon + v);
 										}
 									}
 								}
+								path.pop();
 								this.cache.pop();//åªç›ÇÃäKëwÇä‹Çﬁè„à äKëwÇÃÇ›ÇÉ`ÉFÉbÉNÇÃëŒè€Ç…Ç∑ÇÈ
 							}else if(this.opts.throwError){
 								this.cache = null;
@@ -598,7 +605,7 @@ JSON =
 			if(this.indent != ''){
 				this.lf = String.fromCharCode(0x0A);
 			}
-	    	
+				
 			if(nameOf(options) != 'Object') options = {};
 			this.opts = {
 				encode: options.hasKey('encode') ? options.encode : true,
@@ -611,7 +618,7 @@ JSON =
 			this.rep = replacer;
 			this.repType = nameOf(replacer) || typeof replacer;
 
-			var r = this.toStr({'': value}, '', '', '');
+			var r = this.toStr({'': value}, '', '', []);
 			this.opts = null;
 			this.cache = null;
 			return r;
