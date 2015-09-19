@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=uploadable.ch_DOA
-//version=0.1
+//version=0.11
 //hint=
 //match=http://(www.)?uploadable.ch/file/\w+
 //author=wan
@@ -8,9 +8,11 @@
 //priority=500
 //end
 function(){
+	Util = {fatal: function(){}};
+	common_load('rutil_dorothy2r');
 	common_load('http');
 this.main = function(url){
-	var http = new Http();
+	var http = new Http({autoRedirect: true});
 	if(!http.get(url)){
 		DOA.status = DOA_BS;
 		DOA.comment = http.code;
@@ -23,7 +25,7 @@ this.main = function(url){
 		return;
 	}
 	if(/File not available(<\/h1>)?\s*The file could not be found.\s*Please check the download link./.test(http.data) ||
-	   /This file is no longer available./.test(http.data)){
+		 /This file is no longer available./.test(http.data)){
 		DOA.status = DOA_NG;
 		DOA.comment = RegExp.$0.replace(/<[^>]+>/g, ' ');
 		return;
