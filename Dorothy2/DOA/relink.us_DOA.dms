@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Relink.us
-//version=0.11
+//version=0.12
 //hint=
 //match=http://(www.)?relink.us/
 //author=wan
@@ -24,6 +24,8 @@ function(){
 		a.SubItems.add('');
 	};
 
+	Util = {fatal: function(){}};
+	common_load('rutil_dorothy2r');
 	common_load('decontainer', 'http');
 //ÉÅÉCÉì
 this.main = function(url){
@@ -62,9 +64,7 @@ this.main = function(url){
 			}
 		}
 		return;
-	}
-	/*
-	if(http.data.match('<table class="sortable">.+?</table>')){
+	}else if(http.data.match('<table class="sortable">.+?</table>')){
 		var tmp = RegExp.$0;
 
 		DOA.status = DOA_LS;
@@ -119,7 +119,6 @@ this.main = function(url){
 		}
 		return;
 	}
-	*/
 	DOA.status = DOA_UK;
 };
 
