@@ -12,6 +12,8 @@ function(){
 	//item = {folder: ''};
 	//var irv = new ActiveXObject('Irvine.Api');
 	//folderdata.Folder = irv.FolderData['queue', 'folder'];
+	Util = {fatal: function(){}};
+	common_load('rutil_dorothy2r');
 	common_load('http');
 //ƒƒCƒ“
 this.main = function(url){
