@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=hitfile.net_w
-//version=0.1
+//version=0.11
 //hint=
 //match=http://hitfile.net/(download/free/)?\w+
 //author=wan
@@ -11,32 +11,32 @@ function(){
 	common_load('http', 'utf8', 'jinput', 'l_sleep', 'character_references');
 	/^http:\/\/hitfile.net\/(download\/free\/)?(\w+)/.test(urlinfo.url);
 	var id = RegExp.$2;
-	var url = new URL('http://hitfile.net/download/free/' + id);
+	var url = new URL('http://hitfile.net/' + id);
 	
 	var http = new Http();
 	http.setRequestHeader('Cookie', 'user_lang=en');
-	
 	if(!http.get(url.url)){
-		if(http.code == 302 && http.location == url.expand('/' + id)){
-			var url = url.expand('/turbolight?file=' + id);
-			http.autoRedirect = true;
-			if(http.get(url) && /name="payment" value="free disabled"/.test(http.data)){
-				println('error>premium only');
-			}
-			exit();
-		}
+		http.retry_or_die();
+	}
+	
+	var url2 = new URL('http://hitfile.net/download/free/' + id);
+
+	http.autoRedirect = true;
+	if(!http.get(url2.url)){
 		http.retry_or_die('error>' + http.code);
 	}
-	if(/File was not found. It could possibly be deleted./.test(http.data) ||
-	   /File not found. Probably it was deleted./.test(http.data)){
+	if(/File was deleted or not found/.test(http.data) ||
+		/File was not found. It could possibly be deleted./.test(http.data) ||
+		/File not found. Probably it was deleted./.test(http.data)){
 		println(RegExp.$0);
 		exit();
 	}
-	if(!/Download file(\s|&nbsp;|<br>)*<span class=[^>]+>([^<]+)/.test(http.data)){
+	if(/You download:[^<]*<span class=[^>]+><\/span><span>([^<]+)<\/span>\s*<span class="file-size">\(([^)]+)\)<\/span>/.test(http.data)){
 		println('error>ファイル名が見つからない');
 		exit();
 	}
-	var name = new Utf8(RegExp.$2).toSJIS();
+	var name = new Utf8(RegExp.$1).toSJIS();
+	var size = RegExp.$2;
 
 	if(/You have reached the limit of connections/.test(http.data)){
 		println(RegExp.$0);
@@ -78,7 +78,7 @@ function(){
 			image: http.data,
 			height: 180
 		};
-    	
+			
 		var code = (new JInput ()).inputText (htaOpt);
 		if (code == null) {
 			exit();
@@ -86,7 +86,7 @@ function(){
 		
 		var postdata = 'captcha_type=' + cap_type + '&captcha_subtype=' + cap_subtype + '&captcha_response=' + code;
 		println('post data>' + postdata);
-		if(!http.post(url.url + '#', postdata)){
+		if(!http.post(url2.url + '#', postdata)){
 			http.retry_or_die('post error>' + http.responseHeader.code);
 		}
 	}
@@ -108,7 +108,7 @@ function(){
 		http.retry_or_die();
 	}
 	
-	if(!/<h1><a href='([^']+)'/.test(http.data)){
+	if(!/<h1>\s*<a href='([^']+)'/.test(http.data)){
 		println('DLリンクが見つかりません');
 		http.capture();
 		http.retry_or_die();
@@ -118,5 +118,5 @@ function(){
 	urlinfo.url = url4.url;
 	headers.host = url4.host;
 	headers.Cookie = http.responseHeader.cookie.data;
-	headers.referer = url.url;
+	headers.referer = url2.url;
 }
