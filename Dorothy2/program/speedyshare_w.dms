@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SpeedyShare.com
-//version=0.11
+//version=0.12
 //hint=http://(www\.)?speedy(\.sh|share\.com|live\.net)/(live/|files/)?\w+
 //match=http://(www\.)?speedy(\.sh|share\.com|live\.net)/(live/|files/)?\w+
 //author=wan
@@ -38,7 +38,7 @@ function(){
 		return retry('error> ' + http.responseHeader.code);
 	}
 	
-	if(http.data.indexOf('align=center>File not found.') != -1){
+	if(http.data.indexOf('<span class=downloadfilenamenotfound>') != -1){
 		println('File not found');
 		exit();
 	}
@@ -47,9 +47,20 @@ function(){
 		exit();
 	}
 
-	if(!http.data.match(/a class=downloadfilename href='([^']+)/)) return retry('downloadfilename ‚ªŒ©‚Â‚©‚ç‚È‚¢');
+	var filename, size;
+	if(!http.data.match('<span class=downloadfilename>([^<]+)</span>.+?<div class=sizetagtext>([^<]+)<')){
+		println('filename ‚ªŒ©‚Â‚©‚ç‚È‚¢');
+		exit();
+	}
+	filename = RegExp.$1;
+	size = RegExp.$2;
+
+	if(!http.data.match(/<a href='([^']+)'><[^>]*alt='Slow Download'/)){
+		println('Slow Download ‚ªŒ©‚Â‚©‚ç‚È‚¢');
+		exit();
+	}
 	
-	var location = http.headLocation(RegExp.$1);
+	var location = http.headLocation(http.expandUrl(RegExp.$1));
 	if(!location){
 		println('error>' + http.responseHeader.code);
 		exit();
@@ -59,6 +70,7 @@ function(){
 	urlinfo.url = url.url;
 	headers.Host = url.host;
 	headers.Cookie = http.requestHeader.Cookie;
+	Dorothy.fileName = filename;
 	
 	ini.write('Exp_header', 'Cookie', headers.Cookie);
 	ini.update();

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=SpeedyShare.com
-//version=0.11
+//version=0.12
 //hint=
 //match=http://(www\.)?speedy(\.sh|share\.com|live\.net)/(live/|files/)?\w+
 //author=wan
@@ -9,6 +9,8 @@
 //end
 function(){
 //コンストラクタ
+	Util = {fatal: function(){}};
+	common_load('rutil_dorothy2r');
 	common_load('http');
 //メイン
 this.main = function(url){
@@ -19,6 +21,7 @@ this.main = function(url){
 		if(!location){
 			DOA.status = DOA_UK;
 			DOA.comment = 'error>' + http.responseHeader.code;
+			return;
 		}
 		DOA.status = DOA_LK;
 		DOA.link = location;
@@ -27,13 +30,13 @@ this.main = function(url){
 	http.requestHeader.Cookie = 'trans=en';
 	http.get(url.url);
 	if(http.responseHeader.code != 200){
+		if(http.data.indexOf('<span class=downloadfilenamenotfound>') != -1){
+			DOA.status = DOA_NG;
+			DOA.comment = 'File not found';
+			return;
+		}
 		DOA.status = DOA_BS;
 		DOA.comment = 'error: ' + http.responseHeader.code;
-		return;
-	}
-	if(http.data.indexOf('align=center>File not found.') != -1){
-		DOA.status = DOA_NG;
-		DOA.comment = 'File not found';
 		return;
 	}
 	if(http.data.indexOf('This file can only be downloaded with SpeedyShare Premium. Get Premium Now!</a>') != -1){
@@ -41,7 +44,7 @@ this.main = function(url){
 		DOA.comment = 'Premium Only!';
 		return;
 	}
-	if(http.data.match('a class=downloadfilename[^>]+>([^<]+).+class=sizetagtext>([^<]+)')){
+	if(http.data.match('<span class=downloadfilename>([^<]+)</span>.+?<div class=sizetagtext>([^<]+)<')){
 		DOA.status = DOA_OK;
 		DOA.name = RegExp.$1;
 		DOA.size = RegExp.$2;
