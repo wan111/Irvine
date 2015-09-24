@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Rapidgator.net
-//version=0.27
+//version=0.28
 //hint=
 //match=^http://((www\.)?rapidgator\.net|rg\.to)/(file|folder)/
 //author=wan
@@ -54,7 +54,6 @@ this.main = function(url){
 				http.get(url);
 			}
 	}
-	break;
 	if(http.responseHeader.code != 200){
 		if(http.data.indexOf('E_FOLDERNOTFOUND') != -1){
 			DOA.status = DOA_NG;
