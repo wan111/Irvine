@@ -1,0 +1,53 @@
+//Dorothy2
+//caption=D-Dream 立ち絵
+//version=0.1
+//hint=D-Dreamの製品ページから立ち絵を取得します
+//match=^http:\/\/www\.d-dream\.com\/detail\.php\?arg_tno=\d+
+//author=wan
+//path=program
+//priority=500
+//end
+function(){
+	common_load('http', 'AddItem', 'rutil', 'utf8', 'namebuilder');
+	var def_ini = {
+		General: {Zen2Han: false},
+		AddItem: AddItem.prototype.iniTemplate,
+		Filename: {Format: ''}
+	};
+	var ini = Util.ini_load(def_ini);
+	var nb = new NameBuilder ({ zen2han: ini.General.Zen2Han });
+
+
+	
+	/arg_tno=(\d+)/.test(urlinfo.url);
+	nb.id = RegExp.$1;
+	var url = new URL('http://www.d-dream.com/detail.php?arg_tno=' + nb.id);
+	
+	var http = new Http();
+	if(!http.get(url.url)){
+		http.retry_or_die();
+	}
+	
+	if(!/<title>D-Dream - (.+?)\s*\(([^)]+)\)<\/title>/.test(http.data)){
+		http.die('titleが見つかりませんでした');
+	}
+	nb.title = RegExp.$1;
+	nb.brand = RegExp.$2;
+	
+	var reg = new RegExp('(http:\/\/img\d*.d-dream.com\/chara.php\?tno=' + nb.id + '&cno=(\d+))"\s*alt="([^"]+)"');
+	reg.global = true;
+	
+	var list = [];
+	function addList(all, url, chara_no, chara_name){
+		nb.chara_no = chara_no;
+		nb.chara_name = chara_name;
+		list.push({Url: url + '&type=large', Filename: nb.assemble(ini.Filename.Format, '.jpg')});
+	}
+	
+	http.data.replace(reg, addList);
+	
+	var additem = new AddItem (ini.AddItem);
+	
+	additem.send (list) || exit ();
+	Util.remove_this ();
+}
