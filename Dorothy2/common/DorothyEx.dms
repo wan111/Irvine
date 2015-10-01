@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DorothyEx
-//version=0.13
+//version=0.14
 //hint=
 //match=
 //author=wan
@@ -40,7 +40,7 @@ switch(WScript.ScriptName){
 }
 /*
 if((typeof SettingForm != 'undefined' && typeof OnMainMenuClick == 'function') ||
-   (typeof OnListMenuClick == 'function' && (typeof Dorothy.url == 'string' || typeof _ == 'object') )){
+	 (typeof OnListMenuClick == 'function' && (typeof Dorothy.url == 'string' || typeof _ == 'object') )){
 	DorothyEx.isDorothy2set = true;
 	DorothyEx.queueFolder = Irvine.Current.Path;
 }else if(typeof frmDOA == 'object' && nameOf(frmDOA) == 'VCLForm' && typeof OnListMenuClick == 'function'){
@@ -299,7 +299,8 @@ DorothyEx.define = function(){
 			irvine_script_path = (new irvinePath).scripts;
 		}else{
 			Dorothy.programDir = dorothy2_program;
-			Dorothy.version = this.getVersionDOA();
+			Dorothy.version = this.getVersionDorothy2A();
+			version = this.getVersionDOA();
 			Dorothy.temp = dorothy2_temp;
 		}
 		//Dorothy.userPath = dorothy2_user + Dorothy.matchFile + '\';
