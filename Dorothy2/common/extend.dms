@@ -139,7 +139,7 @@ extend = (function(){
 			destination = arguments[index];
 			index++;
 			if(typeof destination == 'boolean'){
-				same = true;
+				same = destination;
 				destination = arguments[index];
 				index++;
 			}
