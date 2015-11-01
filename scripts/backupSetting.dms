@@ -1,0 +1,118 @@
+/*
+スクリプト初期化データ
+guid={50E782CE-E964-4642-8840-7E63BFF6476D}
+caption=設定フォルダをバックアップ
+version=0.1
+hint=
+event=OnDestroy
+match=
+author=wan
+synchronize=0
+*/
+
+function OnDestroy(){
+//アプリケーション終了イベント
+	SW_HIDE = 0;
+	SW_SHOW = 5;
+	INFINITE = 0xffffffff;
+	NORMAL_PRIORITY_CLASS = 0x20;
+	WAIT_OBJECT_0 = 0;
+
+	function exec(app, cmd, dir, wait){
+		var si = new Struct (
+			'cb:l',
+			'lpReserved:s',
+			'lpDesktop:s',
+			'lpTitle:s',
+			'dwX:l',
+			'dwY:l',
+			'dwXSize:l',
+			'dwYSize:l',
+			'dwXCountChars:l',
+			'dwYCountChars:l',
+			'dwFillAttributes:l',
+			'dwFlags:l',
+			'wShowWindow:t',
+			'cbReserved2:t',
+			'lpReserved2:s',
+			'hStdInput:h',
+			'hStdOutput:h',
+			'hStdError:h'
+		);
+		si.cb = si.sizeOf ();
+
+		si.dwFlags = 0x1;
+		si.wShowWindow = SW_HIDE;
+
+		var pi = new Struct (
+			'hProcess:h',
+			'hThread:h',
+			'dwProcessId:l',
+			'dwThreadId:l'
+		);
+
+		var exitcode = new Struct ('code:l');
+		var r = dll.CreateProcessA (null, '"' + app + '" ' + cmd, null, null, false, NORMAL_PRIORITY_CLASS, null, dir, si, pi);
+		if(r == 0){
+			throw 'Error: CreateProcessA';
+		}
+
+		try {
+			r = dll.WaitForSingleObject (pi.hProcess, wait);
+
+			if (r != WAIT_OBJECT_0) {
+				throw 'Error: WaitForSingleObject: ' + r;
+			}
+
+			if (dll.GetExitCodeProcess (pi.hProcess, exitcode) == 0) {
+				throw 'Error: GetExitCodeProcess';
+			}
+		}catch(e){
+			alert(e);
+		}finally {
+			dll.CloseHandle (pi.hThread);
+			dll.CloseHandle (pi.hProcess);
+		}
+
+		return exitcode.code;
+	}
+
+	var reg = new RegIni('\software\wildforce\irvine');
+	var option = reg.read('path', 'option', '');
+	var userPath = option.slice(0, option.lastIndexOf('\'));
+	var settingPath = userPath.slice(0, userPath.lastIndexOf('\')) + '\';
+	var backupPath = settingPath + 'backups\';
+	var name = userPath.slice(userPath.lastIndexOf('\') + 1);
+	var dir = new Directory(backupPath);
+	var backupName = name + '_backup';
+	var max = 3;
+
+	var backups = new Strings();
+	backups.sorted = true;
+
+	for(var folder = dir.findFirstDir(backupName + '[*]'); folder; folder = dir.findNextDir()){
+		backups.add(folder);
+	}
+
+	var d = new Date();
+	d.format = 'yyyymmdd_hhnnss';
+	var target = format('%s%s[%s]', backupPath, backupName, d.toString());
+
+
+	var dll = new DynaCall ();
+	dll.register ('kernel32.dll', 'CreateProcessA', 'f=s', 'i=ssssblssss', 'r=b');
+	dll.register ('kernel32.dll', 'CloseHandle', 'f=s', 'i=h', 'r=l');
+	dll.register ('kernel32.dll', 'WaitForSingleObject', 'f=s', 'i=hl', 'r=l');
+	dll.register ('kernel32.dll', 'GetExitCodeProcess', 'f=s', 'i=hs', 'r=b');
+
+
+	var r = confirm("バックアップを作成します。よろしいですか?\n最後のバックアップ: " + (backups.length ? backups[backups.length - 1] : 'なし'));
+	if(!r) return;
+
+	r = exec('cmd.exe', format('/C xcopy "%s" "%s" /E /H /I', userPath, target), settingPath, INFINITE);
+	if(r == 0){
+		if(backups.length >= max){
+			r = exec('cmd.exe', format('/C rd /S /Q "%s"', backups[0]), backupPath, INFINITE);
+		}
+	}
+}
