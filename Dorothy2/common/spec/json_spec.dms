@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON spec
-//version=0.50
+//version=0.51
 //hint=http://yasmine.dorothy.test/common/spec/json_spec.dms
 //match=
 //author=wan
@@ -424,6 +424,13 @@ describe('JSON.stringify', function(){
 			rep = function(k, v){if(k != 1) return v;};
 			expect(JSON.stringify(value, rep)).toBe('[0,null,2]');
 		});
+		it('replace undefined by value', function(){
+			var value = {'undef': _undefined};
+			var rep = function(k, v){return typeof v == 'undefined' ? 'undefined' : v;};
+			expect(JSON.stringify(value, rep)).toBe('{"undef":"undefined"}');
+			value = [_undefined];
+			expect(JSON.stringify(value, rep)).toBe('["undefined"]');
+		});
 		it('replace value by function', function(){
 			var value = {"a": 1, "b": 2};
 			var rep = function(k, v){return k == 'b' ? function(){} : v;};
@@ -554,6 +561,7 @@ describe('JSON.stringify', function(){
 			}
 		}
 		var text;
+		expect(function(){JSON.stringify(folderdata);}).not.toThrow();
 		expect(function(){text = JSON.stringify(folderdata, sort);}).not.toThrow();
 		expect(text).toBe(JSON.stringify(o, sort));
 	});

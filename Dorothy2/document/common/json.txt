@@ -128,5 +128,9 @@ JSON.save(path, value, replacer, space, options){
 
 
 XV—š—ğ
-0.5
+
+2015-11-06 version 0.51
+	.stringify‚É‚Äreplacer‚Åundefined‚ğ’uŠ·‚Å‚«‚È‚­‚È‚Á‚Ä‚¢‚½–â‘è‚ğC³‚µ‚½
+
+2014-12-08 version 0.50
 	ˆê‚©‚çì‚è’¼‚µ

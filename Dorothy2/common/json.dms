@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.50
+//version=0.51
 //hint=
 //match=
 //author=wan
@@ -520,7 +520,8 @@ JSON =
 				case 'function':
 				case 'undefined': return;//undefined‚ð•Ô‚·
 				case 'object':
-					switch(nameOf(value)){
+					var name = nameOf(value);
+					switch(name){
 						case 'String':
 						case 'StringList':
 						case 'StringBuffer':
@@ -561,7 +562,7 @@ JSON =
 									type = typeof key;
 									if(type != 'string' && type != 'number' && (type = nameOf(key)) != 'String' && type != 'Number') continue;
 									key = key + '';
-									if(typeof value[key] != 'undefined'){
+									if(!(name == 'IrvineFolderData' && typeof value[key] == 'undefined')){
 										path[l] = key;
 										v = this.toStr(value, key, sp, path);
 										if(!isUndefined(v)){
