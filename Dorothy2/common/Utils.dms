@@ -1,0 +1,1231 @@
+//Dorothy2
+//caption=Utils
+//version=1.0
+//hint=
+//match=
+//author=wan
+//path=common
+//end
+
+/**
+ * @license
+ * Copyright (C) 2015 wan <thewanwan111@gmail.com>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ */
+
+(function(){
+	/**
+	 * ユーティリティ関数群  
+	 * Utilsオブジェクト
+	 * @namespace
+	 */
+	Utils = Global.Utils = typeof Utils == 'object' ? Utils : {};
+
+	/**
+	 * @const
+	 * @type {undefined}
+	 */
+	Utils.UNDEFINED = (function(){})();
+
+
+	/**
+	 * エラーメッセージを整形して返します
+	 * @param {string} message エラーメッセージ
+	 * @param {string} [fileName=Dorothy.matchFile+'.dms'] ファイル名
+	 * @param {string|number} [line=''] エラー発生箇所
+	 * @param {string} [name='Error'] エラー名
+	 * @return {String} 整形した文字列のStringオブジェクト 各引数をプロパティに追加
+	 */
+	Utils.error = function(message, fileName, line, name){
+		var str = new String(message);
+		str.message = str.text;
+		str.fileName = fileName ? Utils.toStr(fileName) : Dorothy.matchFile + '.dms';
+		str.line = line ? Utils.toStr(line) : '';
+		str.name = name ? Utils.toStr(name) : 'Error';
+		str.text = format('%s: %s %s: %s', str.name, str.fileName, str.line, str.message);
+		
+		return str;
+	};
+
+	/**
+	 * エラーメッセージを整形してalertで表示します
+	 * @param {string} message エラーメッセージ
+	 * @param {string} [fileName=Dorothy.matchFile+'.dms'] ファイル名
+	 * @param {string|number} [line=''] エラー発生箇所
+	 * @param {string} [name='Error'] エラー名
+	 * @return {String} 整形した文字列のStringオブジェクト 各引数をプロパティに追加
+	 */
+	Utils.showError = function(message, fileName, line, name){
+		var e = Utils.error(message, fileName, line, name);
+		alert(e);
+		return e;
+	};
+
+	/** 
+	 * 文字列として扱えるか判定します string String StringBufferならばtrue
+	 * @param {*} v
+	 * @return {boolean}
+	 */
+	Utils.isStr = function(v){
+		return typeof v == 'string' || String === v || StringBuffer === v;
+	};
+
+	/**
+	 * 文字列に変換
+	 * @param {*} v
+	 * @return {string}
+	 */
+	Utils.toStr = function(v){
+		return typeof v.toString == 'function' ? v.toString() : new String(v).toString();
+	};
+
+	/**
+	 * 数値に変換 数値に変換できないものはNaNを返します。
+	 * @template T
+	 * @param {*} v
+	 * @param {T=} def 数値に変換できない場合に返す値
+	 * @return {number|T}
+	 */
+	Utils.toNumber = function(v, def){
+		return typeof v === 'number' ? v : isNull(v) ? 0 : isFinite(v) ? parseFloat(v) : arguments.length > 1 ? def : NaN;
+	};
+
+	/**
+	 * 整数値に変換
+	 * @param {*} v
+	 * @return {number}
+	 */
+	Utils.toInteger = function (v){
+		return v > 0 ? Math.floor(v) : Math.ceil(v);
+	};
+
+	/**
+	 * オブジェクトをプリミティブ値に変換
+	 * @param {*} v
+	 * @return {string|number|boolean|null|undefined}
+	 */
+	Utils.objToPrimitive = function(v){
+		var r = v,
+			type = typeof v;
+		if(type == 'object' || type == 'function'){
+			if(nameOf(v) == 'Date'){
+				r = v.toString();
+			}else if(typeof v.valueOf == 'function'){
+				r = v.valueOf();
+				if((type = typeof r) == 'object' || type == 'function'){
+					r = Utils.toStr(r);
+				}
+			}else{
+				r = Utils.toStr(v);
+			}
+		}
+		return r;
+	};
+	
+	/**
+	 * 文字列をプリミティブ値に変換
+	 * 例: "true" -> true
+	 * @param {*} s
+	 * @return {string|number|boolean|null|undefined}
+	 */
+	Utils.strToPrimitive = function(s){
+		var r = s = typeof s == 'object' ? Utils.objToPrimitive(s) : s;
+		
+		if(/^\s*(true|false|null|NaN|undefined|-?\d+(\.\d+)?([eE][+\-]?\d+)?|0[xX][\da-fA-F]+)\s*$/.test(s)){
+			s = RegExp.$1;
+			switch(s){
+				case 'true':
+				case 'false':
+					r = s == 'true';
+					break;
+				case 'null':
+					r = null;
+					break;
+				case 'NaN':
+					r = NaN;
+					break;
+				case 'undefined':
+					r = Utils.UNDEFINED;
+					break;
+				default:
+					r = parseFloat(s);
+			}
+		}
+		return r;
+	};
+
+	/**
+	 * 渡された値からファイル名を取り出します
+	 * @param {*} s
+	 * @return {string} ファイル名
+	 */
+	Utils.extractName = function(s){
+		s = Utils.toStr(s);
+		if(s.indexOf("\\") != -1){
+			s = /^(.*\\)?(.+)/.test(s) ? RegExp.$2 : '';
+		}else if(s.indexOf('/') != -1){
+			s = /^(.*\/)?([^\/#?]+)/.test(s) ? RegExp.$2 : '';
+		}else{
+			s = s.replace(/\?.*$/, '');
+		}
+		return s;
+	};
+	
+	/**
+	 * 渡された値から拡張子を取り出します
+	 * @param {*} s
+	 * @return {string} ファイル名
+	 */
+	Utils.extractExt = function(s){
+		return /\.[^.]+$/.test(Utils.extractName(s)) ? RegExp.$0 : '';
+	};
+
+	/**
+	 * 渡された文字列から 置換変数(%～%) を置換して整形します  
+	 * mapのプロパティと同名の置換変数をその値で置き換えます mapに存在しない名前の置換変数は削除されます
+	 * @param {string} s
+	 * @param {Object=} map 置き換えに使用されるオブジェクト
+	 * @return {string} 整形した文字列
+	 */
+	Utils.formatTemplate = function(s, map){
+		s = Utils.toStr(s);
+		map = map || {};
+		function rep(a, key){
+			return key == '' ? '%' : Utils.getObject(key, map, '');
+		}
+		return s.replace(/%(.*?)%/g, rep);
+	};
+
+	/**
+	 * .call()の代替 関数のモードを変更せずに呼び出します。 戻り値で渡される関数が内部で元とは別の関数として扱われるのを利用しています
+	 * @param {Function} fn 呼び出す関数
+	 * @param {*} selfObj 関数fnの内部でthisとして使用される値
+	 * @param {...*} var_args 関数fnに渡される引数
+	 * @return {*} 関数fnの返り値
+	 */
+	Utils.call = function(fn, selfObj, var_args){
+		/*
+		var len = arguments.length,
+			args = [],
+			p = [];
+
+		for(var i = 2; i < len; i++){
+			args.push(arguments[i]);
+			p.push('args[' + (i -2) + ']');
+		}
+
+		var f = function(){
+			var tmp = eval('function(){return fn(' + p.join(',') + ');}');
+			return tmp();
+		};
+
+		return f.call(selfObj);
+		*/
+		var f = (function(f){return f;})(fn);
+		return f.apply(selfObj, arguments.slice(2));
+	};
+
+	/**
+	 * .apply()の代替 関数のモードを変更せずに呼び出します
+	 * @param {Function} fn 呼び出す関数
+	 * @param {*} selfObj 関数fnの内部でthisとして使用されるオブジェクト
+	 * @param {?Array} argsArray 関数fnに渡される引数
+	 * @return {*} 関数fnの返り値
+	 */
+	Utils.apply = function(fn, selfObj, argsArray){
+		if(nameOf(argsArray) != 'Array' && !isNull(argsArray) && !isUndefined(argsArray)){
+			throw Utils.error('第三引数がArrayではない', 'Utils.dms', '.apply');
+		}
+		/*
+		var args = argsArray || [],
+			len = args.length,
+			p = [];
+
+		for(var i = 0; i < len; i++) p.push('args[' + i + ']');
+
+		var f = function(){
+			var tmp = eval('function(){return fn(' + p.join(',') + ');}');
+			return tmp();
+		};
+
+		return f.call(selfObj);
+		*/
+		var f = (function(f){return f;})(fn);
+		return f.apply(selfObj, (argsArray || []));
+	};
+
+	/**
+	 * 指定した完全修飾名のオブジェクトを取得します objを指定した場合はobjのプロパティから取得します
+	 * @function
+	 * @param {string} name 完全修飾名 例: Global.Utils.UNDEFINED 等
+	 * @param {*=} obj このオブジェクを対象とします 省略した場合グローバルスコープとGlobalオブジェクトを対象とします
+	 * @param {*=} def 見つからなかった場合に返す値
+	 * @return {*}
+	 */
+	Utils.getObject = (function(){
+		function _getObjForGlobal(name){
+			return eval([
+			'(function(){',
+			'  try{',
+			'    return /^[_$a-zA-Z][a-zA-Z0-9]*$/.test("' + name + '") && !/^arguments/.test("' + name + '") ? ' + name + ': Global["' + name + '"];',
+			'  }catch{}',
+			'})()'
+			].join("\n"));
+		}
+		return function(name, obj, def){
+			var key,
+				keys = isNull(name) || isUndefined(name) ? [] : Utils.toStr(name).split(/\./),
+				r = obj || _getObjForGlobal(key = keys.shift());
+			if(isUndefined(r)) r = def;
+			while(!isUndefined(key = keys.shift())){
+				try{
+					if(key == 'prototype') r = r.prototype;
+					else r = r[key];
+				}catch(e){
+					r = def;
+					break;
+				}
+			}
+			return r;
+		};
+	})();
+
+	/**
+	 * オブジェクトの全てのプロパティ名を配列で返します。
+	 * @param {*} obj オブジェクト
+	 * @return {Array<string>}
+	 */
+	Utils.keys = function(obj){
+		var key, keys,
+			r = [],
+			o = {},
+			defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/,
+			type = typeof obj,
+			isObj = type == 'object',
+			name = isObj && nameOf(obj),
+			isPlainObject = name == 'Object',
+			isArray = name == 'Array',
+			isStr = type == 'string' || obj === String || obj === StringBuffer;
+
+		if(isArray || isStr){
+			for(var i = 0; i < obj.length; i++) r.push(i);
+		}else if(isObj){
+			if(typeof obj.getKeys == 'function'){
+				keys = obj.getKeys();
+				for(var i = 0; i < keys.length; i++){
+					key = keys[i];
+					if(isPlainObject ? typeof o[key] == 'undefined' : !defaultMethods.test(key)) r.push(key);
+				}
+			}
+			//folderdata, prototypeはgetKeysでは取得出来ない
+			if(!r.length){
+				for(key in obj) r.push(key);
+			}
+		}
+		return r;
+	};
+	
+	/**
+	 * <pre>
+	 * 指定した最初のオブジェクトに複数のオブジェクトをマージして返します。
+	 * オブジェクトの指定が一つだけの場合はその時のthisに対してマージします
+	 * マージ元で循環参照が有った場合はマージ先でも同様の循環構造を再現します
+	 * マージ元にオブジェクト以外やString,StringBufferオブジェクトを指定した場合は空オブジェクト{}として扱います
+	 * 
+	 * Utils.extend([deep,] [same,] [destination,] source1[, source2[, ...]])
+	 *  deep: 省略可 trueならば深いコピー(deep copy) デフォルトはfalse
+	 *  same: 省略可 trueならば同名のプロパティは同じ型の場合のみ上書き デフォルトはfalse
+	 *  destination: 省略可  マージ先 拡張するオブジェクト 省略した場合はthis
+	 *  source1,2...: マージ元 オブジェクト
+	 * </pre>	 
+	 * @example
+	 * 例1: Utils.extend(destination, source); //destinationにsoucreの内容をコピー
+	 * 例2: Utils.extend(true, destination, source, source2); //destinationにsoucreとsourc2の内容をディープコピー
+	 * 例3: Utils.extend(source); //Utilsにsourceの内容をコピー
+	 * 例4: Obj.extend = Utils.extend;
+	 *      Obj.extend(source); //Objにsourceの内容をコピー
+	 * @function
+	 * @param {...*} var_args
+	 * @return {*} マージしたオブジェクト
+	 */
+	Utils.extend = (function(){
+		var _extend = function(cache, deep, same, destination, source){
+			var dest, src, key, index, ex, destType, srcType, isUndef,
+				keys = Utils.keys(source),
+				len = keys.length;
+
+			for(var i = 0; i < len; i++){
+				key = keys[i];
+				if(typeof source[key] == 'undefined' && nameOf(source) == 'IrvineFolderData') continue;
+				src = source[key];
+				isUndef = typeof destination[key] == 'undefined';
+				dest = isUndef ? null : destination[key];
+				destType = nameOf(dest) || typeof dest;
+				srcType = nameOf(src) || typeof src;
+				if(same && !isUndef && destType != srcType) continue;
+				if(deep && typeof src == 'object'){
+					if((index = cache.indexOf(src)) != -1){
+						destination[key] = cache.dest[index];
+						continue;
+					}
+					ex = false;
+					switch(srcType){
+						case 'Object':
+							dest = destType == 'Object' ? dest : {};
+							ex = true;
+							break;
+						case 'Array':
+							dest = destType == 'Array' ? dest : [];
+							ex = true;
+							break;
+						case 'Number':
+							dest = new Number(src.valueOf());
+							break;
+						case 'Boolean':
+							dest = new Boolean(src.valueOf());
+							break;
+						case 'RegExp':
+							dest = new RegExp();
+							for(var j in dest) dest[j] = src[j];
+							break;
+						case 'Date':
+							dest = new Date(src.getTime());
+							dest.format = src.format;
+							break;
+						case 'StringList':
+							dest = new Strings(src.text);
+							dest.sorted = src.sorted;
+							dest.caseSensitive = src.caseSensitive;
+							dest.duplicates = src.duplicates;
+							break;
+						case 'URL':
+							dest = new URL(src.url);
+							break;
+						case 'Cookie':
+							dest = new Cookie();
+							dest.parse(src.toString());
+							break;
+						default:
+							if(src === String){
+								destination[key] = new String(src.toString());
+								continue;
+							}else if(src === StringBuffer){
+								destination[key] = new StringBuffer(src.text);
+								continue;
+							}else{
+								dest = src;
+							}
+					}
+					cache.dest.push(dest);
+					cache.src.push(src);
+					if(ex) dest = arguments.callee(cache, deep, same, dest, src);//_extend(cache, deep, same, dest, src);
+					destination[key] = dest;
+				}else{
+					destination[key] = src;
+				}
+			}
+			return destination;
+		};
+		return function(/*[deep,] [same,] [destination,] source1[, source2[, ...]]*/){
+			var source,
+				destination = arguments[0],
+				deep = false,
+				same = false,
+				index = 1,
+				len = arguments.length,
+				cache = {
+					dest: [],
+					src: [],
+					indexOf: function(obj){
+						var len = this.src.length;
+						for(var i = 0; i < len; i++){
+							if(this.src[i] === obj || this.dest[i] === obj) return i;
+						}
+						return -1;
+					}
+				};
+
+			if(typeof destination == 'boolean'){
+				deep = destination;
+				destination = arguments[index];
+				index++;
+				if(typeof destination == 'boolean'){
+					same = destination;
+					destination = arguments[index];
+					index++;
+				}
+			}
+			if(len == index){
+				destination = this;
+				index--;
+			}
+			//Stringオブジェクト同士,StringBufferオブジェクト同士の比較は常にtrueとなるバグを利用
+			//またこれらはブラケット表記法ではプロパティにアクセスできないので{}とする
+			if(typeof destination != 'object' || (destination === String || destination === StringBuffer)){
+				destination = {};
+			}
+			var destType = nameOf(destination);
+			for(;index < len; ++index){
+				source = arguments[index];
+				if(typeof source == 'object' && !(destination === source)){
+					if(same && destType != nameOf(source)) continue;
+					cache.dest.push(destination);
+					cache.src.push(source);
+					destination = _extend(cache, deep, same, destination, source);
+				}
+			}
+			return destination;
+		};
+	})();
+
+	/**
+	 * 指定したプロトタイプとプロパティで新しいオブジェクトを生成します
+	 * @param {string} ctorName 内部で使用するコンストラクタ関数の名前。
+	 *     DMonkeyではprototypeは同名の関数同士で共有されます。 共有を避けたい場合は一意の名前にしてください
+	 * @param {Object=} proto 新しいオブジェクトのプロトタイプとなるオブジェクト
+	 * @param {Object=} prop このオブジェクトの各プロパティを新しいオブジェクトに追加する
+	 * @return {Object}
+	 */
+	Utils.objCreate = function(ctorName, proto, prop){
+		var s = [
+			'function ' + ctorName + '(){}',
+			
+			'if(typeof proto == "object" || isNull(proto)) ' + ctorName + '.prototype = proto;',
+			
+			'var obj = new ' + ctorName + ';',
+			
+			'if(typeof prop == "object"){',
+			'    var key, keys = Utils.keys(prop);',
+			'    for(var i in keys){',
+			'        key = keys[i];',
+			'        obj[key] = prop[key];',
+			'    }',
+			'}',
+			
+			'return obj;'
+		].join("\n");
+
+
+		return eval('(function(){' + s + '})()');
+	};
+
+	/**
+	 * <pre>
+	 * 他のコンストラクタからプロトタイプを継承します。クラスの継承を擬似的に実現させます。
+	 * 親のprototypeに constructor プロパティを追加します。 親自身のコンストラクタ関数です。
+	 * 子のprototypeに _super プロパティを追加します。 親のコンストラクタ関数です。
+	 * 子のprototypeに _base メソッドを追加します。 親メソッドの呼び出しに使用します。
+	 * function _base(selfObj, methodName, var_args)
+	 *  selfObj: 呼び出し先でthisとなる値 通常は自身を指定してください
+	 *  methodName: 呼び出す親のメソッドの名前
+	 *  var_args: 親メソッドに渡す引数
+	 * </pre>
+	 * @example
+	 * function Parent(a){this.a = a;}
+	 * function Child(a){
+	 *     //親の呼び出し例
+	 *     //例1:
+	 *         this._base(this, 'constructor', a);
+	 *     //例2:
+	 *         Utils.call(Parent, this, a);
+	 *     //例3:
+	 *         Utils.call(Child.prototype._super, this, a);
+	 *     //例4(DMonkey固有の仕様):
+	 *         var super_ = Child.prototype._super;
+	 *         super_(a);
+	 *     //例5(DMonkey固有の仕様)
+	 *         Parent(a);
+	 *     //駄目な例1:
+	 *         this._super(a);
+	 *     //駄目な例2:
+	 *         Child.prototype._super(a);
+	 * }
+	 * Utils.inherits(Child, Parent);
+	 * @function
+	 * @param {Function} childCtor 子クラスとなるコンストラクタ関数
+	 * @param {Function} parentCtor 親クラスとなるコンストラクタ関数
+	 */
+	Utils.inherits = (function(){
+		var c = {count: 0};//DMonkeyではオブジェクトでないと正しくクロージャを扱えない
+		return function(childCtor, parentCtor) {
+			//DMonkeyでは同じ名前の関数でprototypeが共有されるため毎回違う名前を使用する
+			var tempCtorName = '_inherits_tempCtor_' + c.count++;
+    	
+			childCtor.prototype = Utils.objCreate(tempCtorName, parentCtor.prototype);
+			childCtor.prototype._super = parentCtor;
+			childCtor.prototype.constructor = childCtor;
+    	
+			parentCtor.prototype.constructor = parentCtor;
+    	
+			//動的差し替え
+			childCtor.prototype._base = (function(parent){
+				return function(selfObj, methodName, var_args){
+					if(typeof parent._super == 'function'){
+						var pre_base = this._base;
+						this._base = parent._base;
+						try{
+							var r = Utils.apply(parent[methodName], selfObj, arguments.slice(2)); //DMonkeyではargumentsはただの配列(.calleが追加されている)
+						}finally{
+							this._base = pre_base;
+						}
+					}else{
+						var r = Utils.apply(parent[methodName], selfObj, arguments.slice(2));
+					}
+					return r;
+				};
+			})(parentCtor.prototype);
+		};
+	})();
+	
+	/**
+	 * destオブジェクトにsrcオブジェクトの全てのメンバーをコピーします
+	 * @param {Object} dest
+	 * @param {Object} src
+	 */
+	Utils.mixin = function(dest, src){
+		if(typeof dest == 'object'){
+			var key,
+				keys = Utils.keys(src),
+				len = keys.length;
+			for(var i = 0; i < len; i++){
+				key = keys[i];
+				dest[key] = src[key];
+			}
+		}
+		return dest;
+	};
+
+	/**
+	 * thisや引数が束縛された新たな関数を生成して返します
+	 * @param {Function} fn 対象とする関数
+	 * @param {Object} selfObj 関数内でthisとして使用される値
+	 * @param {...*} var_args 関数に渡される引数。 生成された関数を呼び出す時に指定された引数はこれらの後の引数として使用されます。
+	 * @return {Function}
+	 */
+	Utils.bind = function(fn, selfObj, var_args){
+		return (function(fn, selfObj, args){
+			return function(){
+				return Utils.apply(fn, selfObj, args.concat(arguments));
+			};
+		})(fn, selfObj, arguments.slice(2));
+	};
+
+
+
+	/**
+	 * 日時を表す文字列をIrvineで使用されているTDateTimeの数値に変換します
+	 * @param {string} str 「yyyy/mm/dd hh:nn:ss」または「hh:nn:ss」形式の文字列
+	 * @return {number} TDateTimeの数値
+	 */
+	Utils.strToDateTime = function(str){
+		var d = new Date(),
+			oneday = 86400000, //一日
+			unixDateDelta = 25569, //UnixDateDelta[UNIX時間とTDateTimeとの差]
+			offset = d.getTimezoneOffset() * 60 * 1000; //世界協定時刻(UTC)との差
+		if(/^((\d{4})\/(\d+)\/(\d+))?\s*((\d+):(\d+):(\d+))?$/.test(str)){
+			if(RegExp.$1){
+				d.setYear(RegExp.$2);
+				d.setMonth(RegExp.$3 - 1);
+				d.setDate(RegExp.$4);
+			}
+			d.setHours(RegExp.$6);
+			d.setMinutes(RegExp.$7);
+			d.setSeconds(RegExp.$8);
+			d.setMilliseconds(0);
+			
+			return (d.getTime() - offset + unixDateDelta * oneday) / oneday;
+			//return (d.getTime() - offset) / oneday + UnixDateDelta;
+		};
+		return 0;
+	};
+
+	/**
+	 * Irvineで使用されているTDateTimeの数値を日時を表す文字列に変換します
+	 * @param {number} n TDateTimeの数値
+	 * @param {string=} formatStr Dateオブジェクトによる文字列変換時の書式
+	 * @return {string} 日時を表す文字列
+	 */
+	Utils.dateTimeToStr = function(n, formatStr){
+		var d = new Date();
+		if(formatStr) d.format = formatStr;
+		d.setTime((n - 25569) * 86400000 + (d.getTimezoneOffset() * 60 * 1000)); // (datatime - UnixDateDelta[UNIX時間-TDateTime]) * 一日 + 世界協定時刻(UTC)との差
+		return d.toString();
+	};
+
+	/**
+	 * folderdataが存在しない場合にfolderdataを定義します
+	 */
+	Utils.setFolderData = function(){
+		if(typeof folderdata == 'object' && nameOf(folderdata) == 'IrvineFolderData') return;
+		
+		if(!Utils.queueFolder) throw Utils.showError('Utils.queueFolderが空', 'Utils.dms', '.setFolderData');
+		
+		var folder;
+		var nowTime = Utils.strToDateTime(new Date().toString());
+		
+		folderdata = new IrvineFolderData;
+
+		try{
+			folder = new ActiveXObject('Irvine.Folder');
+			folder.path = Utils.queueFolder;
+		}catch(e){
+			var v = {};
+			for(var key in folderdata){
+				if(typeof folderdata[key] != 'undefined') v[key.toLowerCase()] = '';
+			}
+			v['tryconenctcount'] = '';
+
+			var path = new Directory( (new irvinePath).queue + Utils.queueFolder ).path;
+			var ini = new Ini(path + 'queue.ini');
+			var key, keys, sec, secs = ini.readSections();
+			for(var i in secs){
+				sec = secs[i];
+				keys = ini.readSection(sec);
+				for(var j in keys){
+					key = keys[j];
+					v[key] = ini.read(sec, key, '');
+				}
+			}
+			folder = {Values: v};
+		}
+		
+		//型変換はfolderdata側がやってくれる
+		//folderdata.AbsolutePath        = folder.AbsolutePath;
+		folderdata.Agent               = folder.Values['agent'];
+		folderdata.AutoRemoveFolder    = folder.Values['autoremovefolder'] ;
+		folderdata.AutoRename          = folder.Values['autorename'] ;
+		folderdata.AutoRenameDate      = folder.Values['autorenamedate'] ;
+		folderdata.AutoRenameHash      = folder.Values['autorenamehash'] ;
+		folderdata.AutoRenameHashNum   = folder.Values['autorenamehashnum'] ;
+		folderdata.AutoSort            = folder.Values['autosort'] ;
+		folderdata.AutoStart           = folder.Values['autostart'] ;
+		folderdata.BeginAutoStart      = folder.Values['beginautostart'] ;
+		folderdata.BeginTime           = Utils.strToDateTime(folder.Values['begintime']);
+		if(folderdata.BeginTime < nowTime) folderdata.BeginTime += 1;
+		folderdata.BufferSize          = folder.Values['buffersize'];
+		folderdata.CernType            = folder.Values['cerntype'] ;
+		folderdata.ChangeImportFolder  = folder.Values['changeimportfolder'] ;
+		folderdata.CharCode            = folder.Values['charcode'] ;
+		folderdata.ClearTrash          = folder.Values['cleartrash'] ;
+		folderdata.Cookie              = folder.Values['cookie'] ;
+		folderdata.CookieStr           = folder.Values['cookiestr'];
+		folderdata.CrcTryCount         = folder.Values['crctrycount'];
+		folderdata.CreateDate          = Utils.strToDateTime(folder.Values['createdate']);
+		folderdata.DateFolder          = folder.Values['datefolder'] ;
+		folderdata.DownloadCount       = folder.Values['downloadcount'];
+		folderdata.DupFile             = folder.Values['dupfile'] ;
+		folderdata.DupFileConfirm      = folder.Values['dupfileconfirm'] ;
+		folderdata.DupUrl              = folder.Values['dupurl'] ;
+		folderdata.DupUrlConfirm       = folder.Values['dupurlconfirm'] ;
+		folderdata.EndTime             = Utils.strToDateTime(folder.Values['endtime']);
+		if(folderdata.EndTime < nowTime) folderdata.EndTime += 1;
+		folderdata.Expanded            = folder.Values['expanded'] ;
+		folderdata.Folder              = folder.Values['folder'];
+		folderdata.FtpDirSearch        = folder.Values['ftpdirsearch'] ;
+		folderdata.FtpProxy            = folder.Values['ftpproxy'];
+		folderdata.FtpProxyPassword    = folder.Values['ftpproxypassword'];
+		folderdata.FtpProxyUserId      = folder.Values['ftpproxyuserid'];
+		folderdata.FtpSubDirSearch     = folder.Values['ftpsubdirsearch'] ;
+		folderdata.FtpTimeout          = folder.Values['ftptimeout'];
+		folderdata.GetDate             = folder.Values['getdate'] ;
+		folderdata.HiddenAttr          = folder.Values['hiddenattr'] ;
+		folderdata.History             = folder.Values['history'] ;
+		folderdata.HttpMethod          = folder.Values['httpmethod'] ;
+		folderdata.HttpProxy           = folder.Values['httpproxy'];
+		folderdata.HttpProxyPassword   = folder.Values['httpproxypassword'];
+		folderdata.HttpProxyUserId     = folder.Values['httpproxyuserid'];
+		folderdata.HttpTimeout         = folder.Values['httptimeout'];
+		folderdata.HttpVersion         = folder.Values['httpversion'] ;
+		folderdata.Ignore3xx           = folder.Values['ignore3xx'] ;
+		folderdata.Ignore404           = folder.Values['ignore404'] ;
+		folderdata.Image               = folder.Values['image'];
+		folderdata.InvalidSplitDownload= folder.Values['invalidsplitdownload'] ;
+		folderdata.LessSize            = folder.Values['lesssize'];
+		folderdata.LessSpeed           = folder.Values['lessspeed'];
+		folderdata.LessSpeedRetry      = folder.Values['lessspeedretry'] ;
+		folderdata.LimitSpeed          = folder.Values['limitspeed'] ;
+		folderdata.ListViewStyle       = folder.Values['listviewstyle'] ;
+		folderdata.MailAddress         = folder.Values['mailaddress'];
+		folderdata.Mark                = folder.Values['mark'] ;
+		folderdata.MaxItemCount        = folder.Values['maxitemcount'];
+		folderdata.MaxSpeed            = folder.Values['maxspeed'];
+		folderdata.MoreSize            = folder.Values['moresize'];
+		folderdata.MoveTrash           = folder.Values['movetrash'] ;
+		folderdata.Nlst                = folder.Values['nlst'] ;
+		folderdata.NoCache             = folder.Values['nocache'] ;
+		folderdata.Pasv                = folder.Values['pasv'] ;
+		//folderdata.Path                = folder.Path;
+		folderdata.Post                = folder.Values['post'];
+		folderdata.Postpone            = folder.Values['postpone'];
+		folderdata.Priority            = folder.Values['priority'];
+		folderdata.ProxyErrorCount     = folder.Values['proxyerrorcount'];
+		folderdata.ProxyErrorTo        = folder.Values['proxyerrorto'] ;
+		folderdata.RandomAgent         = folder.Values['randomagent'] ;
+		folderdata.RandomFtpProxy      = folder.Values['randomftpproxy'] ;
+		folderdata.RandomHttpProxy     = folder.Values['randomhttpproxy'] ;
+		folderdata.Referer             = folder.Values['referer'] ;
+		folderdata.RefererStr          = folder.Values['refererstr'];
+		folderdata.RemoveCrcError      = folder.Values['removecrcerror'] ;
+		folderdata.RemoveQuery         = folder.Values['removequery'] ;
+		folderdata.RemoveTrashItem     = folder.Values['removetrashitem'] ;
+		folderdata.ResumeOverwrite     = folder.Values['resumeoverwrite'] ;
+		folderdata.RollBackBytes       = folder.Values['rollbackbytes'];
+		folderdata.SelectIndex         = folder.Values['selectindex'];
+		folderdata.SortItem            = folder.Values['sortitem'] ;
+		folderdata.SplitCount          = folder.Values['splitcount'];
+		folderdata.StorageTrashCount   = folder.Values['storagetrashcount'];
+		folderdata.TryConnect          = folder.Values['tryconnect'] ;
+		folderdata.TryConnectCount     = folder.Values['tryconenctcount'];//iniの方は元から綴りが間違っている
+		folderdata.TryConnectWait      = folder.Values['tryconnectwait'];
+		folderdata.TryResume           = folder.Values['tryresume'] ;
+		folderdata.UrlEncode           = folder.Values['urlencode'] ;
+		folderdata.UrlFolder           = folder.Values['urlfolder'] ;
+		folderdata.UrlUtf8             = folder.Values['urlutf8'] ;
+		folderdata.UseBeginTime        = folder.Values['usebegintime'] ;
+		folderdata.UseCrc              = folder.Values['usecrc'] ;
+		folderdata.UseEndTime          = folder.Values['useendtime'] ;
+		folderdata.UseFtpProxy         = folder.Values['useftpproxy'] ;
+		folderdata.UseHttpProxy        = folder.Values['usehttpproxy'] ;
+		folderdata.UseHttpProxyForFtp  = folder.Values['usehttpproxyforftp'] ;
+		folderdata.UseHttpProxyForHttps= folder.Values['usehttpproxyforhttps'] ;
+		folderdata.UseLessSize         = folder.Values['uselesssize'] ;
+		folderdata.UseMoreSize         = folder.Values['usemoresize'] ;
+		folderdata.UseRecycle          = folder.Values['userecycle'] ;
+		folderdata.UseResume           = folder.Values['useresume'] ;
+		folderdata.UseRollBack         = folder.Values['userollback'] ;
+		folderdata.ViewIndex           = folder.Values['viewindex'];
+	};
+	
+	/**
+	 * 指定したスクリプトのバージョンを取得します  
+	 * IrvineとDorothy2のスクリプトに対応しています
+	 * @function
+	 * @param {string} path スクリプトのフルパス
+	 * @return {string|number} スクリプトのバージョン 数値に変換可能な場合は数値それ以外は文字列
+	 */
+	Utils.getScriptVersion = (function(){
+		var cache = {};
+		return function(path){
+			if(cache.hasKey(path)) return cache[path];
+			var head,
+				sl = new Strings(),
+				version = null;
+			try{
+				sl.loadFromFile(path);
+				if(/^\/\*(.+?)\*\//.test(sl.text) ||
+				   /^\/\/Dorothy2(.+?)^\/\/end/m.test(sl.text)){
+					head = RegExp.$1;
+					if(/^(\/\/)?version=([^\n]+)/m.test(head)){
+						version = RegExp.$2;
+						if(isFinite(version)) version = parseFloat(version);
+					}
+				}
+			}catch(e){
+				println(e);
+			}
+			cache[path] = version;
+			return version;
+		};
+	})();
+
+	/**
+	 * 実行環境別に適切なアイテムの保存パスを取得します  
+	 * 相対パスだった場合は絶対パスになるまで順に上位キューフォルダの保存パスと連結させていきます
+	 * @return {string}
+	 */
+	Utils.getSavePath = function(){
+		if(Utils.isDorothy2set){
+			return Dorothy.userPath;
+		}
+		var ipath = typeof item != 'undefined' ? item.folder : '';
+		if(/^[a-z]:/i.test(ipath)){
+			ipath += "\\";//C: -> C:\  \が二重になっても問題ない
+			return new Directory(ipath).path;
+		}
+	
+		
+		//絶対パスになるまで順に上位キューフォルダから保存パスを取得
+		var path;
+		if(Utils.isDOA && (typeof folderdata.Folder == 'undefined' || !folderdata.Folder)){
+			var folder = new ActiveXObject('Irvine.Folder');
+			folder.path = Utils.queueFolder;
+			path = folder.Data('queue', 'folder') + "\\" + ipath;
+			while(!/^[a-z]:/i.test(path) && folder.path != '/'){
+				folder = folder.Parent;
+				path = folder.Data('queue', 'folder') + "\\" + path;
+			}
+		}else{
+			path = folderdata.Folder + "\\" + ipath;
+			var qPath = (new irvinePath).queue;
+			var irvQPath = Utils.queueFolder;
+			var ini;
+			while(!/^[a-z]:/i.test(path)){
+				irvQPath = irvQPath.slice(0, irvQPath.lastIndexOf('/'));
+				ini = new Ini(new Directory(qPath + irvQPath).path + 'queue.ini');
+				path = ini.read('queue', 'folder', '') + "\\" + path;
+				if(!irvQPath) break;
+			}
+		}
+		return new Directory(path).path;
+	};
+
+
+//======================================Dorothy=======================================================
+	/**
+	 * 実行環境がDorothy2Aならばtrue
+	 * @type {boolean}
+	 */
+	Utils.isDorothy2A = false;
+
+	/**
+	 * 実行環境がDorothy2setならばtrue
+	 * @type {boolean}
+	 */
+	Utils.isDorothy2set = false;
+
+	/**
+	 * 実行環境がOnListMenuClickのDorothy2set(「Dorothy2サイト設定」)ならばtrue
+	 * @type {boolean}
+	 */
+	Utils.isDorothy2setList = false;
+
+	/**
+	 * 実行環境がDOAならばtrue
+	 * @type {boolean}
+	 */
+	Utils.isDOA = false;
+
+	/**
+	 * 実行環境がDorothy2Rならばtrue
+	 * @type {boolean}
+	 */
+	Utils.isRentan = typeof Dorothy.rVersion != 'undefined';
+
+	/**
+	 * folderdata.Postのコメントオプションから取得したキューフォルダのパス
+	 * @type {string}
+	 */
+	Utils.queueFolder = '';
+
+	(function(){
+		switch(WScript.ScriptName){
+			case 'Dorothy2A.dms':
+			case 'Dorothy2R_a.dms':
+				Utils.isDorothy2A = true;
+				Utils.queueFolder = /queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '';
+				break;
+			case 'Dorothy2R_listmenu.dms':
+			case 'Dorothy2ListMenu.dms':
+				Utils.isDorothy2setList = true;
+				//next
+			case 'Dorothy2set.dms':
+			case 'Dorothy2R_set.dms':
+				Utils.isDorothy2set = true;
+				Utils.queueFolder = Irvine.Current.Path;
+				break;
+			case 'DOA.dms':
+			case 'xor100813_2.dms':
+			case 'Dorothy2R_doa_list.dms':
+			case 'Dorothy2R_doa_tree.dms':
+				Utils.isDOA = true;
+				Utils.queueFolder = DOA.CurrentQueueFolder;
+				break;
+			default:
+				throw Utils.showError('不明な実行環境: ' + WScript.ScriptName, 'Utils.dms', 'WScript.ScriptName');
+		}
+	})();
+
+	/**
+	 * 現在のアイテムのIrvineのキューフォルダのパスを取得します
+	 * @return {string}
+	 */
+	Utils.getQueueFolderPath = function(){
+		var q;
+		if(Utils.isDorothy2A){
+			q = /queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '';
+		}else if(Utils.isDorothy2set){
+			q = Irvine.Current.Path;
+		}else if(Utils.isDOA){
+			q = DOA.CurrentQueueFolder;
+		}
+		return q;
+	};
+
+	/**
+	 * Dorothy.userPathを取得します Dorothy.userPathが使えないDOA用
+	 * @return {string}
+	 */
+	Utils.getUserPath = function(){
+		return typeof Dorothy.userPath != 'undefined' ? Dorothy.userPath : Dorothy.path + "user\\" + Dorothy.matchFile + "\\";
+	};
+	
+	/**
+	 * Dorothy.userIniPathを取得します Dorothy.userIniPathが使えないDOA用
+	 * @return {string}
+	 */
+	Utils.getUserIniPath = function(){
+		return typeof Dorothy.userIniPath != 'undefined' ? Dorothy.userIniPath : Utils.getUserPath() + Dorothy.matchFile + '.ini';
+	};
+	
+	/**
+	 * Dorothy2A.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
+	 * @return {number}
+	 */
+	Utils.getVersionDorothy2A = function(){
+		return Utils.isRentan ? Dorothy.rVersion : (Utils.isDorothy2A ? parseFloat(Dorothy.version) : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms'));
+	};
+	
+	/**
+	 * Dorothy2set.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
+	 * @return {number}
+	 */
+	Utils.getVersionDorothy2set = function(){
+		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2set.dms');
+	};
+	
+	/**
+	 * DOA.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
+	 * @return {number}
+	 */
+	Utils.getVersionDOA = function(){
+		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'DOA.dms');
+	};
+	
+	/**
+	 * <pre>
+	 * DOAスクリプト用
+	 * DOA.statusをDOA_ITにし、itemのプロパティに適切にDOAの各値を設定します
+	 *  DOA.nameが空ではないのなら    item.filename = DOA.name
+	 *  DOA.commentが空ではないのなら item.comment += DOA.comment
+	 *  DOA.sizeが123.4MB 等の形式の文字列(/^([\d\.]+)([KMG])?(B|Byte)?$/i)ならば
+	 *   バイト値に変換して item.filesize に設定します
+	 * </pre>
+	 */
+	Utils.setDOA_IT = function(){
+		if(!Utils.isDOA) throw Utils.showError('.setDOA_IT()は DOA でしか使用できません', 'Utils.dms', '.setDOA_IT');
+
+		if(typeof DOA_IT != 'number' || typeof item != 'object' || nameOf(item) != 'IrvineItem'){
+			if(Dorothy.isRentan){
+				if(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2R_doa_list.dms') < 20141124){
+					throw Utils.showError('古いバージョンのDorothy2R_doa_list.dmsが使用されています。version 20141124以上を使用してください', 'Utils.dms', '.setDOA_IT');
+				}
+			}else if(Utils.getVersionDOA() < 0.26){
+				throw Utils.showError('古いバージョンのDOA.dmsが使用されています。version 0.26以上を使用してください', 'Utils.dms', '.setDOA_IT');
+			}
+			throw Utils.showError('未知のエラー。DOA_ITまたはitemが正しく定義されていません', 'Utils.dms', '.setDOA_IT');
+		}
+		
+		DOA.status = DOA_IT;
+		if(DOA.name) item.filename = DOA.name;
+		if(DOA.comment) item.comment += DOA.comment;
+		if(!item.url) item.url = urlinfo.url;
+
+		var size = DOA.size.replace(/[,\s]+/g, '');
+		if(/^([\d\.]+)([KMG])?(B|Byte)?$/i.test(size)){
+			switch(RegExp.$2.toUpperCase()){
+				case '':
+					item.filesize = RegExp.$1 * 1;
+					break;
+				case 'K':
+					item.filesize = RegExp.$1 * 1024;
+					break;
+				case 'M':
+					item.filesize = RegExp.$1 * 1048576;
+					break;
+				case 'G':
+					item.filesize = RegExp.$1 * 1073741824;
+					break;
+			}
+		}
+		return true;
+	};
+
+
+	(function(){
+		var loadOption = (function(){
+			var cache = {
+				loaded: false,
+				folderPost: null,
+				itemComment: null,
+				opt: {}
+			};
+			var parse = function(s, o){
+				s.replace(/\s*([^=;]+?)\s*=([^;]*);?/g, function(a, name, value){
+					o[name] = Utils.strToPrimitive(value);
+				});
+			};
+			
+			return function(){
+				if(typeof folderdata.Post == 'undefined' || typeof item.comment == 'undefined'){
+					Utils.showError('folderdata.Postまたはitem.commentが正しく定義されていません', 'Utils.dms', 'loadOption');
+				}
+				if(!cache.loaded || cache.folderPost != folderdata.Post || cache.itemComment != item.comment){
+					var opt = {};
+					parse(folderdata.Post, opt);
+					parse(item.comment, opt);
+					cache.loaded = true;
+					cache.folderPost = folderdata.Post;
+					cache.itemComment = item.comment;
+					cache.opt = opt;
+				}
+				return cache.opt;
+			};
+		})();
+		/**
+		 * folderdata.Postとitem.commentに設定されたオプションから指定された名前のオプションを取得します  
+		 * オプションの各値は適切なプリミティブ値に変換されます
+		 * @function
+		 * @template T
+		 * @param {string} key オプションの名前
+		 * @param {T=} def 指定されたオプションが存在しなかった場合に返す値
+		 * @return {string|number|boolean|null|undefined|T}
+		 */
+		Utils.getCommentOption = (function(loadOption){
+			return function(key, def){
+				var opt = loadOption();
+				return opt.hasKey(key) ? opt[key] : def;
+			};
+		})(loadOption);
+		
+		/**
+		 * folderdata.Postとitem.commentに設定された全てのオプションを取得します  
+		 * オプションの各値は適切なプリミティブ値に変換されます  
+		 * defを指定した場合は取得したオプションとdefをマージした新しいオブジェクトを返します
+		 * @function
+		 * @param {Object=} def デフォルト値
+		 * @return {Object}
+		 */
+		Utils.getCommentOptions = (function(loadOption){
+			return function(def){
+				var opt = loadOption();
+				return typeof def == 'object' ? Utils.extend(true, {}, def, opt) : Utils.extend({}, opt);
+			};
+		})(loadOption);
+
+	})();
+
+
+	/** 
+	 * 環境別の差異がなるべく少なくなる様にDorothyの関数等を再定義します  
+	 * DOAやDorothy2AやDorothy2set等の環境別に存在したりしなかったりするプロパティや関数等を  
+	 * なるべく全ての環境で使用できるようにします
+	 */
+	Utils.redefineDorothy = function(){
+		if(Utils.isRentan){
+			Global.common_reload = function(){
+				for (var i = 0; i < arguments.length; i++) {
+					common_xload (arguments [i]);
+				}
+			};
+		}
+		if(Utils.isDorothy2A){
+			if(Utils.isRentan){
+				Global.reset = function(){
+					for(var i = 0 ; i < arguments.length ; i++){
+						println(arguments[i]);
+					}
+					var url = new URL(Dorothy.oldUrl);
+					urlinfo.url = url.url;
+					headers.host = url.host;
+				};
+				
+			}
+			dorothy2_path                = Dorothy.path;
+			dorothy2_temp                = dorothy2_path + "temp\\";
+			dorothy2_document            = dorothy2_path + "document\\";
+			dorothy2_common              = dorothy2_path + "common\\";
+			dorothy2_program             = dorothy2_path + "program\\";
+			dorothy2_setting             = dorothy2_path + "setting\\";
+			dorothy2_system              = dorothy2_path + "system\\";
+			dorothy2_project             = dorothy2_path + "project\\";
+			dorothy2_projectdata         = dorothy2_path + "projectdata\\";
+			dorothy2_bin                 = dorothy2_path + "bin\\";
+			dorothy2_user                = dorothy2_path + "user\\";
+			dorothy2_system_menu         = dorothy2_system + "menu\\";
+			dorothy2_system_menu_new     = dorothy2_system_menu + "new\\";
+			dorothy2_system_menu_setting = dorothy2_system_menu + "setting\\";
+			dorothy2_system_menu_edit    = dorothy2_system_menu + "edit\\";
+			dorothy2_system_menu_project = dorothy2_system_menu + "project\\";
+			dorothy2_system_menu_tool    = dorothy2_system_menu + "tool\\";
+			dorothy2_system_menu_set     = dorothy2_system_menu + "set\\";
+			dorothy2_system_menu_package = dorothy2_system_menu + "package\\";
+			dorothy2_system_menu_help    = dorothy2_system_menu + "help\\";
+			dorothy2_system_ini          = dorothy2_system + "ini\\";
+			irvine_script_path           = (new irvinePath).scripts;
+			Dorothy.url = Dorothy.oldUrl;
+		}else if(Utils.isDOA){
+			if(Utils.isRentan){
+				irvine_script_path = (new irvinePath).scripts;
+			}else{
+				Dorothy.programDir = dorothy2_program;
+				Dorothy.version = '' + Utils.getVersionDorothy2A();
+				Dorothy.temp = dorothy2_temp;
+			}
+			//これらの値はthis.main関数内でUtils.getUserPathやUtils.getUserIniPath等を用いて毎回手動で設定してください
+			//Dorothy.userPath
+			//Dorothy.userIniPath
+		}else if(Utils.isDorothy2set){
+			if(!Utils.isRentan){
+				Global.print_debug = function(str){
+					if(debug) println(str);
+				};
+			}
+			if(!Utils.isDorothy2setList){
+				if(!Utils.isRentan){
+					Global.program_load = function(name){
+						return file_load("program\\" + name + '.dms');
+					};
+					Global.user_load = function(name){
+						return file_load("user\\" + Dorothy.matchFile + "\\" + name);//'
+					};
+					Global.user_program_load = function(){
+						for(var i = 0 ; i < arguments.length ; i++){
+							try{
+								eval( file_load("user\\" + Dorothy.matchFile + "\\" + arguments[i] + '.dms') );
+							}
+							catch(e){
+								println(e+' '+Dorothy.matchFile + "\\" + arguments[i]+'.dms');
+								eval( file_load("user\\" + Dorothy.matchFile + "\\" + arguments[i] + '.dms') );
+							}
+						}
+					};
+				}
+				//無理矢理 選択アイテム取得
+				item = new IrvineItem;
+				var count = Irvine.ItemCount;
+				for(var i = 0; i < count; i++){
+					if(Irvine.GetItemSelected(i)){
+						item.data = Irvine.GetItemData(i);
+						if(item.url.indexOf('ttp://') == 0){
+							item.url = 'h' + item.url;
+						}
+						break;
+					}
+				}
+				Dorothy.url = item.url;
+			}else{
+				if(Utils.isRentan){
+					irvine_script_path = (new irvinePath).scripts;
+					Dorothy.url = item.url;
+				}
+			}
+		}
+	};
+	
+//====================================================================================================
+
+
+})();

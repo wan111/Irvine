@@ -1,0 +1,1410 @@
+//Dorothy2
+//caption=Utils_spec
+//version=1.0
+//hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
+//match=
+//author=wan
+//path=common\spec
+//end
+
+/*
+Copyright (C) 2015 wan <thewanwan111@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+common_load('Utils');
+
+UNDEFINED = (function(){})();
+
+function keys(o){
+	var r = [];
+	if(typeof o.getKeys == 'function'){
+		var key, keys = o.getKeys();
+		var defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/;
+		for(var i in keys){
+			key = keys[i];
+			if(!defaultMethods.test(key)) r.push(key);
+		}
+	}else{
+		for(var key in o) r.push(key);
+	}
+	return r.sort(function(a, b){return a > b;});
+}
+function toObj(o){
+	var r = {};
+	var key, keys = keys(o);
+	for(var i in keys){
+		key = keys[i];
+		r[key] = o[key];
+	}
+	return r;
+}
+var customMatcher = {
+	toContainKeys: function (util, customEqualityTesters) {
+		return {
+			compare: function (actual, expected) {
+				var key, keys, pass = true;
+				if(typeof actual != 'object'){
+					pass = false;
+				}else if(nameOf(expected) == 'Array'){
+					for(var i = 0; i < expected.length; i++){
+						key = expected[i];
+						try{
+							actual[key];
+						}catch(e){
+							pass = false;
+							break;
+						}
+					}
+				}else if(typeof expected == 'object'){
+					keys = keys(expected);
+					for(var i = 0; i < keys.length; i++){
+						key = keys[i];
+						try{
+							actual[key];
+						}catch(e){
+							pass = false;
+							break;
+						}
+					}
+				}else{
+					pass = false;
+				}
+				return {pass: pass};
+			}
+		};
+	}
+};
+
+
+describe('Utils.UNDEFINED', function(){
+	it('undefined', function(){
+		expect(Utils.UNDEFINED).toBeUndefined();
+	});
+});
+
+describe('Utils.isStr', function(){
+	cases([
+		['a', true],
+		[new String('a'), true],
+		[new StringBuffer('a'), true],
+		[123, false],
+		[true, false],
+		[false, false],
+		[null, false],
+		[UNDEFINED, false]
+	]).it('isStr', function(v, r){
+		expect(Utils.isStr(v)).toBe(r);
+	});
+});
+
+describe('Utils.toStr', function(){
+	function test(){}
+	cases([
+		[123, '123'],
+		['abcABC', 'abcABC'],
+		[true, 'true'],
+		[false, 'false'],
+		[null, 'null'],
+		[Number.POSITIVE_INFINITY, 'infinity'],
+		[Number.NEGATIVE_INFINITY, '-infinity'],
+		[UNDEFINED, 'undefined'],
+		[test, 'function test'],
+		[function(){}, 'function '],
+		[test.prototype, '[object Prototype]'],
+		[{}, '[object Object]'],
+		[[1, 2], '1,2']
+	]).it('toStr', function(v, str){
+		expect(Utils.toStr(v)).toBe(str);
+	});
+});
+
+describe('Utils.toNumber', function(){
+	cases([
+		[123, 123, 0],
+		['123', 123, 0],
+		['0x10', 16, 0],
+		[1.5, 1.5, 0],
+		[1.4, 1.4, 0],
+		[0.5, 0.5, 0],
+		[true, 1, 0],
+		[false, 0, 0],
+		[null, 0, 0],
+		[NaN, NaN, 0],
+		[Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, 0],
+		[Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, 0],
+		['abc', NaN, 'a'],
+		['0x1G', NaN, true],
+		[UNDEFINED, NaN, {}],
+		[function(){}, NaN, UNDEFINED],
+		[{}, NaN, function(){return 1;}]
+	]).it('toNumber', function(v, r, def){
+		expect(Utils.toNumber(v)).toBe(r);
+		var r2 = Utils.toNumber(v, def);
+		if(typeof def == 'function'){
+			expect(r2()).toBe(def());
+		}else{
+			expect(r2).toBe(isNaN(r) && !isNaN(v) ? def : r);
+		}
+	});
+});
+describe('Utils.toInteger', function(){
+	cases([
+		[123, 123],
+		['123', 123],
+		['0x10', 16],
+		[1.8, 1],
+		[1.5, 1],
+		[1.4, 1],
+		[-1.8, -1],
+		[-1.5, -1],
+		[-1.4, -1],
+		[true, 1],
+		[false, 0],
+		[null, 0],
+		[NaN, 0],
+		[Number.POSITIVE_INFINITY, 0],
+		[Number.NEGATIVE_INFINITY, 0],
+		['abc', 0],
+		['0x1G', 0],
+		[UNDEFINED, 0],
+		[function(){}, 0],
+		[{}, 0]
+	]).it('toInteger', function(v, r){
+		expect(Utils.toInteger(v)).toBe(r);
+	});
+});
+
+describe('Utils.error', function(){
+	it('error message', function(){
+		var err = Utils.error('test message');
+		
+		expect(err).toEqual(jasmine.any(String));
+		expect(err.toString()).toBe('Error: yasmine.dms : test message');
+		expect(err.text).toBe('Error: yasmine.dms : test message');
+		expect(err.message).toBe('test message');
+		expect(err.fileName).toBe('yasmine.dms');
+		expect(err.line).toBe('');
+		expect(err.name).toBe('Error');
+	});
+	
+	cases([
+		['test1', 'aaa.dms', 123, 'TEST', 'TEST: aaa.dms 123: test1', ['aaa.dms', '123', 'TEST']],
+		['test2', null, '/Utils.error', UNDEFINED, 'Error: yasmine.dms /Utils.error: test2', ['yasmine.dms', '/Utils.error', 'Error']]
+	]).it('message, fileName, line, name', function(message, fileName, line, name, text, p){
+		var err = Utils.error(message, fileName, line, name);
+		expect(err).toEqual(jasmine.any(String));
+		expect(err.toString()).toBe(text);
+		expect(err.text).toBe(text);
+		expect(err.message).toBe(message);
+		expect(err.fileName).toBe(p[0]);
+		expect(err.line).toBe(p[1]);
+		expect(err.name).toBe(p[2]);
+	});
+	
+	it('throw', function(){
+		expect(function(){throw Utils.error('throw test', 'Utils_spec.dms', '(Utils.error throw)');}).toThrow('Error: Utils_spec.dms (Utils.error throw): throw test');
+	});
+});
+
+describe('Utils.getObject', function(){
+	Test = {a: 1, b: {b2 : 2}};
+	Global.Test = {a: 2, b: {b2: 3}};
+	void function TestFn(){return 'TestFn';};
+	TestFn.prototype.a = 1;
+
+	cases([
+		['String', String],
+		['Number', Number],
+		['Array', Array],
+		['Object', Object],
+		['Boolean', Boolean],
+		['Global', Global],
+		['Utils', Utils],
+		['Test', Test],
+		['Test.a', Test.a],
+		['Test.b.b2', Test.b.b2],
+		['Global.Test', Global.Test],
+		['Global.Test.a', Global.Test.a],
+		['Global.Test.b.b2', Global.Test.b.b2],
+		['Number.POSITIVE_INFINITY', Number.POSITIVE_INFINITY],
+		['TestFn', TestFn],
+		['TestFn.prototype.a', TestFn.prototype.a],
+		['aaaa', UNDEFINED],
+		['Test.c', UNDEFINED]
+	]).it('get object for Global', function(name, v){
+		var r = Utils.getObject(name);
+		var r2 = Utils.getObject(name, null);
+		var isFn = typeof r == 'function';
+		expect(isFn ? r() : r).toBe(isFn ? v() : v);
+		expect(isFn ? r2() : r2).toBe(isFn ? v() : v);
+	});
+	
+	cases([
+		['a', Test, Test.a],
+		['b.b2', Test, Test.b.b2],
+		['Test', Global, Global.Test],
+		['b.b2', Global.Test, Global.Test.b.b2],
+		['a', TestFn.prototype, TestFn.prototype.a],
+		['a', {}, UNDEFINED]
+	]).it('get value for object', function(name, obj, value){
+		expect(Utils.getObject(name, obj)).toBe(value);
+	});
+	
+	it('def', function(){
+		expect(Utils.getObject('c', Test, true)).toBeTruthy();
+		expect(Utils.getObject('', Test, null)).toBeNull();
+		expect(Utils.getObject('aaaa', null, false)).toBeFalsy();
+
+		expect(Utils.getObject(null, Test, 1)).toBe(Test);
+	});
+});
+
+describe('Utils.keys', function(){
+	function Test(){this.i = function(){};};
+	Test.prototype.a = 1;
+	Test.prototype.b = 'a';
+	Test.prototype.c = true;
+	Test.prototype.d = false;
+	Test.prototype.e = null;
+	Test.prototype.f = Number.POSITIVE_INFINITY;
+	Test.prototype.g = UNDEFINED;
+	Test.prototype.h = function(){};
+
+	cases([
+		[ {a: 1, b: 'a', c: true, d: false, e: null, f: Number.POSITIVE_INFINITY, g: UNDEFINED, h: function(){}}, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] ],
+		[ [1, 'a', true, false, null, Number.POSITIVE_INFINITY, UNDEFINED, function(){}], [0, 1, 2, 3, 4, 5, 6, 7] ],
+		[ 'abcdefgh', [0, 1, 2, 3, 4, 5, 6, 7] ],
+		[ new String('abcdefgh'), [0, 1, 2, 3, 4, 5, 6, 7] ],
+		[ new StringBuffer('abcdefgh'), [0, 1, 2, 3, 4, 5, 6, 7] ],
+		[ Test.prototype,  ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] ],
+		[ new Test, ['i'] ]
+	]).it('keys', function(obj, keys){
+		expect(Utils.keys(obj)).toEqual(keys);
+	});
+
+	it('IrvineFolderData', function(){
+		var keys = [];
+		for(var key in folderdata){
+			keys.push(key);
+		}
+		expect(Utils.keys(folderdata)).toEqual(keys);
+	});
+});
+describe('Utils.extend', function(){
+	cases([
+		[ {a: 1}, {b: 2, c: true, d: null, e: UNDEFINED}, {a: 1, b: 2, c: true, d: null, e: UNDEFINED} ],
+		[ {a: 1}, {a: 'a'}, {a: 'a'} ],
+		[ {a: 'a'}, ['a', true, null], {a: 'a', 0: 'a', 1: true, 2: null} ],
+		[ {}, null, {} ],
+		[ {}, 'abc', {} ],
+		[ null, {a: 1}, {a: 1} ],
+		[ 123, {a: 1}, {a: 1} ]
+	]).it('plain object', function(dest, src, merge){
+		var obj = Utils.extend(dest, src);
+		expect(obj).not.toBe(src);
+		expect(obj).toEqual(merge);
+	});
+	cases([
+		[ ['a'], [1, 'b', false, null], [1, 'b', false, null] ],
+		[ [1, 2], [1, 2], [1, 2] ],
+		[ [], null, [] ],
+		[ [], 'abc', [] ],
+		[ [1], {a: 'abc', b: 123}, [1] ]
+	]).it('array', function(dest, src, merge){
+		var obj = Utils.extend(dest, src);
+		expect(dest).not.toBe(src);
+		expect(dest).toBe(obj);
+		expect(dest.slice(0)).toEqual(merge.slice(0));
+		if(nameOf(src) == 'Object'){
+			for(var i in src){
+				expect(dest.hasKey(i)).toBeTruthy();
+			}
+		}
+	});
+	cases([
+		[ {} ,{a: 1, b: 'a', c: true, d: null, e: new String('abc')} ],
+		[ [] ,[1, 'a', true, null, new String('abc')] ]
+	]).it('copy', function(dest, src){
+		var copy = Utils.extend(dest, src);
+		expect(copy).toEqual(src);
+		expect(copy).not.toBe(src);
+	});
+	it('merge', function(){
+		var merge = {a: 1, b: 'a', c: null, d: true, e: UNDEFINED};
+		expect(Utils.extend({}, {a: 1}, {b: 'a'}, {c: null}, {d: true}, {e: UNDEFINED})).toEqual(merge);
+	});
+	cases([
+		[ false, {a: {c: 3}} ],
+		[ true, {a: {b: [1, 2], c: 3}} ]
+	]).it('deep', function(deep, merge){
+		var src = {a: {b: [1, 2]}};
+		var src2 = {a: {c: 3}};
+
+		var obj = Utils.extend(deep, {}, src);
+		expect(obj).not.toBe(src);
+		expect(obj).toEqual(src);
+		expect(obj.a === src.a).toBe(!deep);
+		expect(obj.a.b === src.a.b).toBe(!deep);
+		obj = Utils.extend(deep, {}, src, src2);
+		expect(obj).toEqual(merge);
+	});
+	cases([
+		[ 
+			{a: 1, b: 'a', c: {}, d: new Number(1), e: 'a', f: function(){}},
+			{a: 'a', b: 'b', c: [], d: new Number(2), e: new String('a'), f: null, g: 0},
+			{a: 1, b: 'b', c: {}, d: new Number(2), e: 'a', f: function(){}, g: 0}
+		],
+		[
+			[1, 'a', {}, new Number(1), 'a', function(){}],
+			['a', 'b', [], new Number(2), new String('a'), null, 0],
+			[1, 'b', {}, new Number(2), 'a', function(){}, 0]
+		],
+		[
+			{a: 1},
+			[1],
+			{a: 1}
+		]
+	]).it('same', function(dest, src, merge){
+		var obj = Utils.extend(false, true, dest, src);
+		var v1, v2, type1, type2;
+		for(var i in merge){
+			v1 = merge[i];
+			v2 = obj[i];
+			type1 = typeof v1;
+			type2 = typeof v2;
+			if(type1 == 'function'){
+				expect(type2 == 'function').toBeTruthy();
+			}else{
+				expect(type1 == type2 && nameOf(v1) == nameOf(v2) && v1.toString() == v2.toString()).toBeTruthy();
+			}
+		}
+	});
+	cases([
+		new String('abc'),
+		new StringBuffer('abc')
+	]).it('String, StringBuffer', function(src){
+		expect(Utils.extend({}, src)).toEqual({0: 'a', 1: 'b', 2: 'c'});
+		expect(Utils.extend([], src)).toEqual(['a', 'b', 'c']);
+		expect(Utils.extend({}, {a: src})).toEqual({a: src});
+		expect(Utils.extend([], [src])).toEqual([src]);
+	});
+	it('function', function(){
+		var src = {a: function(){}, b: 1};
+		var copy = Utils.extend({}, src);
+		expect(copy).toEqual(src);
+		expect(copy).not.toBe(src);
+	});
+	it('prototype', function(){
+		function f(){}
+		f.prototype.c = function(){};
+		f.prototype.d = 1;
+
+		var src = {e: function(){}, f: "a"};
+
+		expect(Utils.extend({}, f.prototype, src)).toEqual({c: f.prototype.c, d: f.prototype.d, e: src.e, f: src.f});
+	});
+	cases([
+		new Number(123),
+		new Boolean(true),
+		new RegExp('abc'),
+		new Date('2000/10/10 00:00:00'),
+		new URL('http://000:111@www.test.com:8080/aaa/bbb.ccc?ddd=eee'),
+		(function(){
+			var c = new Cookie;
+			c.parse('expires=Sun Oct 10 2010 10:10:10 GMT;domain=test.com;path=/;test=aaa;');
+			return c;
+		})()
+	]).it('Global Objects', function(src){
+		var obj = Utils.extend({}, src);
+		expect(obj).toEqual(jasmine.objectContaining(src));
+		obj = Utils.extend(true, {}, {a: src});
+		expect(obj.a === src).toBeFalsy();
+		expect(nameOf(obj.a)).toBe(nameOf(src));
+	});
+	it('cyclic objects', function(){
+		var o = {
+			a: [new String('a'), new String('b'), new StringBuffer('a'), new StringBuffer('b')],
+			b: [null, new Number(1), null, []],
+			c: new Boolean(false),
+			d: new RegExp('aaa'),
+			e: new Date(),
+			f: null,
+			g: {a: null},
+			b2: null,
+			c2: null,
+			d2: null,
+			e2: null
+		};
+		o.b[0] = o.b;
+		o.b[2] = o.b[1];
+		o.b[3][0] = o.b;
+		o.f = o;
+		o.g.a = o;
+		o.b2 = o.b;
+		o.c2 = o.c;
+		o.d2 = o.d;
+		o.e2 = o.e;
+
+		var copy = Utils.extend(true, {}, o);
+		expect(copy).not.toBe(o);
+		expect(copy).toEqual(o);
+
+		//String,StringBufferオブジェクト同士の==での比較は別のオブジェクトであってもtrueとなる
+		expect(copy.a[0]).toBe(o.a[1]);
+		expect(copy.a[2]).toBe(o.a[3]);
+
+		expect(copy.b[0]).not.toBe(o.b[0]);
+		expect(copy.b[2]).not.toBe(o.b[2]);
+		expect(copy.b[3][0]).not.toBe(o.b[3][0]);
+		expect(copy.f).not.toBe(o.f);
+		expect(copy.g.a).not.toBe(o.g.a);
+		expect(copy.b2).not.toBe(o.b2);
+		expect(copy.c2).not.toBe(o.c2);
+		expect(copy.d2).not.toBe(o.d2);
+		expect(copy.e2).not.toBe(o.e2);
+
+		expect(copy.a[0].toString()).not.toBe(copy.a[1].toString());
+		expect(copy.a[2].toString()).not.toBe(copy.a[3].toString());
+
+		expect(copy.b[0]).toBe(copy.b);
+		expect(copy.b[2]).toBe(copy.b[1]);
+		expect(copy.b[3][0]).toBe(copy.b);
+		expect(copy.f).toBe(copy);
+		expect(copy.g.a).toBe(copy);
+		expect(copy.b2).toBe(copy.b);
+		expect(copy.c2).toBe(copy.c);
+		expect(copy.d2).toBe(copy.d);
+		expect(copy.e2).toBe(copy.e);
+
+		o.b[0] = copy.b[0] = null;
+		o.b[2] = copy.b[2] = null;
+		o.b[3][0] = copy.b[3][0] = null;
+		o.f = copy.f = null;
+		o.g.a = copy.g.a = null;
+		o.b2 = copy.b2 = null;
+		o.c2 = copy.c2 = null;
+		o.d2 = copy.d2 = null;
+		o.e2 = copy.e2 = null;
+
+		//cache済みのobjectを渡す
+		var a = {};
+		var b = {a: a};
+		var c = Utils.extend(true, {}, a, b);
+		expect(c).toBe(c.a);
+		expect(c).not.toBe(a);
+
+		//destに対して循環参照
+		a = Utils.extend(true, a, b);
+		expect(a).toBe(a.a);
+
+	});
+	it('IrvineFolderData', function(){
+		var o = {};
+		for(var i in folderdata){
+			if(typeof folderdata[i] != 'undefined') o[i] = folderdata[i];
+		}
+		var obj = {};
+		expect(function(){Utils.extend(true, obj, folderdata);}).not.toThrow();
+		expect(obj).toEqual(o);
+	});
+});
+
+describe('Utils.call', function(){
+	it('native .call()', function(){
+		var o = {
+			f: function(a, b){return [this, a, b];}
+		};
+		var o2 = {};
+
+		expect(o.f.call(o2, 1, 2)).toEqual([o2, 1, 2]);
+		//モードが変更される
+		expect(o.f(1, 2)).toEqual([1, 2, UNDEFINED]);
+	});
+	it('Utils .call()', function(){
+		var o = {
+			f: function(a, b){return [this, a, b];}
+		};
+		var o2 = {};
+
+		expect(Utils.call(o.f, o2, 1, 2)).toEqual([o2, 1, 2]);
+		expect(o.f(1, 2)).toEqual([o, 1, 2]);
+	});
+	cases([
+		[UNDEFINED, "Global"],
+		[null, "Global"],
+		['', "Global"],//selfObj無指定
+		[1, "new Number(1)"],
+		['a', "new String('a')"],
+		[true, "new Boolean(true)"]
+	]).it('selfObj', function(obj, result){
+		result = eval(result);
+		function f(){return this;}
+
+		var r = obj === '' ? Utils.call(f) : Utils.call(f, obj);
+		expect(nameOf(r)).toBe(nameOf(result));
+		expect(r.valueOf()).toBe(result.valueOf());
+	});
+});
+describe('Utils.apply', function(){
+	it('native .apply()', function(){
+		var o = {
+			f: function(a, b){return [this, a, b];}
+		};
+		var o2 = {};
+
+		expect(o.f.apply(o2, [1, 2])).toEqual([o2, 1, 2]);
+		//モードが変更される
+		expect(function(){o.f(1, 2);}).toThrow();
+		expect(o.f(1, [2])).toEqual([1, 2, UNDEFINED]);
+	});
+	it('Utils .apply()', function(){
+		var o = {
+			f: function(a, b){return [this, a, b];}
+		};
+		var o2 = {};
+
+		expect(Utils.apply(o.f, o2, [1, 2])).toEqual([o2, 1, 2]);
+		expect(o.f(1, 2)).toEqual([o, 1, 2]);
+	});
+	cases([
+		[UNDEFINED, "Global"],
+		[null, "Global"],
+		['', "Global"],//selfObj無指定
+		[1, "new Number(1)"],
+		['a', "new String('a')"],
+		[true, "new Boolean(true)"]
+	]).it('selfObj', function(obj, result){
+		result = eval(result);
+		function f(){return this;}
+
+		var r = obj === '' ? Utils.apply(f) : Utils.apply(f, obj);
+		expect(nameOf(r)).toBe(nameOf(result));
+		expect(r.valueOf()).toBe(result.valueOf());
+	});
+
+});
+
+describe('Utils.objCreate', function(){
+	function Test2(){this.i = function(){};};
+	Test2.prototype.a = 1;
+	Test2.prototype.b = 'a';
+	Test2.prototype.c = true;
+	Test2.prototype.d = false;
+	Test2.prototype.e = null;
+	Test2.prototype.f = Number.POSITIVE_INFINITY;
+	Test2.prototype.g = UNDEFINED;
+	Test2.prototype.h = function(){};
+
+	it('share prototype', function(){
+		(function(){
+			function testFn1(){}
+			testFn1.prototype.a = 1;
+			testFn1.prototype.b = function(){};
+		})();
+		function testFn1(){}
+		//DMonkeyでは同名の関数同士でprototypeが共有される
+		expect(keys(testFn1.prototype)).toEqual(['a', 'b']);
+		expect(testFn1.prototype.a).toBe(1);
+
+		//なので同名の関数名を指定した場合はprototypeが共有される
+		var o = Utils.objCreate('testFn1');
+		expect(keys(o)).toEqual([]);
+		expect(keys(o.prototype)).toEqual(['a', 'b']);
+		expect(o.prototype).toBe(testFn1.prototype);
+		expect(o.prototype.a).toBe(1);
+		expect(o.b).toBe(testFn1.prototype.b);
+	});
+
+	cases([
+		['testFn2', ''],//無指定
+		['testFn3', 'a'],
+		['testFn4', null],
+		['testFn5', UNDEFINED]
+	]).it('empty object', function(name, proto){
+		var o = proto === '' ? Utils.objCreate(name) : Utils.objCreate(name, proto);
+		expect(keys(o.prototype)).toEqual([]);
+		expect(nameOf(o)).toBe(name);
+		expect(typeof o).toBe('object');
+
+	});
+
+	it('constructor', function(){
+		var o = Utils.objCreate('tmpFn1', Test2.prototype);
+		var proto = toObj(Test2.prototype);
+		expect(typeof o).toBe('object');
+		expect(nameOf(o)).toBe('tmpFn1');
+		expect(toObj(o.prototype)).toEqual(proto);
+		expect(o.constructor).not.toBe(Test2);
+		expect(o.h).toBe(Test2.prototype.h);
+
+		//Test2.prototypeが書き換えられていないか確認
+		expect(toObj(Test2.prototype)).toEqual(proto);
+	});
+
+	it('properties', function(){
+		var props = {a: 123, b: 'abc', c: false, d: true, e: Number.POSITIVE_INFINITY, f: null, g: function(){}, h: UNDEFINED, i: {}};
+		var proto = toObj(Test2.prototype);
+		var o = Utils.objCreate('tmpFn2', Test2.prototype, props);
+		expect(toObj(o.prototype)).toEqual(proto);
+		expect(toObj(o)).toEqual(props);
+		expect(o).toEqual(jasmine.objectContaining(props));
+
+		//Test2.prototypeが書き換えられていないか確認
+		expect(toObj(Test2.prototype)).toEqual(proto);
+	});
+});
+
+describe('Utils.inherits', function(){
+	beforeEach(function(){
+		jasmine.addMatchers(customMatcher);
+	});
+
+	function testObj(obj, expectedCtors, expectedName, expectedProtoKeys, expectedObjKeys){
+		var o, key, protokeys, parent,
+			child = expectedCtors[0],
+			len = expectedCtors.length,
+			objKeys = keys(obj),
+			objTree = [];
+
+		expect(typeof obj).toBe('object');
+		expect(nameOf(obj)).toBe(expectedName);
+		expect(obj.constructor).toBe(child);
+		expect(obj).toContainKeys(expectedObjKeys ? expectedObjKeys : expectedProtoKeys);
+		expect(obj.prototype).toContainKeys(expectedProtoKeys);
+
+		o = obj;
+		for(var i = 0; i < len-1; i++){
+			child = expectedCtors[i];
+			parent = expectedCtors[i + 1];
+			expect(child.prototype).toContainKeys(['_super', '_base']);
+			expect(o.prototype).toBe(child.prototype);
+			expect(o.prototype.constructor).toBe(child);
+			expect(o.prototype.constructor).not.toBe(parent.prototype.constructor);
+			expect(o.prototype.prototype).toBe(parent.prototype);
+			expect(o.prototype.prototype.constructor).toBe(parent);
+			expect(o.prototype._super).toBe(parent);
+			o = o.prototype._super;
+		}
+
+		o = obj.constructor;
+		do{
+			objTree.push(o);
+		}while(typeof o.prototype._super == 'function' && (o = o.prototype._super) );
+
+		expect(objTree.join(' - ')).toBe(expectedCtors.join(' - '));
+	}
+
+	it('Child - Parent', function(){
+		function A(){}
+		A.prototype.a = 1;
+		A.prototype.b = 'a';
+		A.prototype.c = true;
+		A.prototype.d = false;
+		A.prototype.e = null;
+		A.prototype.f = Number.POSITIVE_INFINITY;
+		A.prototype.g = UNDEFINED;
+		A.prototype.h = function(){};
+
+		function B(){}
+		Utils.inherits(B, A);
+		B.prototype.i = 1;
+
+		var o = new B();
+		testObj(o, [B, A], 'B', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']);
+	});
+	it('GrandChild - Child - Parent', function(){
+		function C(){}
+		C.prototype.s1 = function(){return this._super;};
+
+		function D(){}
+		Utils.inherits(D, C);
+		D.prototype.s2 = function(){return this._super;};
+
+		function E(){}
+		Utils.inherits(E, D);
+		E.prototype.s3 = function(){return this._super;};
+
+		var o = new E;
+		testObj(o, [E, D, C], 'E', ['s1', 's2', 's3']);
+		expect(o.s1).toBe(C.prototype.s1);
+		expect(o.s2).toBe(D.prototype.s2);
+		expect(o.s3).toBe(E.prototype.s3);
+		//this._super
+		expect(new String(o.s1()) + '').toBe(new String(D) + '');
+		expect(new String(o.s2()) + '').toBe(new String(D) + '');
+		expect(new String(o.s3()) + '').toBe(new String(D) + '');
+	});
+	it('._base()', function(){
+		function F(a){this.a = a;}
+		F.prototype.b = function(s){return s + s;};
+
+		function G(a){this._base(this, 'constructor', a);}
+		Utils.inherits(G, F);
+		G.prototype.c = function(s){return this._base(this, 'b', s);};
+		G.prototype.b = function(s){return 'G: ' + s;};
+
+		function H(a){this._base(this, 'constructor', a);}
+		Utils.inherits(H, G);
+		H.prototype.d = function(s){return this._base(this, 'c', s);};
+		H.prototype.e = function(s){return this._base(this, 'b', s);};
+
+		var o = new H('abc');
+		testObj(o, [H, G, F], 'H', ['b', 'c', 'd', 'e'], ['a', 'b', 'c', 'd', 'e']);
+		expect(o.prototype).not.toContainKeys(['a']);
+		expect(o.a).toBe('abc');
+		expect(o.d('123')).toBe('123123');
+		expect(o.e('123')).toBe('G: 123');
+	});
+	it('[GrandChildA - ChildA, GrandChildB - ChildB] - Parent', function(){
+		function Parent(name){this.name = name;}
+		Parent.prototype.a = function(){};
+
+		function ChildA(name){this._base(this, 'constructor', name);}
+		Utils.inherits(ChildA, Parent);
+		ChildA.prototype.b = function(){};
+
+		function GrandChildA(name){this._base(this, 'constructor', name);}
+		Utils.inherits(GrandChildA, ChildA);
+		GrandChildA.prototype.c = function(){};
+
+
+		function ChildB(name){this._base(this, 'constructor', name);}
+		Utils.inherits(ChildB, Parent);
+		ChildB.prototype.d = function(){};
+
+		function GrandChildB(name){this._base(this, 'constructor', name);}
+		Utils.inherits(GrandChildB, ChildB);
+		GrandChildB.prototype.e = function(){};
+
+		var objA = new GrandChildA('A');
+		var objB = new GrandChildB('B');
+		testObj(objA, [GrandChildA, ChildA, Parent], 'GrandChildA', ['a', 'b', 'c'], ['name', 'a', 'b', 'c']);
+		testObj(objB, [GrandChildB, ChildB, Parent], 'GrandChildB', ['a', 'd', 'e'], ['name', 'a', 'd', 'e']);
+		expect(objA.name).toBe('A');
+		expect(objB.name).toBe('B');
+	});
+	it('call superclass method', function(){
+		function I(){}
+		I.prototype.a = function(v){return v == 1;};
+
+		function J(){}
+		Utils.inherits(J, I);
+		J.prototype.b = function(){
+			return this._base(this, 'a', 1);
+		};
+		J.prototype.c = function(){
+			return Utils.call(I.prototype.a, this, 1);
+		};
+		J.prototype.d = function(){
+			return Utils.call(J.prototype._super.prototype.a, this, 1);
+		};
+		J.prototype.e = function(){
+			var f = J.prototype._super.prototype.a;
+			return f(1);
+		};
+		J.prototype.f = function(){
+			var f = I.prototype.a;
+			return f(1);
+		};
+
+		var o = new J;
+		expect(o.b()).toBeTruthy();
+		expect(o.c()).toBeTruthy();
+		expect(o.d()).toBeTruthy();
+		expect(o.e()).toBeTruthy();
+		expect(o.f()).toBeTruthy();
+	});
+});
+
+describe('Utils.mixin', function(){
+	beforeEach(function(){
+		jasmine.addMatchers(customMatcher);
+	});
+	function source(){}
+	source.prototype.a = 1;
+	source.prototype.b = 'a';
+	source.prototype.c = true;
+	source.prototype.d = false;
+	source.prototype.e = null;
+	source.prototype.f = Number.POSITIVE_INFINITY;
+	source.prototype.g = UNDEFINED;
+	source.prototype.h = function(){};
+	
+	function target(){}
+	target.prototype.a = null;
+	target.prototype.i = function(){};
+	
+	it('mixin', function(){
+		Utils.mixin(target.prototype, source.prototype);
+		expect(target.prototype).toContainKeys(['a', 'b', 'c', 'e', 'f', 'g', 'h', 'i']);
+		expect(target.prototype.a).toBe(1);
+		expect(target.prototype.b).toBe('a');
+		expect(target.prototype.c).toBe(true);
+		expect(target.prototype.d).toBe(false);
+		expect(target.prototype.e).toBe(null);
+		expect(target.prototype.f).toBe(Number.POSITIVE_INFINITY);
+		expect(target.prototype.g).toBe(UNDEFINED);
+		expect(typeof target.prototype.h).toBe('function');
+		expect(typeof target.prototype.i).toBe('function');
+	});
+	
+});
+
+describe('Utils.bind', function(){
+	it('creat a bound function', function(){
+		function fn(){return this;}
+		fn.prototype.a = function(){return this.b;};
+		fn.prototype.b = 1;
+		var obj = {b: 2};
+
+		var f = Utils.bind(fn, obj);
+		expect(f()).toBe(obj);
+
+		var o = new fn();
+		expect(o.a()).toBe(1);
+
+		fn.prototype.a = Utils.bind(fn.prototype.a, obj);
+		expect(o.a()).toBe(2);
+	});
+	it('leading default arguments', function(){
+		function fn(a, b, c){return a + b + c + this.a;}
+		fn.prototype.a = null;
+
+		var obj = {a: 'D'};
+
+		var f = Utils.bind(fn, obj, 'A', 'B');
+		expect(f('C')).toBe('ABCD');
+	});
+});
+
+describe('TDateTime <--> ecma time', function(){
+	it('.strToDateTime', function(){
+		expect(Utils.strToDateTime('2013/05/23 20:18:07')).toBe(41417.8459143518485);
+		var d = Utils.strToDateTime(new Date().toString());
+		d = Math.floor(d);
+		expect(Utils.strToDateTime('20:18:07')).toBe(d + 0.8459143518485);
+	});
+	it('.dateTimeToStr', function(){
+		expect(Utils.dateTimeToStr(41417.8459143518485)).toBe('2013/05/23 20:18:07');
+	});
+	it('folderdata', function(){
+		var s = Utils.dateTimeToStr(folderdata.CreateDate);
+		var d = Utils.strToDateTime(s);
+		expect(d).toBe(folderdata.CreateDate);
+		
+		s = Utils.dateTimeToStr(folderdata.BeginTime);
+		d = Utils.strToDateTime(s);
+		expect(d).toBe(folderdata.BeginTime);
+	});
+});
+
+describe('Utils.setFolderData', function(){
+	var oldFolderdata;
+	beforeEach(function(){
+		oldFolderdata = folderdata;
+		folderdata = null;
+	});
+	afterEach(function(){
+		folderdata = oldFolderdata;
+	});
+	
+	it('setFolderData', function(){
+		expect(folderdata).toBeNull();
+		Utils.setFolderData();
+		expect(nameOf(folderdata)).toBe('IrvineFolderData');
+
+		var old = {};
+		for(var i in oldFolderdata){
+			if(typeof oldFolderdata[i] != 'undefined') old[i] = oldFolderdata[i];
+		}
+
+		var current = {};
+		for(var i in folderdata){
+			if(typeof folderdata[i] != 'undefined') current[i] = folderdata[i];
+		}
+		expect(current).toEqual(old);
+	});
+});
+
+describe('Utils.getScriptVersion', function(){
+	it('get version of Irvine Script', function(){
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms')).toBe(0.31);
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2set.dms')).toBe(0.19);
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'DOA.dms')).toBe(0.26);
+	});
+	
+	it('get version of Dorothy2 Script', function(){
+		expect(Utils.getScriptVersion(Dorothy.path + 'common\Utils.dms')).toBe(parseFloat(Dorothy.common.Utils.version));
+	});
+});
+
+describe('Utils.objToPrimitive', function(){
+	function test(){}
+	var d = new Date();
+	cases([
+		[new String('a'), 'a'],
+		[new Boolean(false), false],
+		[new Number(123), 123],
+		[d, d.toString()],
+		[test, 'function test'],
+		[{}, '[object Object]'],
+		['a', 'a'],
+		[false, false],
+		[123, 123],
+		[null, null],
+		[NaN, NaN]
+	]).it('objToPrimitive', function(o, v){
+		expect(Utils.objToPrimitive(o)).toBe(v);
+	});
+});
+describe('Utils.strToPrimitive', function(){
+	cases([
+		['a', 'a'],
+		['123 ', 123],
+		[' true', true],
+		[' false ', false],
+		['null', null],
+		['NaN', NaN],
+		['undefined', UNDEFINED],
+		['1.23E+10', 1.23E+10],
+		['0x1F', 0x1F],
+		[{}, '[object Object]']
+	]).it('strToPrimitive', function(s, v){
+		expect(Utils.strToPrimitive(s)).toBe(v);
+		expect(Utils.strToPrimitive(new String(s))).toBe(v);
+		expect(Utils.strToPrimitive(new StringBuffer(s))).toBe(v);
+	});
+});
+
+describe('Utils.extractName, Utils.extractExt', function(){
+	cases([
+		['http://example.com/aaa/test.txt', 'test.txt', '.txt'],
+		['http://example.com/aaa/testtxt', 'testtxt', ''],
+		['http://example.com/test.txt.zip', 'test.txt.zip', '.zip'],
+		['http://example.com/test.txt?aaa=bbb.ccc', 'test.txt', '.txt'],
+		['http://example.com/aaa/test.txt#aaa.bbb', 'test.txt', '.txt'],
+		['http://example.com/aaa/test.txt#aaa.bbb?ccc=ddd.eee', 'test.txt', '.txt'],
+		['/test.txt', 'test.txt', '.txt'],
+		['./test.txt', 'test.txt', '.txt'],
+		['../test.txt', 'test.txt', '.txt'],
+		['/test.txt?aaa=bbb', 'test.txt', '.txt'],
+		['test.txt?aaa=bbb', 'test.txt', '.txt'],
+		['C:\aaa\test.txt', 'test.txt', '.txt'],
+		['C:\aaa\test#aaa.txt', 'test#aaa.txt', '.txt'],
+		['\aaa\test.txt', 'test.txt', '.txt'],
+		['..\aaa\test.txt', 'test.txt', '.txt'],
+		['C:\aaa\testtxt', 'testtxt', ''],
+		['C:\aaa\test.txt.zip', 'test.txt.zip', '.zip'],
+		['\test.txt', 'test.txt', '.txt'],
+		['test.txt', 'test.txt', '.txt'],
+		[null, 'null', ''],
+		[UNDEFINED, 'undefined', ''],
+		[new URL('http://example.com/aaa/test.txt#aaa.bbb?ccc=ddd.eee'), 'test.txt', '.txt']
+	]).it('extractName,Ext', function(s, name, ext){
+		expect(Utils.extractName(s)).toBe(name);
+		expect(Utils.extractExt(s)).toBe(ext);
+	});
+
+});
+
+describe('Utils.formatTemplate', function(){
+	it('formatTemplate', function(){
+		var s = '%AAA% bbb%% %CCC%%DDD%';
+		var o = {AAA: 'aaa', CCC: 'ccc', DDD: 'ddd', bbb: null, '': null};
+		expect(Utils.formatTemplate(s, o)).toBe('aaa bbb% cccddd');
+	});
+});
+
+describe('Utils Dorothy', function(){
+	var is2A = typeof OnHttpRequest == 'function';
+	var isDOA = typeof frmDOA == 'object';
+	var is2Set = !is2A && !isDOA;
+	var isRentan = typeof Dorothy.rVersion == 'number';
+	it('platform', function(){
+		expect(Utils.isDorothy2A).toBe(is2A);
+		expect(Utils.isDorothy2set).toBe(is2Set);
+		expect(Utils.isDOA).toBe(isDOA);
+	});
+	
+	it('queueFolder', function(){
+		if(is2A){
+			expect(Utils.queueFolder).toBe(/queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '');
+		}else if(is2Set){
+			expect(Utils.queueFolder).toBe(Irvine.Current.Path);
+		}else{
+			expect(Utils.queueFolder).toBe(DOA.CurrentQueueFolder);
+		}
+	});
+	
+	it('getQueueFolderPath', function(){
+		if(is2A){
+			expect(Utils.getQueueFolderPath()).toBe(/queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '');
+		}else if(is2Set){
+			expect(Utils.getQueueFolderPath()).toBe(Irvine.Current.Path);
+		}else{
+			expect(Utils.getQueueFolderPath()).toBe(DOA.CurrentQueueFolder);
+		}
+	});
+	
+	it('getVersion', function(){
+		if(isRentan){
+			expect(Utils.getVersionDorothy2A()).toBe(Dorothy.rVersion);
+			expect(Utils.getVersionDorothy2set()).toBe(Dorothy.rVersion);
+			expect(Utils.getVersionDOA()).toBe(Dorothy.rVersion);
+		}else{
+			expect(Utils.getVersionDorothy2A()).toBe(0.31);
+			expect(Utils.getVersionDorothy2set()).toBe(0.19);
+			expect(Utils.getVersionDOA()).toBe(0.26);
+		}
+	});
+
+	it('getUserPath, getUserIniPath', function(){
+		expect(Utils.getUserPath()).toBe(Dorothy.path + 'user\yasmine\');
+		expect(Utils.getUserIniPath()).toBe(Dorothy.path + 'user\yasmine\yasmine.ini');
+	});
+
+	describe('getSavePath', function(){
+		var fpath, ipath;
+		beforeEach(function(){
+			fpath = folderdata.Folder;
+			ipath = item.folder;
+		});
+		afterEach(function(){
+			folderdata.folder = fpath;
+			item.folder = ipath;
+		});
+		
+		it('absolute path', function(){
+			item.folder = 'C:\test\aaa';
+			folderdata.folder = 'C:\test\';
+			if(is2Set){
+				expect(Utils.getSavePath()).toBe(Dorothy.userPath);
+			}else{
+				expect(Utils.getSavePath()).toBe('C:\test\aaa\');
+				item.folder = '';
+				expect(Utils.getSavePath()).toBe('C:\test\');
+			}
+		});
+		
+		it('relative path', function(){
+			item.folder = 'aaa';
+			folderdata.folder = 'C:\test';
+			if(is2Set){
+				expect(Utils.getSavePath()).toBe(Dorothy.userPath);
+			}else{
+				expect(Utils.getSavePath()).toBe('C:\test\aaa\');
+			}
+		});
+	});
+
+	describe('Utils.setDOA_IT', function(){
+		var old = {
+			item: null,
+			name: null,
+			comment: null,
+			size: null,
+			status: null
+		};
+		beforeEach(function(){
+			old.item = item;
+			if(isDOA){
+				old.name = DOA.name;
+				old.comment = DOA.comment;
+				old.size = DOA.size;
+				old.status = DOA.status;
+			}
+		});
+		afterEach(function(){
+			item = old.item;
+			if(isDOA){
+				DOA.name = old.name;
+				DOA.comment = old.comment;
+				DOA.size = old.size;
+				DOA.status = old.status;
+			}
+		});
+		
+		it('setDOA_IT', function(){
+			var r;
+			if(!isDOA){
+				expect(function(){r = Utils.setDOA_IT();}).toThrow('Error: Utils.dms .setDOA_IT: .setDOA_IT()は DOA でしか使用できません');
+				expect(r).toBeFalsy();
+			}else{
+				var oldItem = item;
+				item.url = '';
+				item.comment = 'test';
+				DOA.name = 'setDOA_IT';
+				DOA.comment = 'test';
+				DOA.size = '2.0MB';
+				expect(function(){r = Utils.setDOA_IT();}).not.toThrow();
+				expect(r).toBeTruthy();
+				expect(item.filename).toBe('setDOA_IT');
+				expect(item.comment).toBe('testtest');
+				expect(item.filesize).toBe(2 * 1024 * 1024);
+				expect(item.url).toBe(urlinfo.url);
+			}
+		});
+		
+		cases([
+			['2.0GB', 2 * 1024 * 1024 * 1024],
+			['2.0gb', 2 * 1024 * 1024 * 1024],
+			['2.0GByte', 2 * 1024 * 1024 * 1024],
+			['2.0MB', 2 * 1024 * 1024],
+			['2.0KB', 2 * 1024],
+			['2.0B', 2],
+			[' 2,048 MByte ', 2 * 1024 * 1024 * 1024]
+		]).it('filesize', function(s, size){
+			if(!isDOA) pending();
+			DOA.name = 'test';
+			DOA.size = s;
+			Utils.setDOA_IT();
+			expect(item.filesize).toBe(size);
+		});
+	});
+	
+	describe('commentOption', function(){
+		var oldComment = item.comment;
+		var oldPost = folderdata.Post;
+
+		afterEach(function(){
+			item.comment = oldComment;
+			folderdata.Post = oldPost;
+		});
+		
+		cases([
+			['', '', {}],
+			['aaa=abc', '', {aaa: 'abc'}],
+			['bbb=123;', '', {bbb: 123}],
+			[' ccc = true ; ddd=false;eee=null;fff=a', '012=NaN; _=undefined; fff=;', {ccc: true, ddd: false, eee: null, fff: '', '012': NaN, '_': UNDEFINED}],
+			['num1=0.123; num2=1.23; num3=12.3e-1; num4=0x1F', '', {num1: 0.123, num2: 1.23, num3: 12.3e-1, num4: 0x1F}],
+			['abc123', 'bbb', {}]
+		]).it('getCommentOptions', function(s1, s2, opt){
+			folderdata.Post = s1;
+			item.comment = s2;
+			var o = Utils.getCommentOptions();
+			expect(o).toEqual(opt);
+		});
+		
+		cases([
+			['', {a: 1}, {a: 1}],
+			['', null, {}],
+			['a=1;b=2', {b: 3, c: 4}, {a: 1, b: 2, c:4}]
+		]).it('getCommentOptions def', function(s, def, opt){
+			item.comment = s;
+			folderdata.Post = '';
+			var r = Utils.getCommentOptions(def);
+			expect(r).toEqual(opt);
+			expect(r).not.toBe(def);
+		});
+		
+		it('getCommentOption', function(){
+			item.comment = 'a=1; b=abc; c=true; d=null; e=NaN; f=undefined';
+			folderdata.Post = '';
+			expect(Utils.getCommentOption('a')).toBe(1);
+			expect(Utils.getCommentOption('b')).toBe('abc');
+			expect(Utils.getCommentOption('c')).toBe(true);
+			expect(Utils.getCommentOption('d')).toBe(null);
+			expect(Utils.getCommentOption('e')).toBe(NaN);
+			expect(Utils.getCommentOption('f')).toBe(UNDEFINED);
+			expect(Utils.getCommentOption('g', true)).toBeTruthy();
+		});
+	});
+	
+	describe('Utils.redefineDorothy', function(){
+		var names;
+		if(is2A){
+			names = [
+				'debug',
+				'Dorothy',
+				'Dorothy.matchList',
+				'Dorothy.programDir',
+				'Dorothy.path',
+				'Dorothy.temp',
+				'Dorothy.userName',
+				'Dorothy.version',
+				'Dorothy.common',
+				'Dorothy.fileNameKey',
+				'Dorothy.fileName',
+				'Dorothy.oldUrl',
+				'Dorothy.continueCount',
+				'Dorothy.cancel',
+				'Dorothy.i',
+				'Dorothy.tempStr',
+				'Dorothy.end',
+				'Dorothy.continue',
+				'Dorothy.matchFlg',
+				'Dorothy.matchFile',
+				'Dorothy.matchType',
+				'Dorothy.program',
+				'Dorothy.programHead',
+				'Dorothy.author',
+				'Dorothy.programName',
+				'Dorothy.programVersion',
+				'Dorothy.stealth',
+				'Dorothy.userPath',
+				'Dorothy.userIniPath',
+				'Dorothy.common_show',
+				'Dorothy.common_sp',
+				'Dorothy.common_name',
+				'file_load',
+				'print_debug',
+				'common_xload',
+				'common_load',
+				'common_reload',
+				'program_load',
+				'user_load',
+				'user_program_load',
+				'retry',
+				'reset',
+				'DorothyFileSavePath',
+				'DorothyItemFilenameWrite',
+				'dorothy2_path',
+				'dorothy2_temp',
+				'dorothy2_document',
+				'dorothy2_common',
+				'dorothy2_program',
+				'dorothy2_setting',
+				'dorothy2_system',
+				'dorothy2_project',
+				'dorothy2_projectdata',
+				'dorothy2_bin',
+				'dorothy2_user',
+				'dorothy2_system_menu',
+				'dorothy2_system_menu_new',
+				'dorothy2_system_menu_setting',
+				'dorothy2_system_menu_edit',
+				'dorothy2_system_menu_project',
+				'dorothy2_system_menu_tool',
+				'dorothy2_system_menu_set',
+				'dorothy2_system_menu_package',
+				'dorothy2_system_menu_help',
+				'dorothy2_system_ini',
+				'irvine_script_path',
+				'Dorothy.url',
+				'irvinePath'
+			];
+		}else if(isDOA){
+			names = [
+				'debug',
+				'Dorothy',
+				'Dorothy.programDir',
+				'Dorothy.path',
+				'Dorothy.temp',
+				'Dorothy.userName',
+				'Dorothy.version',
+				'Dorothy.common',
+				//'Dorothy.userPath',
+				//'Dorothy.userIniPath',
+				'Dorothy.common_show',
+				'Dorothy.common_sp',
+				'Dorothy.common_name',
+				'file_load',
+				'print_debug',
+				'common_xload',
+				'common_load',
+				'common_reload',
+				'program_load',
+				'user_load',
+				'user_program_load',
+				'Irvine',
+				'dorothy2_path',
+				'dorothy2_temp',
+				'dorothy2_document',
+				'dorothy2_common',
+				'dorothy2_program',
+				'dorothy2_setting',
+				'dorothy2_system',
+				'dorothy2_project',
+				'dorothy2_projectdata',
+				'dorothy2_bin',
+				'dorothy2_user',
+				'dorothy2_system_menu',
+				'dorothy2_system_menu_new',
+				'dorothy2_system_menu_setting',
+				'dorothy2_system_menu_edit',
+				'dorothy2_system_menu_project',
+				'dorothy2_system_menu_tool',
+				'dorothy2_system_menu_set',
+				'dorothy2_system_menu_package',
+				'dorothy2_system_menu_help',
+				'dorothy2_system_ini',
+				'irvine_script_path',
+				'irvinePath'
+			];
+		}else{
+			names = [
+				'debug',
+				'Dorothy',
+				'Dorothy.programDir',
+				'Dorothy.path',
+				'Dorothy.temp',
+				'Dorothy.userName',
+				'Dorothy.version',
+				'Dorothy.common',
+				'Dorothy.matchFile',
+				'Dorothy.userPath',
+				'Dorothy.userIniPath',
+				'Dorothy.common_show',
+				'Dorothy.common_sp',
+				'Dorothy.common_name',
+				'file_load',
+				'print_debug',
+				'common_xload',
+				'common_load',
+				'common_reload',
+				'program_load',
+				'user_load',
+				'user_program_load',
+				'Irvine',
+				'dorothy2_path',
+				'dorothy2_temp',
+				'dorothy2_document',
+				'dorothy2_common',
+				'dorothy2_program',
+				'dorothy2_setting',
+				'dorothy2_system',
+				'dorothy2_project',
+				'dorothy2_projectdata',
+				'dorothy2_bin',
+				'dorothy2_user',
+				'dorothy2_system_menu',
+				'dorothy2_system_menu_new',
+				'dorothy2_system_menu_setting',
+				'dorothy2_system_menu_edit',
+				'dorothy2_system_menu_project',
+				'dorothy2_system_menu_tool',
+				'dorothy2_system_menu_set',
+				'dorothy2_system_menu_package',
+				'dorothy2_system_menu_help',
+				'dorothy2_system_ini',
+				'irvine_script_path',
+				'Dorothy.url',
+				'irvinePath'
+			];
+		}
+		var flag = false;
+		cases(names).it('redefineDorothy', function(name){
+			if(!flag){
+				expect(function(){Utils.redefineDorothy();}).not.toThrow();
+				flag = true;
+			}
+			expect(function(){eval(name);}).not.toThrow();
+		});
+		
+	});
+
+});
