@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=extend
-//version=0.2
+//version=0.21
 //hint=
 //match=
 //author=wan
@@ -26,31 +26,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 extend = (function(){
-	function getOwnProperties(obj, forIn){
-		var keys, key,
+	function keys(obj){
+		var key, keys,
 			r = [],
+			o = {},
 			defaultMethods = /^(getEvents|getProperties|hasOwnProperty|getKeys|hasKey|valueOf|removeKey|toString|getMethods|constructor)$/,
-			isPlainObject = nameOf(obj) == 'Object';
-		if(!forIn && typeof obj.getKeys == 'function'){
-			keys = obj.getKeys();
-			for(var i = 0; i < keys.length; i++){
-				key = keys[i];
-				if(typeof obj[key] == 'undefined') continue;
-	
-				if(isPlainObject){
-					if(Object.hasKey(key)) continue;
-				}else{
-					if(defaultMethods.test(key)) continue;
+			type = typeof obj,
+			isObj = type == 'object',
+			name = isObj && nameOf(obj),
+			isPlainObject = name == 'Object',
+			isArray = name == 'Array',
+			isStr = type == 'string' || obj === String || obj === StringBuffer;
+
+		if(isArray || isStr){
+			for(var i = 0; i < obj.length; i++) r.push(i);
+		}else if(isObj){
+			if(typeof obj.getKeys == 'function'){
+				keys = obj.getKeys();
+				for(var i = 0; i < keys.length; i++){
+					key = keys[i];
+					if(isPlainObject ? typeof o[key] == 'undefined' : !defaultMethods.test(key)) r.push(key);
 				}
-				r.push(key);
 			}
-		}
-		//folderdata“™‚ÍgetKeys‚ÅŽæ“¾‚Å‚«‚È‚¢‚½‚ß
-		if(!r.length){
-			for(key in obj){
-				if(typeof obj[key] != 'undefined'){
-					r.push(key);
-				}
+			//folderdata, prototype‚ÍgetKeys‚Å‚ÍŽæ“¾o—ˆ‚È‚¢
+			if(!r.length){
+				for(key in obj) r.push(key);
 			}
 		}
 		return r;
@@ -59,11 +59,12 @@ extend = (function(){
 	return function(/*[deep,] [same,] [destination,] source1[, source2[, ...]]*/){
 		function _extend(deep, same, destination, source){
 			var dest, src, key, index, ex, destType, srcType, isUndef,
-				isStrObj = source === String || source === StringBuffer,
-				keys = getOwnProperties(source, (nameOf(source) == 'Array' || isStrObj));
-	
-			for(var i = 0; i < keys.length; i++){
+				keys = keys(source),
+				len = keys.length;
+
+			for(var i = 0; i < len; i++){
 				key = keys[i];
+				if(typeof source[key] == 'undefined') continue;
 				src = source[key];
 				isUndef = typeof destination[key] == 'undefined';
 				dest = isUndef ? null : destination[key];
@@ -133,7 +134,7 @@ extend = (function(){
 			}
 			return destination;
 		}
-	
+
 		var source,
 			destination = arguments[0],
 			deep = false,
@@ -151,7 +152,7 @@ extend = (function(){
 					return -1;
 				}
 			};
-	
+
 		if(typeof destination == 'boolean'){
 			deep = destination;
 			destination = arguments[index];
