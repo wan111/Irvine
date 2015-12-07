@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DOA
-//version=1.0
+//version=1.1
 //hint=DOA新規作成
 //match=
 //author=wan
@@ -64,7 +64,7 @@ function new_def(){
 		s.add('//コンストラクタ');
 		s.add('	');
 		s.add('//メイン');
-		s.add('this.main = function(url){');
+		s.add('this.main = function(url,itemIndex,itemData){');
 		s.add('	');
 		s.add('};');
 		s.add('');
