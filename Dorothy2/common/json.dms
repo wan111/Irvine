@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON
-//version=0.51
+//version=0.52
 //hint=
 //match=
 //author=wan
@@ -680,8 +680,8 @@ JSON =
 	JSON.prototype.load = function(path, reviver, opts){
 		path = path || Dorothy.matchFile + '.json';
 		if(!/^[a-z]:/i.test(path)){
-			common_load('DorothyEx');
-			path = DorothyEx.getSaveFolder() + path.replace('^\s*\\', '');
+			common_load('Utils');
+			path = Utils.getSavePath() + path.replace('^\s*\\', '');
 		}
 		opts = nameOf(opts) == 'Object' ? opts : {};
 		if(!opts.hasKey('relaxed')) opts.relaxed = true;
@@ -702,8 +702,8 @@ JSON =
 	JSON.prototype.save = function(path, value, replacer, space, opts){
 		path = path || Dorothy.matchFile + '.json';
 		if(!/^[a-z]:/i.test(path)){
-			common_load('DorothyEx');
-			path = DorothyEx.getSaveFolder() + path.replace('^\s*\\', '');
+			common_load('Utils');
+			path = Utils.getSavePath() + path.replace('^\s*\\', '');
 		}
 		try{
 			space = isUndefined(space) || isNull(space) ? "\t" : space;

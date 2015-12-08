@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=JSON spec
-//version=0.51
+//version=0.52
 //hint=http://yasmine.dorothy.test/common/spec/json_spec.dms
 //match=
 //author=wan
@@ -569,7 +569,10 @@ describe('JSON.stringify', function(){
 		});
 	});
 	it('IrvineFolderData', function(){
-		common_load('DorothyEx');
+		common_load('Utils');
+		if(Utils.isDOA){
+			Utils.setFolderData();
+		}
 		var o = {};
 		var sort = [];
 		for(var i in folderdata){
@@ -603,7 +606,7 @@ describe('JSON.stringify', function(){
 });
 
 describe('JSON.save, JSON.load', function(){
-	common_load('DorothyEx');
+	common_load('Utils');
 	var value = {a: 1, b: "aa", c: true, d: false, e: null, f: {g: [1, "a", true, false, null, [], {}]} };
 	var text = [
 		'{',
@@ -626,7 +629,7 @@ describe('JSON.save, JSON.load', function(){
 		'}',
 		''
 	].join("\n");
-	var file = new File(new Directory(DorothyEx.getSaveFolder()).includePathDelimiter() + 'JSON_test.json');
+	var file = new File(new Directory(Utils.getSavePath()).includePathDelimiter() + 'JSON_test.json');
 	for(var i = 0; file.exists() && i < 100; i++){
 		file.filename = file.changeExt('') + '(' + i + ')' + file.extractExt();
 	}
