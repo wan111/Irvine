@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils
-//version=1.0
+//version=1.1
 //hint=
 //match=
 //author=wan
@@ -26,10 +26,11 @@
  * 
  */
 
+
 (function(){
 	/**
-	 * ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£é–¢æ•°ç¾¤  
-	 * Utilsã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	 * ƒ†[ƒeƒBƒŠƒeƒBŠÖ”ŒQ  
+	 * UtilsƒIƒuƒWƒFƒNƒg
 	 * @namespace
 	 */
 	Utils = Global.Utils = typeof Utils == 'object' ? Utils : {};
@@ -42,12 +43,12 @@
 
 
 	/**
-	 * ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’æ•´å½¢ã—ã¦è¿”ã—ã¾ã™
-	 * @param {string} message ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
-	 * @param {string} [fileName=Dorothy.matchFile+'.dms'] ãƒ•ã‚¡ã‚¤ãƒ«å
-	 * @param {string|number} [line=''] ã‚¨ãƒ©ãƒ¼ç™ºç”Ÿç®‡æ‰€
-	 * @param {string} [name='Error'] ã‚¨ãƒ©ãƒ¼å
-	 * @return {String} æ•´å½¢ã—ãŸæ–‡å­—åˆ—ã®Stringã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ å„å¼•æ•°ã‚’ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«è¿½åŠ 
+	 * ƒGƒ‰[ƒƒbƒZ[ƒW‚ğ®Œ`‚µ‚Ä•Ô‚µ‚Ü‚·
+	 * @param {string} message ƒGƒ‰[ƒƒbƒZ[ƒW
+	 * @param {string} [fileName=Dorothy.matchFile+'.dms'] ƒtƒ@ƒCƒ‹–¼
+	 * @param {string|number} [line=''] ƒGƒ‰[”­¶‰ÓŠ
+	 * @param {string} [name='Error'] ƒGƒ‰[–¼
+	 * @return {String} ®Œ`‚µ‚½•¶š—ñ‚ÌStringƒIƒuƒWƒFƒNƒg Šeˆø”‚ğƒvƒƒpƒeƒB‚É’Ç‰Á
 	 */
 	Utils.error = function(message, fileName, line, name){
 		var str = new String(message);
@@ -61,12 +62,12 @@
 	};
 
 	/**
-	 * ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’æ•´å½¢ã—ã¦alertã§è¡¨ç¤ºã—ã¾ã™
-	 * @param {string} message ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
-	 * @param {string} [fileName=Dorothy.matchFile+'.dms'] ãƒ•ã‚¡ã‚¤ãƒ«å
-	 * @param {string|number} [line=''] ã‚¨ãƒ©ãƒ¼ç™ºç”Ÿç®‡æ‰€
-	 * @param {string} [name='Error'] ã‚¨ãƒ©ãƒ¼å
-	 * @return {String} æ•´å½¢ã—ãŸæ–‡å­—åˆ—ã®Stringã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ å„å¼•æ•°ã‚’ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«è¿½åŠ 
+	 * ƒGƒ‰[ƒƒbƒZ[ƒW‚ğ®Œ`‚µ‚Äalert‚Å•\¦‚µ‚Ü‚·
+	 * @param {string} message ƒGƒ‰[ƒƒbƒZ[ƒW
+	 * @param {string} [fileName=Dorothy.matchFile+'.dms'] ƒtƒ@ƒCƒ‹–¼
+	 * @param {string|number} [line=''] ƒGƒ‰[”­¶‰ÓŠ
+	 * @param {string} [name='Error'] ƒGƒ‰[–¼
+	 * @return {String} ®Œ`‚µ‚½•¶š—ñ‚ÌStringƒIƒuƒWƒFƒNƒg Šeˆø”‚ğƒvƒƒpƒeƒB‚É’Ç‰Á
 	 */
 	Utils.showError = function(message, fileName, line, name){
 		var e = Utils.error(message, fileName, line, name);
@@ -75,7 +76,7 @@
 	};
 
 	/** 
-	 * æ–‡å­—åˆ—ã¨ã—ã¦æ‰±ãˆã‚‹ã‹åˆ¤å®šã—ã¾ã™ string String StringBufferãªã‚‰ã°true
+	 * •¶š—ñ‚Æ‚µ‚Äˆµ‚¦‚é‚©”»’è‚µ‚Ü‚· string String StringBuffer‚È‚ç‚Îtrue
 	 * @param {*} v
 	 * @return {boolean}
 	 */
@@ -84,7 +85,7 @@
 	};
 
 	/**
-	 * æ–‡å­—åˆ—ã«å¤‰æ›
+	 * •¶š—ñ‚É•ÏŠ·
 	 * @param {*} v
 	 * @return {string}
 	 */
@@ -93,10 +94,10 @@
 	};
 
 	/**
-	 * æ•°å€¤ã«å¤‰æ› æ•°å€¤ã«å¤‰æ›ã§ããªã„ã‚‚ã®ã¯NaNã‚’è¿”ã—ã¾ã™ã€‚
+	 * ”’l‚É•ÏŠ· ”’l‚É•ÏŠ·‚Å‚«‚È‚¢‚à‚Ì‚ÍNaN‚ğ•Ô‚µ‚Ü‚·B
 	 * @template T
 	 * @param {*} v
-	 * @param {T=} def æ•°å€¤ã«å¤‰æ›ã§ããªã„å ´åˆã«è¿”ã™å€¤
+	 * @param {T=} def ”’l‚É•ÏŠ·‚Å‚«‚È‚¢ê‡‚É•Ô‚·’l
 	 * @return {number|T}
 	 */
 	Utils.toNumber = function(v, def){
@@ -104,7 +105,7 @@
 	};
 
 	/**
-	 * æ•´æ•°å€¤ã«å¤‰æ›
+	 * ®”’l‚É•ÏŠ·
 	 * @param {*} v
 	 * @return {number}
 	 */
@@ -113,7 +114,7 @@
 	};
 
 	/**
-	 * ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ãƒ—ãƒªãƒŸãƒ†ã‚£ãƒ–å€¤ã«å¤‰æ›
+	 * ƒIƒuƒWƒFƒNƒg‚ğƒvƒŠƒ~ƒeƒBƒu’l‚É•ÏŠ·
 	 * @param {*} v
 	 * @return {string|number|boolean|null|undefined}
 	 */
@@ -136,8 +137,8 @@
 	};
 	
 	/**
-	 * æ–‡å­—åˆ—ã‚’ãƒ—ãƒªãƒŸãƒ†ã‚£ãƒ–å€¤ã«å¤‰æ›
-	 * ä¾‹: "true" -> true
+	 * •¶š—ñ‚ğƒvƒŠƒ~ƒeƒBƒu’l‚É•ÏŠ·
+	 * —á: "true" -> true
 	 * @param {*} s
 	 * @return {string|number|boolean|null|undefined}
 	 */
@@ -168,9 +169,9 @@
 	};
 
 	/**
-	 * æ¸¡ã•ã‚ŒãŸå€¤ã‹ã‚‰ãƒ•ã‚¡ã‚¤ãƒ«åã‚’å–ã‚Šå‡ºã—ã¾ã™
+	 * “n‚³‚ê‚½’l‚©‚çƒtƒ@ƒCƒ‹–¼‚ğæ‚èo‚µ‚Ü‚·
 	 * @param {*} s
-	 * @return {string} ãƒ•ã‚¡ã‚¤ãƒ«å
+	 * @return {string} ƒtƒ@ƒCƒ‹–¼
 	 */
 	Utils.extractName = function(s){
 		s = Utils.toStr(s);
@@ -185,20 +186,20 @@
 	};
 	
 	/**
-	 * æ¸¡ã•ã‚ŒãŸå€¤ã‹ã‚‰æ‹¡å¼µå­ã‚’å–ã‚Šå‡ºã—ã¾ã™
+	 * “n‚³‚ê‚½’l‚©‚çŠg’£q‚ğæ‚èo‚µ‚Ü‚·
 	 * @param {*} s
-	 * @return {string} ãƒ•ã‚¡ã‚¤ãƒ«å
+	 * @return {string} ƒtƒ@ƒCƒ‹–¼
 	 */
 	Utils.extractExt = function(s){
 		return /\.[^.]+$/.test(Utils.extractName(s)) ? RegExp.$0 : '';
 	};
 
 	/**
-	 * æ¸¡ã•ã‚ŒãŸæ–‡å­—åˆ—ã‹ã‚‰ ç½®æ›å¤‰æ•°(%ï½%) ã‚’ç½®æ›ã—ã¦æ•´å½¢ã—ã¾ã™  
-	 * mapã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã¨åŒåã®ç½®æ›å¤‰æ•°ã‚’ãã®å€¤ã§ç½®ãæ›ãˆã¾ã™ mapã«å­˜åœ¨ã—ãªã„åå‰ã®ç½®æ›å¤‰æ•°ã¯å‰Šé™¤ã•ã‚Œã¾ã™
+	 * “n‚³‚ê‚½•¶š—ñ‚©‚ç ’uŠ·•Ï”(%`%) ‚ğ’uŠ·‚µ‚Ä®Œ`‚µ‚Ü‚·  
+	 * map‚ÌƒvƒƒpƒeƒB‚Æ“¯–¼‚Ì’uŠ·•Ï”‚ğ‚»‚Ì’l‚Å’u‚«Š·‚¦‚Ü‚· map‚É‘¶İ‚µ‚È‚¢–¼‘O‚Ì’uŠ·•Ï”‚Ííœ‚³‚ê‚Ü‚·
 	 * @param {string} s
-	 * @param {Object=} map ç½®ãæ›ãˆã«ä½¿ç”¨ã•ã‚Œã‚‹ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
-	 * @return {string} æ•´å½¢ã—ãŸæ–‡å­—åˆ—
+	 * @param {Object=} map ’u‚«Š·‚¦‚Ég—p‚³‚ê‚éƒIƒuƒWƒFƒNƒg
+	 * @return {string} ®Œ`‚µ‚½•¶š—ñ
 	 */
 	Utils.formatTemplate = function(s, map){
 		s = Utils.toStr(s);
@@ -210,13 +211,16 @@
 	};
 
 	/**
-	 * .call()ã®ä»£æ›¿ é–¢æ•°ã®ãƒ¢ãƒ¼ãƒ‰ã‚’å¤‰æ›´ã›ãšã«å‘¼ã³å‡ºã—ã¾ã™ã€‚ æˆ»ã‚Šå€¤ã§æ¸¡ã•ã‚Œã‚‹é–¢æ•°ãŒå†…éƒ¨ã§å…ƒã¨ã¯åˆ¥ã®é–¢æ•°ã¨ã—ã¦æ‰±ã‚ã‚Œã‚‹ã®ã‚’åˆ©ç”¨ã—ã¦ã„ã¾ã™
-	 * @param {Function} fn å‘¼ã³å‡ºã™é–¢æ•°
-	 * @param {*} selfObj é–¢æ•°fnã®å†…éƒ¨ã§thisã¨ã—ã¦ä½¿ç”¨ã•ã‚Œã‚‹å€¤
-	 * @param {...*} var_args é–¢æ•°fnã«æ¸¡ã•ã‚Œã‚‹å¼•æ•°
-	 * @return {*} é–¢æ•°fnã®è¿”ã‚Šå€¤
+	 * .call()‚Ì‘ã‘Ö ŠÖ”‚Ìƒ‚[ƒh‚ğ•ÏX‚¹‚¸‚ÉŒÄ‚Ño‚µ‚Ü‚·B –ß‚è’l‚Å“n‚³‚ê‚éŠÖ”‚ª“à•”‚ÅŒ³‚Æ‚Í•Ê‚ÌŠÖ”‚Æ‚µ‚Äˆµ‚í‚ê‚é‚Ì‚ğ—˜—p‚µ‚Ä‚¢‚Ü‚·
+	 * @param {Function} fn ŒÄ‚Ño‚·ŠÖ”
+	 * @param {*} selfObj ŠÖ”fn‚Ì“à•”‚Åthis‚Æ‚µ‚Äg—p‚³‚ê‚é’l
+	 * @param {...*} var_args ŠÖ”fn‚É“n‚³‚ê‚éˆø”
+	 * @return {*} ŠÖ”fn‚Ì•Ô‚è’l
 	 */
 	Utils.call = function(fn, selfObj, var_args){
+		if(typeof fn != 'function'){
+			throw Utils.error('‘æˆêˆø”‚ªfunction‚Å‚Í‚È‚¢', 'Utils.dms', '.call');
+		}
 		/*
 		var len = arguments.length,
 			args = [],
@@ -239,15 +243,18 @@
 	};
 
 	/**
-	 * .apply()ã®ä»£æ›¿ é–¢æ•°ã®ãƒ¢ãƒ¼ãƒ‰ã‚’å¤‰æ›´ã›ãšã«å‘¼ã³å‡ºã—ã¾ã™
-	 * @param {Function} fn å‘¼ã³å‡ºã™é–¢æ•°
-	 * @param {*} selfObj é–¢æ•°fnã®å†…éƒ¨ã§thisã¨ã—ã¦ä½¿ç”¨ã•ã‚Œã‚‹ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
-	 * @param {?Array} argsArray é–¢æ•°fnã«æ¸¡ã•ã‚Œã‚‹å¼•æ•°
-	 * @return {*} é–¢æ•°fnã®è¿”ã‚Šå€¤
+	 * .apply()‚Ì‘ã‘Ö ŠÖ”‚Ìƒ‚[ƒh‚ğ•ÏX‚¹‚¸‚ÉŒÄ‚Ño‚µ‚Ü‚·
+	 * @param {Function} fn ŒÄ‚Ño‚·ŠÖ”
+	 * @param {*} selfObj ŠÖ”fn‚Ì“à•”‚Åthis‚Æ‚µ‚Äg—p‚³‚ê‚éƒIƒuƒWƒFƒNƒg
+	 * @param {?Array} argsArray ŠÖ”fn‚É“n‚³‚ê‚éˆø”
+	 * @return {*} ŠÖ”fn‚Ì•Ô‚è’l
 	 */
 	Utils.apply = function(fn, selfObj, argsArray){
+		if(typeof fn != 'function'){
+			throw Utils.error('‘æˆêˆø”‚ªfunction‚Å‚Í‚È‚¢', 'Utils.dms', '.apply');
+		}
 		if(nameOf(argsArray) != 'Array' && !isNull(argsArray) && !isUndefined(argsArray)){
-			throw Utils.error('ç¬¬ä¸‰å¼•æ•°ãŒArrayã§ã¯ãªã„', 'Utils.dms', '.apply');
+			throw Utils.error('‘æOˆø”‚ªArray‚Å‚Í‚È‚¢', 'Utils.dms', '.apply');
 		}
 		/*
 		var args = argsArray || [],
@@ -268,11 +275,11 @@
 	};
 
 	/**
-	 * æŒ‡å®šã—ãŸå®Œå…¨ä¿®é£¾åã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å–å¾—ã—ã¾ã™ objã‚’æŒ‡å®šã—ãŸå ´åˆã¯objã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‹ã‚‰å–å¾—ã—ã¾ã™
+	 * w’è‚µ‚½Š®‘SCü–¼‚ÌƒIƒuƒWƒFƒNƒg‚ğæ“¾‚µ‚Ü‚· obj‚ğw’è‚µ‚½ê‡‚Íobj‚ÌƒvƒƒpƒeƒB‚©‚çæ“¾‚µ‚Ü‚·
 	 * @function
-	 * @param {string} name å®Œå…¨ä¿®é£¾å ä¾‹: Global.Utils.UNDEFINED ç­‰
-	 * @param {*=} obj ã“ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ã‚’å¯¾è±¡ã¨ã—ã¾ã™ çœç•¥ã—ãŸå ´åˆã‚°ãƒ­ãƒ¼ãƒãƒ«ã‚¹ã‚³ãƒ¼ãƒ—ã¨Globalã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å¯¾è±¡ã¨ã—ã¾ã™
-	 * @param {*=} def è¦‹ã¤ã‹ã‚‰ãªã‹ã£ãŸå ´åˆã«è¿”ã™å€¤
+	 * @param {string} name Š®‘SCü–¼ —á: Global.Utils.UNDEFINED “™
+	 * @param {*=} obj ‚±‚ÌƒIƒuƒWƒFƒN‚ğ‘ÎÛ‚Æ‚µ‚Ü‚· È—ª‚µ‚½ê‡ƒOƒ[ƒoƒ‹ƒXƒR[ƒv‚ÆGlobalƒIƒuƒWƒFƒNƒg‚ğ‘ÎÛ‚Æ‚µ‚Ü‚·
+	 * @param {*=} def Œ©‚Â‚©‚ç‚È‚©‚Á‚½ê‡‚É•Ô‚·’l
 	 * @return {*}
 	 */
 	Utils.getObject = (function(){
@@ -281,7 +288,7 @@
 			'(function(){',
 			'  try{',
 			'    return /^[_$a-zA-Z][a-zA-Z0-9]*$/.test("' + name + '") && !/^arguments/.test("' + name + '") ? ' + name + ': Global["' + name + '"];',
-			'  }catch{}',
+			'  }catch(e){}',
 			'})()'
 			].join("\n"));
 		}
@@ -304,8 +311,8 @@
 	})();
 
 	/**
-	 * ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®å…¨ã¦ã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£åã‚’é…åˆ—ã§è¿”ã—ã¾ã™ã€‚
-	 * @param {*} obj ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	 * ƒIƒuƒWƒFƒNƒg‚Ì‘S‚Ä‚ÌƒvƒƒpƒeƒB–¼‚ğ”z—ñ‚Å•Ô‚µ‚Ü‚·B
+	 * @param {*} obj ƒIƒuƒWƒFƒNƒg
 	 * @return {Array<string>}
 	 */
 	Utils.keys = function(obj){
@@ -330,7 +337,7 @@
 					if(isPlainObject ? typeof o[key] == 'undefined' : !defaultMethods.test(key)) r.push(key);
 				}
 			}
-			//folderdata, prototypeã¯getKeysã§ã¯å–å¾—å‡ºæ¥ãªã„
+			//folderdata, prototype‚ÍgetKeys‚Å‚Íæ“¾o—ˆ‚È‚¢
 			if(!r.length){
 				for(key in obj) r.push(key);
 			}
@@ -340,26 +347,26 @@
 	
 	/**
 	 * <pre>
-	 * æŒ‡å®šã—ãŸæœ€åˆã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«è¤‡æ•°ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ãƒãƒ¼ã‚¸ã—ã¦è¿”ã—ã¾ã™ã€‚
-	 * ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®æŒ‡å®šãŒä¸€ã¤ã ã‘ã®å ´åˆã¯ãã®æ™‚ã®thisã«å¯¾ã—ã¦ãƒãƒ¼ã‚¸ã—ã¾ã™
-	 * ãƒãƒ¼ã‚¸å…ƒã§å¾ªç’°å‚ç…§ãŒæœ‰ã£ãŸå ´åˆã¯ãƒãƒ¼ã‚¸å…ˆã§ã‚‚åŒæ§˜ã®å¾ªç’°æ§‹é€ ã‚’å†ç¾ã—ã¾ã™
-	 * ãƒãƒ¼ã‚¸å…ƒã«ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆä»¥å¤–ã‚„String,StringBufferã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’æŒ‡å®šã—ãŸå ´åˆã¯ç©ºã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ{}ã¨ã—ã¦æ‰±ã„ã¾ã™
+	 * w’è‚µ‚½Å‰‚ÌƒIƒuƒWƒFƒNƒg‚É•¡”‚ÌƒIƒuƒWƒFƒNƒg‚ğƒ}[ƒW‚µ‚Ä•Ô‚µ‚Ü‚·B
+	 * ƒIƒuƒWƒFƒNƒg‚Ìw’è‚ªˆê‚Â‚¾‚¯‚Ìê‡‚Í‚»‚Ì‚Ìthis‚É‘Î‚µ‚Äƒ}[ƒW‚µ‚Ü‚·
+	 * ƒ}[ƒWŒ³‚ÅzŠÂQÆ‚ª—L‚Á‚½ê‡‚Íƒ}[ƒWæ‚Å‚à“¯—l‚ÌzŠÂ\‘¢‚ğÄŒ»‚µ‚Ü‚·
+	 * ƒ}[ƒWŒ³‚ÉƒIƒuƒWƒFƒNƒgˆÈŠO‚âString,StringBufferƒIƒuƒWƒFƒNƒg‚ğw’è‚µ‚½ê‡‚Í‹óƒIƒuƒWƒFƒNƒg{}‚Æ‚µ‚Äˆµ‚¢‚Ü‚·
 	 * 
 	 * Utils.extend([deep,] [same,] [destination,] source1[, source2[, ...]])
-	 *  deep: çœç•¥å¯ trueãªã‚‰ã°æ·±ã„ã‚³ãƒ”ãƒ¼(deep copy) ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯false
-	 *  same: çœç•¥å¯ trueãªã‚‰ã°åŒåã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã¯åŒã˜å‹ã®å ´åˆã®ã¿ä¸Šæ›¸ã ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯false
-	 *  destination: çœç•¥å¯  ãƒãƒ¼ã‚¸å…ˆ æ‹¡å¼µã™ã‚‹ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ çœç•¥ã—ãŸå ´åˆã¯this
-	 *  source1,2...: ãƒãƒ¼ã‚¸å…ƒ ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	 *  deep: È—ª‰Â true‚È‚ç‚Î[‚¢ƒRƒs[(deep copy) ƒfƒtƒHƒ‹ƒg‚Ífalse
+	 *  same: È—ª‰Â true‚È‚ç‚Î“¯–¼‚ÌƒvƒƒpƒeƒB‚Í“¯‚¶Œ^‚Ìê‡‚Ì‚İã‘‚« ƒfƒtƒHƒ‹ƒg‚Ífalse
+	 *  destination: È—ª‰Â  ƒ}[ƒWæ Šg’£‚·‚éƒIƒuƒWƒFƒNƒg È—ª‚µ‚½ê‡‚Íthis
+	 *  source1,2...: ƒ}[ƒWŒ³ ƒIƒuƒWƒFƒNƒg
 	 * </pre>	 
 	 * @example
-	 * ä¾‹1: Utils.extend(destination, source); //destinationã«soucreã®å†…å®¹ã‚’ã‚³ãƒ”ãƒ¼
-	 * ä¾‹2: Utils.extend(true, destination, source, source2); //destinationã«soucreã¨sourc2ã®å†…å®¹ã‚’ãƒ‡ã‚£ãƒ¼ãƒ—ã‚³ãƒ”ãƒ¼
-	 * ä¾‹3: Utils.extend(source); //Utilsã«sourceã®å†…å®¹ã‚’ã‚³ãƒ”ãƒ¼
-	 * ä¾‹4: Obj.extend = Utils.extend;
-	 *      Obj.extend(source); //Objã«sourceã®å†…å®¹ã‚’ã‚³ãƒ”ãƒ¼
+	 * —á1: Utils.extend(destination, source); //destination‚Ésoucre‚Ì“à—e‚ğƒRƒs[
+	 * —á2: Utils.extend(true, destination, source, source2); //destination‚Ésoucre‚Æsourc2‚Ì“à—e‚ğƒfƒB[ƒvƒRƒs[
+	 * —á3: Utils.extend(source); //Utils‚Ésource‚Ì“à—e‚ğƒRƒs[
+	 * —á4: Obj.extend = Utils.extend;
+	 *      Obj.extend(source); //Obj‚Ésource‚Ì“à—e‚ğƒRƒs[
 	 * @function
 	 * @param {...*} var_args
-	 * @return {*} ãƒãƒ¼ã‚¸ã—ãŸã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	 * @return {*} ƒ}[ƒW‚µ‚½ƒIƒuƒWƒFƒNƒg
 	 */
 	Utils.extend = (function(){
 		var _extend = function(cache, deep, same, destination, source){
@@ -472,8 +479,8 @@
 				destination = this;
 				index--;
 			}
-			//Stringã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆåŒå£«,StringBufferã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆåŒå£«ã®æ¯”è¼ƒã¯å¸¸ã«trueã¨ãªã‚‹ãƒã‚°ã‚’åˆ©ç”¨
-			//ã¾ãŸã“ã‚Œã‚‰ã¯ãƒ–ãƒ©ã‚±ãƒƒãƒˆè¡¨è¨˜æ³•ã§ã¯ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«ã‚¢ã‚¯ã‚»ã‚¹ã§ããªã„ã®ã§{}ã¨ã™ã‚‹
+			//StringƒIƒuƒWƒFƒNƒg“¯m,StringBufferƒIƒuƒWƒFƒNƒg“¯m‚Ì”äŠr‚Íí‚Étrue‚Æ‚È‚éƒoƒO‚ğ—˜—p
+			//‚Ü‚½‚±‚ê‚ç‚Íƒuƒ‰ƒPƒbƒg•\‹L–@‚Å‚ÍƒvƒƒpƒeƒB‚ÉƒAƒNƒZƒX‚Å‚«‚È‚¢‚Ì‚Å{}‚Æ‚·‚é
 			if(typeof destination != 'object' || (destination === String || destination === StringBuffer)){
 				destination = {};
 			}
@@ -492,11 +499,11 @@
 	})();
 
 	/**
-	 * æŒ‡å®šã—ãŸãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—ã¨ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã§æ–°ã—ã„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ç”Ÿæˆã—ã¾ã™
-	 * @param {string} ctorName å†…éƒ¨ã§ä½¿ç”¨ã™ã‚‹ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿é–¢æ•°ã®åå‰ã€‚
-	 *     DMonkeyã§ã¯prototypeã¯åŒåã®é–¢æ•°åŒå£«ã§å…±æœ‰ã•ã‚Œã¾ã™ã€‚ å…±æœ‰ã‚’é¿ã‘ãŸã„å ´åˆã¯ä¸€æ„ã®åå‰ã«ã—ã¦ãã ã•ã„
-	 * @param {Object=} proto æ–°ã—ã„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—ã¨ãªã‚‹ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
-	 * @param {Object=} prop ã“ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®å„ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’æ–°ã—ã„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«è¿½åŠ ã™ã‚‹
+	 * w’è‚µ‚½ƒvƒƒgƒ^ƒCƒv‚ÆƒvƒƒpƒeƒB‚ÅV‚µ‚¢ƒIƒuƒWƒFƒNƒg‚ğ¶¬‚µ‚Ü‚·
+	 * @param {string} ctorName “à•”‚Åg—p‚·‚éƒRƒ“ƒXƒgƒ‰ƒNƒ^ŠÖ”‚Ì–¼‘OB
+	 *     DMonkey‚Å‚Íprototype‚Í“¯–¼‚ÌŠÖ”“¯m‚Å‹¤—L‚³‚ê‚Ü‚·B ‹¤—L‚ğ”ğ‚¯‚½‚¢ê‡‚ÍˆêˆÓ‚Ì–¼‘O‚É‚µ‚Ä‚­‚¾‚³‚¢
+	 * @param {Object=} proto V‚µ‚¢ƒIƒuƒWƒFƒNƒg‚Ìƒvƒƒgƒ^ƒCƒv‚Æ‚È‚éƒIƒuƒWƒFƒNƒg
+	 * @param {Object=} prop ‚±‚ÌƒIƒuƒWƒFƒNƒg‚ÌŠeƒvƒƒpƒeƒB‚ğV‚µ‚¢ƒIƒuƒWƒFƒNƒg‚É’Ç‰Á‚·‚é
 	 * @return {Object}
 	 */
 	Utils.objCreate = function(ctorName, proto, prop){
@@ -524,44 +531,44 @@
 
 	/**
 	 * <pre>
-	 * ä»–ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã‹ã‚‰ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—ã‚’ç¶™æ‰¿ã—ã¾ã™ã€‚ã‚¯ãƒ©ã‚¹ã®ç¶™æ‰¿ã‚’æ“¬ä¼¼çš„ã«å®Ÿç¾ã•ã›ã¾ã™ã€‚
-	 * è¦ªã®prototypeã« constructor ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’è¿½åŠ ã—ã¾ã™ã€‚ è¦ªè‡ªèº«ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿é–¢æ•°ã§ã™ã€‚
-	 * å­ã®prototypeã« _super ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚’è¿½åŠ ã—ã¾ã™ã€‚ è¦ªã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿é–¢æ•°ã§ã™ã€‚
-	 * å­ã®prototypeã« _base ãƒ¡ã‚½ãƒƒãƒ‰ã‚’è¿½åŠ ã—ã¾ã™ã€‚ è¦ªãƒ¡ã‚½ãƒƒãƒ‰ã®å‘¼ã³å‡ºã—ã«ä½¿ç”¨ã—ã¾ã™ã€‚
+	 * ‘¼‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^‚©‚çƒvƒƒgƒ^ƒCƒv‚ğŒp³‚µ‚Ü‚·BƒNƒ‰ƒX‚ÌŒp³‚ğ‹[—“I‚ÉÀŒ»‚³‚¹‚Ü‚·B
+	 * e‚Ìprototype‚É constructor ƒvƒƒpƒeƒB‚ğ’Ç‰Á‚µ‚Ü‚·B e©g‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^ŠÖ”‚Å‚·B
+	 * q‚Ìprototype‚É _super ƒvƒƒpƒeƒB‚ğ’Ç‰Á‚µ‚Ü‚·B e‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^ŠÖ”‚Å‚·B
+	 * q‚Ìprototype‚É _base ƒƒ\ƒbƒh‚ğ’Ç‰Á‚µ‚Ü‚·B eƒƒ\ƒbƒh‚ÌŒÄ‚Ño‚µ‚Ég—p‚µ‚Ü‚·B
 	 * function _base(selfObj, methodName, var_args)
-	 *  selfObj: å‘¼ã³å‡ºã—å…ˆã§thisã¨ãªã‚‹å€¤ é€šå¸¸ã¯è‡ªèº«ã‚’æŒ‡å®šã—ã¦ãã ã•ã„
-	 *  methodName: å‘¼ã³å‡ºã™è¦ªã®ãƒ¡ã‚½ãƒƒãƒ‰ã®åå‰
-	 *  var_args: è¦ªãƒ¡ã‚½ãƒƒãƒ‰ã«æ¸¡ã™å¼•æ•°
+	 *  selfObj: ŒÄ‚Ño‚µæ‚Åthis‚Æ‚È‚é’l ’Êí‚Í©g‚ğw’è‚µ‚Ä‚­‚¾‚³‚¢
+	 *  methodName: ŒÄ‚Ño‚·e‚Ìƒƒ\ƒbƒh‚Ì–¼‘O
+	 *  var_args: eƒƒ\ƒbƒh‚É“n‚·ˆø”
 	 * </pre>
 	 * @example
 	 * function Parent(a){this.a = a;}
 	 * function Child(a){
-	 *     //è¦ªã®å‘¼ã³å‡ºã—ä¾‹
-	 *     //ä¾‹1:
+	 *     //e‚ÌŒÄ‚Ño‚µ—á
+	 *     //—á1:
 	 *         this._base(this, 'constructor', a);
-	 *     //ä¾‹2:
+	 *     //—á2:
 	 *         Utils.call(Parent, this, a);
-	 *     //ä¾‹3:
+	 *     //—á3:
 	 *         Utils.call(Child.prototype._super, this, a);
-	 *     //ä¾‹4(DMonkeyå›ºæœ‰ã®ä»•æ§˜):
+	 *     //—á4(DMonkeyŒÅ—L‚Ìd—l):
 	 *         var super_ = Child.prototype._super;
 	 *         super_(a);
-	 *     //ä¾‹5(DMonkeyå›ºæœ‰ã®ä»•æ§˜)
+	 *     //—á5(DMonkeyŒÅ—L‚Ìd—l)
 	 *         Parent(a);
-	 *     //é§„ç›®ãªä¾‹1:
+	 *     //‘Ê–Ú‚È—á1:
 	 *         this._super(a);
-	 *     //é§„ç›®ãªä¾‹2:
+	 *     //‘Ê–Ú‚È—á2:
 	 *         Child.prototype._super(a);
 	 * }
 	 * Utils.inherits(Child, Parent);
 	 * @function
-	 * @param {Function} childCtor å­ã‚¯ãƒ©ã‚¹ã¨ãªã‚‹ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿é–¢æ•°
-	 * @param {Function} parentCtor è¦ªã‚¯ãƒ©ã‚¹ã¨ãªã‚‹ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿é–¢æ•°
+	 * @param {Function} childCtor qƒNƒ‰ƒX‚Æ‚È‚éƒRƒ“ƒXƒgƒ‰ƒNƒ^ŠÖ”
+	 * @param {Function} parentCtor eƒNƒ‰ƒX‚Æ‚È‚éƒRƒ“ƒXƒgƒ‰ƒNƒ^ŠÖ”
 	 */
 	Utils.inherits = (function(){
-		var c = {count: 0};//DMonkeyã§ã¯ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ãªã„ã¨æ­£ã—ãã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ã‚’æ‰±ãˆãªã„
+		var c = {count: 0};//DMonkey‚Å‚ÍƒIƒuƒWƒFƒNƒg‚Å‚È‚¢‚Æ³‚µ‚­ƒNƒ[ƒWƒƒ‚ğˆµ‚¦‚È‚¢
 		return function(childCtor, parentCtor) {
-			//DMonkeyã§ã¯åŒã˜åå‰ã®é–¢æ•°ã§prototypeãŒå…±æœ‰ã•ã‚Œã‚‹ãŸã‚æ¯å›é•ã†åå‰ã‚’ä½¿ç”¨ã™ã‚‹
+			//DMonkey‚Å‚Í“¯‚¶–¼‘O‚ÌŠÖ”‚Åprototype‚ª‹¤—L‚³‚ê‚é‚½‚ß–ˆ‰ñˆá‚¤–¼‘O‚ğg—p‚·‚é
 			var tempCtorName = '_inherits_tempCtor_' + c.count++;
     	
 			childCtor.prototype = Utils.objCreate(tempCtorName, parentCtor.prototype);
@@ -570,14 +577,14 @@
     	
 			parentCtor.prototype.constructor = parentCtor;
     	
-			//å‹•çš„å·®ã—æ›¿ãˆ
+			//“®“I·‚µ‘Ö‚¦
 			childCtor.prototype._base = (function(parent){
 				return function(selfObj, methodName, var_args){
 					if(typeof parent._super == 'function'){
 						var pre_base = this._base;
 						this._base = parent._base;
 						try{
-							var r = Utils.apply(parent[methodName], selfObj, arguments.slice(2)); //DMonkeyã§ã¯argumentsã¯ãŸã ã®é…åˆ—(.calleãŒè¿½åŠ ã•ã‚Œã¦ã„ã‚‹)
+							var r = Utils.apply(parent[methodName], selfObj, arguments.slice(2)); //DMonkey‚Å‚Íarguments‚Í‚½‚¾‚Ì”z—ñ(.calle‚ª’Ç‰Á‚³‚ê‚Ä‚¢‚é)
 						}finally{
 							this._base = pre_base;
 						}
@@ -591,7 +598,7 @@
 	})();
 	
 	/**
-	 * destã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«srcã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®å…¨ã¦ã®ãƒ¡ãƒ³ãƒãƒ¼ã‚’ã‚³ãƒ”ãƒ¼ã—ã¾ã™
+	 * destƒIƒuƒWƒFƒNƒg‚ÉsrcƒIƒuƒWƒFƒNƒg‚Ì‘S‚Ä‚Ìƒƒ“ƒo[‚ğƒRƒs[‚µ‚Ü‚·
 	 * @param {Object} dest
 	 * @param {Object} src
 	 */
@@ -609,10 +616,10 @@
 	};
 
 	/**
-	 * thisã‚„å¼•æ•°ãŒæŸç¸›ã•ã‚ŒãŸæ–°ãŸãªé–¢æ•°ã‚’ç”Ÿæˆã—ã¦è¿”ã—ã¾ã™
-	 * @param {Function} fn å¯¾è±¡ã¨ã™ã‚‹é–¢æ•°
-	 * @param {Object} selfObj é–¢æ•°å†…ã§thisã¨ã—ã¦ä½¿ç”¨ã•ã‚Œã‚‹å€¤
-	 * @param {...*} var_args é–¢æ•°ã«æ¸¡ã•ã‚Œã‚‹å¼•æ•°ã€‚ ç”Ÿæˆã•ã‚ŒãŸé–¢æ•°ã‚’å‘¼ã³å‡ºã™æ™‚ã«æŒ‡å®šã•ã‚ŒãŸå¼•æ•°ã¯ã“ã‚Œã‚‰ã®å¾Œã®å¼•æ•°ã¨ã—ã¦ä½¿ç”¨ã•ã‚Œã¾ã™ã€‚
+	 * this‚âˆø”‚ª‘©”›‚³‚ê‚½V‚½‚ÈŠÖ”‚ğ¶¬‚µ‚Ä•Ô‚µ‚Ü‚·
+	 * @param {Function} fn ‘ÎÛ‚Æ‚·‚éŠÖ”
+	 * @param {Object} selfObj ŠÖ”“à‚Åthis‚Æ‚µ‚Äg—p‚³‚ê‚é’l
+	 * @param {...*} var_args ŠÖ”‚É“n‚³‚ê‚éˆø”B ¶¬‚³‚ê‚½ŠÖ”‚ğŒÄ‚Ño‚·‚Éw’è‚³‚ê‚½ˆø”‚Í‚±‚ê‚ç‚ÌŒã‚Ìˆø”‚Æ‚µ‚Äg—p‚³‚ê‚Ü‚·B
 	 * @return {Function}
 	 */
 	Utils.bind = function(fn, selfObj, var_args){
@@ -623,18 +630,88 @@
 		})(fn, selfObj, arguments.slice(2));
 	};
 
-
+	/**
+	 * iniƒtƒ@ƒCƒ‹‚©‚çİ’è’l‚ğ“Ç‚İ‚İƒIƒuƒWƒFƒNƒg‚Å•Ô‚µ‚Ü‚·  
+	 * Šeİ’è’l‚Í“KØ‚ÈƒvƒŠƒ~ƒeƒBƒu’l‚É•ÏŠ·‚³‚ê‚Ü‚·  
+	 * ini‚Íiniƒtƒ@ƒCƒ‹‚ÌƒpƒX–”‚ÍIniƒIƒuƒWƒFƒNƒg‚ğ“n‚µ‚Ä‚­‚¾‚³‚¢  
+	 * IniƒIƒuƒWƒFƒNƒg‚ğ“n‚µ‚½ê‡‚Í‚»‚±‚©‚çİ’è’l‚ğ“Ç‚İ‚İ‚Ü‚·  
+	 * def‚ğw’è‚µ‚½ê‡‚Íæ“¾‚µ‚½ƒIƒvƒVƒ‡ƒ“‚Ædef‚ğƒ}[ƒW‚µ‚½V‚µ‚¢ƒIƒuƒWƒFƒNƒg‚ğ•Ô‚µ‚Ü‚·
+	 * @param {Object} [def] ƒfƒtƒHƒ‹ƒg’l
+	 * @param {string|Ini} [ini=Dorothy.userIniPath] iniƒtƒ@ƒCƒ‹‚ÌƒpƒX–”‚ÍIniƒIƒuƒWƒFƒNƒg
+	 * @return {Object}
+	 */
+	Utils.loadIni = function(def, ini){
+		ini = nameOf(ini) == 'Ini' ? ini : new Ini(ini && Utils.expandPath(ini) || Utils.getUserIniPath());
+		var sec, key, keys,
+			obj = {},
+			secs = ini.readSections();
+		for(var i in secs){
+			sec = secs[i];
+			obj[sec] = {};
+			keys = ini.readSection(sec);
+			for(var j in keys){
+				key = keys[j];
+				obj[sec][key] = Utils.strToPrimitive(ini.read(sec, key, ""));
+			}
+		}
+		return typeof def == 'object' ? Utils.extend(true, {}, def, obj) : obj;
+	};
+	
+	/**
+	 * iniƒtƒ@ƒCƒ‹‚Éİ’è’l‚ğ•Û‘¶‚µ‚Ü‚·  
+	 * dataƒIƒuƒWƒFƒNƒg‚É‘¶İ‚µ‚È‚¢ƒZƒNƒVƒ‡ƒ“‚âƒL[‚Ííœ‚³‚ê‚Ü‚·  
+	 * ini‚Íiniƒtƒ@ƒCƒ‹‚ÌƒpƒX–”‚ÍIniƒIƒuƒWƒFƒNƒg‚ğ“n‚µ‚Ä‚­‚¾‚³‚¢  
+	 * IniƒIƒuƒWƒFƒNƒg‚ğ“n‚µ‚½ê‡‚Í‚»‚±‚Éİ’è’l‚ğ•Û‘¶‚µ‚Ü‚·B IniƒIƒuƒWƒFƒNƒg‚Ì“à—e‚ÍXV‚³‚ê‚Ü‚·  
+	 * @param {Object} data iniƒtƒ@ƒCƒ‹‚É•Û‘¶‚·‚éİ’è’l‚ğ‚ÂƒIƒuƒWƒFƒNƒg
+	 * @param {string|Ini} [ini=Dorothy.userIniPath] iniƒtƒ@ƒCƒ‹‚ÌƒpƒX–”‚ÍIniƒIƒuƒWƒFƒNƒg
+	 */
+	Utils.saveIni = function(data, ini){
+		if(typeof data != 'object') return;
+		ini = nameOf(ini) == 'Ini' ? ini : new Ini(ini && Utils.expandPath(ini) || Utils.getUserIniPath());
+		var v, secs = ini.readSections();
+		for(var i in secs){
+			ini.eraseSection(secs[i]);
+		}
+		
+		for(var sec in data){
+			if(typeof data[sec] == 'object'){
+				for(var key in data[sec]){
+					v = data[sec][key];
+					if(isUndefined(v)) continue;
+					ini.write(sec, key, v);
+				}
+			}
+		}
+		ini.update();
+	};
+	
+	/**
+	 * iniƒtƒ@ƒCƒ‹‚Ü‚½JSONƒtƒ@ƒCƒ‹‚©‚çİ’è’l‚ğ“Ç‚İ‚İ
+	 * @param {Object} [def] ƒfƒtƒHƒ‹ƒg’l
+	 * @param {string|Ini} [ini=Dorothy.userIniPath] iniƒtƒ@ƒCƒ‹‚ÌƒpƒX–”‚ÍIniƒIƒuƒWƒFƒNƒgA–”‚ÍJSONƒtƒ@ƒCƒ‹‚ÌƒpƒX
+	 * @param {...*} var_args JSONƒtƒ@ƒCƒ‹‚Ìê‡‚ÉJSON.load‚É“n‚·ˆø”
+	 * @return {Object}
+	 */
+	Utils.loadOption = function(def, ini, var_args){
+		if(/\.json$/.test(ini)){
+			common_load('json');
+			var obj = Utils.apply(JSON.load, JSON, [ini].concat(arguments.slice(2))) || {};
+			return typeof def == 'object' ? Utils.extend(true, {}, def, obj) : obj;
+		}else{
+			return Utils.loadIni(def, ini);
+		}
+	};
 
 	/**
-	 * æ—¥æ™‚ã‚’è¡¨ã™æ–‡å­—åˆ—ã‚’Irvineã§ä½¿ç”¨ã•ã‚Œã¦ã„ã‚‹TDateTimeã®æ•°å€¤ã«å¤‰æ›ã—ã¾ã™
-	 * @param {string} str ã€Œyyyy/mm/dd hh:nn:ssã€ã¾ãŸã¯ã€Œhh:nn:ssã€å½¢å¼ã®æ–‡å­—åˆ—
-	 * @return {number} TDateTimeã®æ•°å€¤
+	 * “ú‚ğ•\‚·•¶š—ñ‚ğIrvine‚Åg—p‚³‚ê‚Ä‚¢‚éTDateTime‚Ì”’l‚É•ÏŠ·‚µ‚Ü‚·
+	 * @param {string} str uyyyy/mm/dd hh:nn:ssv‚Ü‚½‚Íuhh:nn:ssvŒ`®‚Ì•¶š—ñ
+	 * @return {number} TDateTime‚Ì”’l
 	 */
 	Utils.strToDateTime = function(str){
 		var d = new Date(),
-			oneday = 86400000, //ä¸€æ—¥
-			unixDateDelta = 25569, //UnixDateDelta[UNIXæ™‚é–“ã¨TDateTimeã¨ã®å·®]
-			offset = d.getTimezoneOffset() * 60 * 1000; //ä¸–ç•Œå”å®šæ™‚åˆ»(UTC)ã¨ã®å·®
+			oneday = 86400000, //ˆê“ú
+			unixDateDelta = 25569, //UnixDateDelta[UNIXŠÔ‚ÆTDateTime‚Æ‚Ì·]
+			offset = d.getTimezoneOffset() * 60 * 1000; //¢ŠE‹¦’è(UTC)‚Æ‚Ì·
 		if(/^((\d{4})\/(\d+)\/(\d+))?\s*((\d+):(\d+):(\d+))?$/.test(str)){
 			if(RegExp.$1){
 				d.setYear(RegExp.$2);
@@ -653,25 +730,25 @@
 	};
 
 	/**
-	 * Irvineã§ä½¿ç”¨ã•ã‚Œã¦ã„ã‚‹TDateTimeã®æ•°å€¤ã‚’æ—¥æ™‚ã‚’è¡¨ã™æ–‡å­—åˆ—ã«å¤‰æ›ã—ã¾ã™
-	 * @param {number} n TDateTimeã®æ•°å€¤
-	 * @param {string=} formatStr Dateã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«ã‚ˆã‚‹æ–‡å­—åˆ—å¤‰æ›æ™‚ã®æ›¸å¼
-	 * @return {string} æ—¥æ™‚ã‚’è¡¨ã™æ–‡å­—åˆ—
+	 * Irvine‚Åg—p‚³‚ê‚Ä‚¢‚éTDateTime‚Ì”’l‚ğ“ú‚ğ•\‚·•¶š—ñ‚É•ÏŠ·‚µ‚Ü‚·
+	 * @param {number} n TDateTime‚Ì”’l
+	 * @param {string=} formatStr DateƒIƒuƒWƒFƒNƒg‚É‚æ‚é•¶š—ñ•ÏŠ·‚Ì‘®
+	 * @return {string} “ú‚ğ•\‚·•¶š—ñ
 	 */
 	Utils.dateTimeToStr = function(n, formatStr){
 		var d = new Date();
 		if(formatStr) d.format = formatStr;
-		d.setTime((n - 25569) * 86400000 + (d.getTimezoneOffset() * 60 * 1000)); // (datatime - UnixDateDelta[UNIXæ™‚é–“-TDateTime]) * ä¸€æ—¥ + ä¸–ç•Œå”å®šæ™‚åˆ»(UTC)ã¨ã®å·®
+		d.setTime((n - 25569) * 86400000 + (d.getTimezoneOffset() * 60 * 1000)); // (datatime - UnixDateDelta[UNIXŠÔ-TDateTime]) * ˆê“ú + ¢ŠE‹¦’è(UTC)‚Æ‚Ì·
 		return d.toString();
 	};
 
 	/**
-	 * folderdataãŒå­˜åœ¨ã—ãªã„å ´åˆã«folderdataã‚’å®šç¾©ã—ã¾ã™
+	 * folderdata‚ª‘¶İ‚µ‚È‚¢ê‡‚Éfolderdata‚ğ’è‹`‚µ‚Ü‚·
 	 */
 	Utils.setFolderData = function(){
 		if(typeof folderdata == 'object' && nameOf(folderdata) == 'IrvineFolderData') return;
 		
-		if(!Utils.queueFolder) throw Utils.showError('Utils.queueFolderãŒç©º', 'Utils.dms', '.setFolderData');
+		if(!Utils.queueFolder) throw Utils.showError('Utils.queueFolder‚ª‹ó', 'Utils.dms', '.setFolderData');
 		
 		var folder;
 		var nowTime = Utils.strToDateTime(new Date().toString());
@@ -702,7 +779,7 @@
 			folder = {Values: v};
 		}
 		
-		//å‹å¤‰æ›ã¯folderdataå´ãŒã‚„ã£ã¦ãã‚Œã‚‹
+		//Œ^•ÏŠ·‚Ífolderdata‘¤‚ª‚â‚Á‚Ä‚­‚ê‚é
 		//folderdata.AbsolutePath        = folder.AbsolutePath;
 		folderdata.Agent               = folder.Values['agent'];
 		folderdata.AutoRemoveFolder    = folder.Values['autoremovefolder'] ;
@@ -788,7 +865,7 @@
 		folderdata.SplitCount          = folder.Values['splitcount'];
 		folderdata.StorageTrashCount   = folder.Values['storagetrashcount'];
 		folderdata.TryConnect          = folder.Values['tryconnect'] ;
-		folderdata.TryConnectCount     = folder.Values['tryconenctcount'];//iniã®æ–¹ã¯å…ƒã‹ã‚‰ç¶´ã‚ŠãŒé–“é•ã£ã¦ã„ã‚‹
+		folderdata.TryConnectCount     = folder.Values['tryconenctcount'];//ini‚Ì•û‚ÍŒ³‚©‚ç’Ô‚è‚ªŠÔˆá‚Á‚Ä‚¢‚é
 		folderdata.TryConnectWait      = folder.Values['tryconnectwait'];
 		folderdata.TryResume           = folder.Values['tryresume'] ;
 		folderdata.UrlEncode           = folder.Values['urlencode'] ;
@@ -810,11 +887,11 @@
 	};
 	
 	/**
-	 * æŒ‡å®šã—ãŸã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã‚’å–å¾—ã—ã¾ã™  
-	 * Irvineã¨Dorothy2ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã«å¯¾å¿œã—ã¦ã„ã¾ã™
+	 * w’è‚µ‚½ƒXƒNƒŠƒvƒg‚Ìƒo[ƒWƒ‡ƒ“‚ğæ“¾‚µ‚Ü‚·  
+	 * Irvine‚ÆDorothy2‚ÌƒXƒNƒŠƒvƒg‚É‘Î‰‚µ‚Ä‚¢‚Ü‚·
 	 * @function
-	 * @param {string} path ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ãƒ•ãƒ«ãƒ‘ã‚¹
-	 * @return {string|number} ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ æ•°å€¤ã«å¤‰æ›å¯èƒ½ãªå ´åˆã¯æ•°å€¤ãã‚Œä»¥å¤–ã¯æ–‡å­—åˆ—
+	 * @param {string} path ƒXƒNƒŠƒvƒg‚Ìƒtƒ‹ƒpƒX
+	 * @return {string|number} ƒXƒNƒŠƒvƒg‚Ìƒo[ƒWƒ‡ƒ“ ”’l‚É•ÏŠ·‰Â”\‚Èê‡‚Í”’l‚»‚êˆÈŠO‚Í•¶š—ñ
 	 */
 	Utils.getScriptVersion = (function(){
 		var cache = {};
@@ -842,8 +919,8 @@
 	})();
 
 	/**
-	 * å®Ÿè¡Œç’°å¢ƒåˆ¥ã«é©åˆ‡ãªã‚¢ã‚¤ãƒ†ãƒ ã®ä¿å­˜ãƒ‘ã‚¹ã‚’å–å¾—ã—ã¾ã™  
-	 * ç›¸å¯¾ãƒ‘ã‚¹ã ã£ãŸå ´åˆã¯çµ¶å¯¾ãƒ‘ã‚¹ã«ãªã‚‹ã¾ã§é †ã«ä¸Šä½ã‚­ãƒ¥ãƒ¼ãƒ•ã‚©ãƒ«ãƒ€ã®ä¿å­˜ãƒ‘ã‚¹ã¨é€£çµã•ã›ã¦ã„ãã¾ã™
+	 * ÀsŠÂ‹«•Ê‚É“KØ‚ÈƒAƒCƒeƒ€‚Ì•Û‘¶æ‚ÌƒpƒX‚ğæ“¾‚µ‚Ü‚·  
+	 * ‘Š‘ÎƒpƒX‚¾‚Á‚½ê‡‚Íâ‘ÎƒpƒX‚É‚È‚é‚Ü‚Å‡‚ÉãˆÊƒLƒ…[ƒtƒHƒ‹ƒ_‚Ì•Û‘¶ƒpƒX‚Æ˜AŒ‹‚³‚¹‚Ä‚¢‚«‚Ü‚·
 	 * @return {string}
 	 */
 	Utils.getSavePath = function(){
@@ -852,12 +929,12 @@
 		}
 		var ipath = typeof item != 'undefined' ? item.folder : '';
 		if(/^[a-z]:/i.test(ipath)){
-			ipath += "\\";//C: -> C:\  \ãŒäºŒé‡ã«ãªã£ã¦ã‚‚å•é¡Œãªã„
+			ipath += "\\";//C: -> C:\  \‚ª“ñd‚É‚È‚Á‚Ä‚à–â‘è‚È‚¢
 			return new Directory(ipath).path;
 		}
 	
 		
-		//çµ¶å¯¾ãƒ‘ã‚¹ã«ãªã‚‹ã¾ã§é †ã«ä¸Šä½ã‚­ãƒ¥ãƒ¼ãƒ•ã‚©ãƒ«ãƒ€ã‹ã‚‰ä¿å­˜ãƒ‘ã‚¹ã‚’å–å¾—
+		//â‘ÎƒpƒX‚É‚È‚é‚Ü‚Å‡‚ÉãˆÊƒLƒ…[ƒtƒHƒ‹ƒ_‚©‚ç•Û‘¶ƒpƒX‚ğæ“¾
 		var path;
 		if(Utils.isDOA && (typeof folderdata.Folder == 'undefined' || !folderdata.Folder)){
 			var folder = new ActiveXObject('Irvine.Folder');
@@ -882,40 +959,63 @@
 		return new Directory(path).path;
 	};
 
+	/**
+	 * path‚ğÀsŠÂ‹«•Ê‚É“KØ‚È•Û‘¶æ‚Ìâ‘ÎƒpƒX‚É•ÏŠ·‚µ‚Ü‚·  
+	 * Šù‚Éâ‘ÎƒpƒX‚¾‚Á‚½ê‡‚Í‰½‚à‚µ‚Ü‚¹‚ñ  
+	 * ‚½‚¾‚µ 'C:\aaa\..\bbb\' ‚Ì‚æ‚¤‚Èw’è‚Ìê‡‚Í "C:\bbb\' ‚É•ÏŠ·‚³‚ê‚Ü‚·  
+	 * base‚ğw’è‚µ‚½ê‡‚Íbase‚ğŠî€ƒpƒX‚Æ‚µ‚Äg—p‚µ‚Ü‚·  
+	 * ’Pƒ‚É˜AŒ‹‚³‚¹‚Ä‚¢‚é‚¾‚¯‚È‚Ì‚ÅŠî€ƒpƒX‚Éƒtƒ@ƒCƒ‹–¼‚ğŠÜ‚Ü‚¹‚È‚¢‚Å‰º‚³‚¢
+	 * @param {string} [path=''] •ÏŠ·‚·‚éƒpƒX
+	 * @param {string} [base=''] Šî€ƒpƒX
+	 * @return {string}
+	 */
+	Utils.expandPath = function(path, base){
+		path = Utils.toStr(path || '');
+		base = base || '';
+		if(!/^[a-z]:\\/i.test(path)){
+			if(!base || !/^[a-z]:\\/i.test( (path = Utils.toStr(base) + "\\" + path) )){
+				path = Utils.getSavePath() + path;
+			}
+		}
+		var i = path.lastIndexOf("\\");
+		var folder = path.slice(0, i + 1);
+		var file = path.slice(i + 1);
+		return new Directory(folder).path + file;
+	};
 
 //======================================Dorothy=======================================================
 	/**
-	 * å®Ÿè¡Œç’°å¢ƒãŒDorothy2Aãªã‚‰ã°true
+	 * ÀsŠÂ‹«‚ªDorothy2A‚È‚ç‚Îtrue
 	 * @type {boolean}
 	 */
 	Utils.isDorothy2A = false;
 
 	/**
-	 * å®Ÿè¡Œç’°å¢ƒãŒDorothy2setãªã‚‰ã°true
+	 * ÀsŠÂ‹«‚ªDorothy2set‚È‚ç‚Îtrue
 	 * @type {boolean}
 	 */
 	Utils.isDorothy2set = false;
 
 	/**
-	 * å®Ÿè¡Œç’°å¢ƒãŒOnListMenuClickã®Dorothy2set(ã€ŒDorothy2ã‚µã‚¤ãƒˆè¨­å®šã€)ãªã‚‰ã°true
+	 * ÀsŠÂ‹«‚ªOnListMenuClick‚ÌDorothy2set(uDorothy2ƒTƒCƒgİ’èv)‚È‚ç‚Îtrue
 	 * @type {boolean}
 	 */
 	Utils.isDorothy2setList = false;
 
 	/**
-	 * å®Ÿè¡Œç’°å¢ƒãŒDOAãªã‚‰ã°true
+	 * ÀsŠÂ‹«‚ªDOA‚È‚ç‚Îtrue
 	 * @type {boolean}
 	 */
 	Utils.isDOA = false;
 
 	/**
-	 * å®Ÿè¡Œç’°å¢ƒãŒDorothy2Rãªã‚‰ã°true
+	 * ÀsŠÂ‹«‚ªDorothy2R‚È‚ç‚Îtrue
 	 * @type {boolean}
 	 */
 	Utils.isRentan = typeof Dorothy.rVersion != 'undefined';
 
 	/**
-	 * folderdata.Postã®ã‚³ãƒ¡ãƒ³ãƒˆã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‹ã‚‰å–å¾—ã—ãŸã‚­ãƒ¥ãƒ¼ãƒ•ã‚©ãƒ«ãƒ€ã®ãƒ‘ã‚¹
+	 * folderdata.Post‚ÌƒRƒƒ“ƒgƒIƒvƒVƒ‡ƒ“‚©‚çæ“¾‚µ‚½ƒLƒ…[ƒtƒHƒ‹ƒ_‚ÌƒpƒX
 	 * @type {string}
 	 */
 	Utils.queueFolder = '';
@@ -944,12 +1044,12 @@
 				Utils.queueFolder = DOA.CurrentQueueFolder;
 				break;
 			default:
-				throw Utils.showError('ä¸æ˜ãªå®Ÿè¡Œç’°å¢ƒ: ' + WScript.ScriptName, 'Utils.dms', 'WScript.ScriptName');
+				throw Utils.showError('•s–¾‚ÈÀsŠÂ‹«: ' + WScript.ScriptName, 'Utils.dms', 'WScript.ScriptName');
 		}
 	})();
 
 	/**
-	 * ç¾åœ¨ã®ã‚¢ã‚¤ãƒ†ãƒ ã®Irvineã®ã‚­ãƒ¥ãƒ¼ãƒ•ã‚©ãƒ«ãƒ€ã®ãƒ‘ã‚¹ã‚’å–å¾—ã—ã¾ã™
+	 * Œ»İ‚ÌƒAƒCƒeƒ€‚ÌIrvine‚ÌƒLƒ…[ƒtƒHƒ‹ƒ_‚ÌƒpƒX‚ğæ“¾‚µ‚Ü‚·
 	 * @return {string}
 	 */
 	Utils.getQueueFolderPath = function(){
@@ -965,7 +1065,7 @@
 	};
 
 	/**
-	 * Dorothy.userPathã‚’å–å¾—ã—ã¾ã™ Dorothy.userPathãŒä½¿ãˆãªã„DOAç”¨
+	 * Dorothy.userPath‚ğæ“¾‚µ‚Ü‚· Dorothy.userPath‚ªg‚¦‚È‚¢DOA—p
 	 * @return {string}
 	 */
 	Utils.getUserPath = function(){
@@ -973,7 +1073,7 @@
 	};
 	
 	/**
-	 * Dorothy.userIniPathã‚’å–å¾—ã—ã¾ã™ Dorothy.userIniPathãŒä½¿ãˆãªã„DOAç”¨
+	 * Dorothy.userIniPath‚ğæ“¾‚µ‚Ü‚· Dorothy.userIniPath‚ªg‚¦‚È‚¢DOA—p
 	 * @return {string}
 	 */
 	Utils.getUserIniPath = function(){
@@ -981,7 +1081,7 @@
 	};
 	
 	/**
-	 * Dorothy2A.dmsã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã‚’å–å¾—ã—ã¾ã™ Dorothy2Rã®å ´åˆã¯Dorothy.rVersionã®å€¤ã‚’è¿”ã—ã¾ã™
+	 * Dorothy2A.dms‚Ìƒo[ƒWƒ‡ƒ“‚ğæ“¾‚µ‚Ü‚· Dorothy2R‚Ìê‡‚ÍDorothy.rVersion‚Ì’l‚ğ•Ô‚µ‚Ü‚·
 	 * @return {number}
 	 */
 	Utils.getVersionDorothy2A = function(){
@@ -989,7 +1089,7 @@
 	};
 	
 	/**
-	 * Dorothy2set.dmsã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã‚’å–å¾—ã—ã¾ã™ Dorothy2Rã®å ´åˆã¯Dorothy.rVersionã®å€¤ã‚’è¿”ã—ã¾ã™
+	 * Dorothy2set.dms‚Ìƒo[ƒWƒ‡ƒ“‚ğæ“¾‚µ‚Ü‚· Dorothy2R‚Ìê‡‚ÍDorothy.rVersion‚Ì’l‚ğ•Ô‚µ‚Ü‚·
 	 * @return {number}
 	 */
 	Utils.getVersionDorothy2set = function(){
@@ -997,7 +1097,7 @@
 	};
 	
 	/**
-	 * DOA.dmsã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã‚’å–å¾—ã—ã¾ã™ Dorothy2Rã®å ´åˆã¯Dorothy.rVersionã®å€¤ã‚’è¿”ã—ã¾ã™
+	 * DOA.dms‚Ìƒo[ƒWƒ‡ƒ“‚ğæ“¾‚µ‚Ü‚· Dorothy2R‚Ìê‡‚ÍDorothy.rVersion‚Ì’l‚ğ•Ô‚µ‚Ü‚·
 	 * @return {number}
 	 */
 	Utils.getVersionDOA = function(){
@@ -1006,26 +1106,26 @@
 	
 	/**
 	 * <pre>
-	 * DOAã‚¹ã‚¯ãƒªãƒ—ãƒˆç”¨
-	 * DOA.statusã‚’DOA_ITã«ã—ã€itemã®ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã«é©åˆ‡ã«DOAã®å„å€¤ã‚’è¨­å®šã—ã¾ã™
-	 *  DOA.nameãŒç©ºã§ã¯ãªã„ã®ãªã‚‰    item.filename = DOA.name
-	 *  DOA.commentãŒç©ºã§ã¯ãªã„ã®ãªã‚‰ item.comment += DOA.comment
-	 *  DOA.sizeãŒ123.4MB ç­‰ã®å½¢å¼ã®æ–‡å­—åˆ—(/^([\d\.]+)([KMG])?(B|Byte)?$/i)ãªã‚‰ã°
-	 *   ãƒã‚¤ãƒˆå€¤ã«å¤‰æ›ã—ã¦ item.filesize ã«è¨­å®šã—ã¾ã™
+	 * DOAƒXƒNƒŠƒvƒg—p
+	 * DOA.status‚ğDOA_IT‚É‚µAitem‚ÌƒvƒƒpƒeƒB‚É“KØ‚ÉDOA‚ÌŠe’l‚ğİ’è‚µ‚Ü‚·
+	 *  DOA.name‚ª‹ó‚Å‚Í‚È‚¢‚Ì‚È‚ç    item.filename = DOA.name
+	 *  DOA.comment‚ª‹ó‚Å‚Í‚È‚¢‚Ì‚È‚ç item.comment += DOA.comment
+	 *  DOA.size‚ª123.4MB “™‚ÌŒ`®‚Ì•¶š—ñ(/^([\d\.]+)([KMG])?(B|Byte)?$/i)‚È‚ç‚Î
+	 *   ƒoƒCƒg’l‚É•ÏŠ·‚µ‚Ä item.filesize ‚Éİ’è‚µ‚Ü‚·
 	 * </pre>
 	 */
 	Utils.setDOA_IT = function(){
-		if(!Utils.isDOA) throw Utils.showError('.setDOA_IT()ã¯ DOA ã§ã—ã‹ä½¿ç”¨ã§ãã¾ã›ã‚“', 'Utils.dms', '.setDOA_IT');
+		if(!Utils.isDOA) throw Utils.showError('.setDOA_IT()‚Í DOA ‚Å‚µ‚©g—p‚Å‚«‚Ü‚¹‚ñ', 'Utils.dms', '.setDOA_IT');
 
 		if(typeof DOA_IT != 'number' || typeof item != 'object' || nameOf(item) != 'IrvineItem'){
 			if(Dorothy.isRentan){
 				if(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2R_doa_list.dms') < 20141124){
-					throw Utils.showError('å¤ã„ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®Dorothy2R_doa_list.dmsãŒä½¿ç”¨ã•ã‚Œã¦ã„ã¾ã™ã€‚version 20141124ä»¥ä¸Šã‚’ä½¿ç”¨ã—ã¦ãã ã•ã„', 'Utils.dms', '.setDOA_IT');
+					throw Utils.showError('ŒÃ‚¢ƒo[ƒWƒ‡ƒ“‚ÌDorothy2R_doa_list.dms‚ªg—p‚³‚ê‚Ä‚¢‚Ü‚·Bversion 20141124ˆÈã‚ğg—p‚µ‚Ä‚­‚¾‚³‚¢', 'Utils.dms', '.setDOA_IT');
 				}
 			}else if(Utils.getVersionDOA() < 0.26){
-				throw Utils.showError('å¤ã„ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®DOA.dmsãŒä½¿ç”¨ã•ã‚Œã¦ã„ã¾ã™ã€‚version 0.26ä»¥ä¸Šã‚’ä½¿ç”¨ã—ã¦ãã ã•ã„', 'Utils.dms', '.setDOA_IT');
+				throw Utils.showError('ŒÃ‚¢ƒo[ƒWƒ‡ƒ“‚ÌDOA.dms‚ªg—p‚³‚ê‚Ä‚¢‚Ü‚·Bversion 0.26ˆÈã‚ğg—p‚µ‚Ä‚­‚¾‚³‚¢', 'Utils.dms', '.setDOA_IT');
 			}
-			throw Utils.showError('æœªçŸ¥ã®ã‚¨ãƒ©ãƒ¼ã€‚DOA_ITã¾ãŸã¯itemãŒæ­£ã—ãå®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“', 'Utils.dms', '.setDOA_IT');
+			throw Utils.showError('–¢’m‚ÌƒGƒ‰[BDOA_IT‚Ü‚½‚Íitem‚ª³‚µ‚­’è‹`‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ', 'Utils.dms', '.setDOA_IT');
 		}
 		
 		DOA.status = DOA_IT;
@@ -1070,7 +1170,7 @@
 			
 			return function(){
 				if(typeof folderdata.Post == 'undefined' || typeof item.comment == 'undefined'){
-					Utils.showError('folderdata.Postã¾ãŸã¯item.commentãŒæ­£ã—ãå®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“', 'Utils.dms', 'loadOption');
+					Utils.showError('folderdata.Post‚Ü‚½‚Íitem.comment‚ª³‚µ‚­’è‹`‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ', 'Utils.dms', 'loadOption');
 				}
 				if(!cache.loaded || cache.folderPost != folderdata.Post || cache.itemComment != item.comment){
 					var opt = {};
@@ -1085,12 +1185,12 @@
 			};
 		})();
 		/**
-		 * folderdata.Postã¨item.commentã«è¨­å®šã•ã‚ŒãŸã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‹ã‚‰æŒ‡å®šã•ã‚ŒãŸåå‰ã®ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚’å–å¾—ã—ã¾ã™  
-		 * ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã®å„å€¤ã¯é©åˆ‡ãªãƒ—ãƒªãƒŸãƒ†ã‚£ãƒ–å€¤ã«å¤‰æ›ã•ã‚Œã¾ã™
+		 * folderdata.Post‚Æitem.comment‚Éİ’è‚³‚ê‚½ƒIƒvƒVƒ‡ƒ“‚©‚çw’è‚³‚ê‚½–¼‘O‚ÌƒIƒvƒVƒ‡ƒ“‚ğæ“¾‚µ‚Ü‚·  
+		 * ƒIƒvƒVƒ‡ƒ“‚ÌŠe’l‚Í“KØ‚ÈƒvƒŠƒ~ƒeƒBƒu’l‚É•ÏŠ·‚³‚ê‚Ü‚·
 		 * @function
 		 * @template T
-		 * @param {string} key ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã®åå‰
-		 * @param {T=} def æŒ‡å®šã•ã‚ŒãŸã‚ªãƒ—ã‚·ãƒ§ãƒ³ãŒå­˜åœ¨ã—ãªã‹ã£ãŸå ´åˆã«è¿”ã™å€¤
+		 * @param {string} key ƒIƒvƒVƒ‡ƒ“‚Ì–¼‘O
+		 * @param {T=} def w’è‚³‚ê‚½ƒIƒvƒVƒ‡ƒ“‚ª‘¶İ‚µ‚È‚©‚Á‚½ê‡‚É•Ô‚·’l
 		 * @return {string|number|boolean|null|undefined|T}
 		 */
 		Utils.getCommentOption = (function(loadOption){
@@ -1101,11 +1201,11 @@
 		})(loadOption);
 		
 		/**
-		 * folderdata.Postã¨item.commentã«è¨­å®šã•ã‚ŒãŸå…¨ã¦ã®ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚’å–å¾—ã—ã¾ã™  
-		 * ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã®å„å€¤ã¯é©åˆ‡ãªãƒ—ãƒªãƒŸãƒ†ã‚£ãƒ–å€¤ã«å¤‰æ›ã•ã‚Œã¾ã™  
-		 * defã‚’æŒ‡å®šã—ãŸå ´åˆã¯å–å¾—ã—ãŸã‚ªãƒ—ã‚·ãƒ§ãƒ³ã¨defã‚’ãƒãƒ¼ã‚¸ã—ãŸæ–°ã—ã„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’è¿”ã—ã¾ã™
+		 * folderdata.Post‚Æitem.comment‚Éİ’è‚³‚ê‚½‘S‚Ä‚ÌƒIƒvƒVƒ‡ƒ“‚ğæ“¾‚µ‚Ü‚·  
+		 * ƒIƒvƒVƒ‡ƒ“‚ÌŠe’l‚Í“KØ‚ÈƒvƒŠƒ~ƒeƒBƒu’l‚É•ÏŠ·‚³‚ê‚Ü‚·  
+		 * def‚ğw’è‚µ‚½ê‡‚Íæ“¾‚µ‚½ƒIƒvƒVƒ‡ƒ“‚Ædef‚ğƒ}[ƒW‚µ‚½V‚µ‚¢ƒIƒuƒWƒFƒNƒg‚ğ•Ô‚µ‚Ü‚·
 		 * @function
-		 * @param {Object=} def ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤
+		 * @param {Object=} def ƒfƒtƒHƒ‹ƒg’l
 		 * @return {Object}
 		 */
 		Utils.getCommentOptions = (function(loadOption){
@@ -1119,9 +1219,9 @@
 
 
 	/** 
-	 * ç’°å¢ƒåˆ¥ã®å·®ç•°ãŒãªã‚‹ã¹ãå°‘ãªããªã‚‹æ§˜ã«Dorothyã®é–¢æ•°ç­‰ã‚’å†å®šç¾©ã—ã¾ã™  
-	 * DOAã‚„Dorothy2Aã‚„Dorothy2setç­‰ã®ç’°å¢ƒåˆ¥ã«å­˜åœ¨ã—ãŸã‚Šã—ãªã‹ã£ãŸã‚Šã™ã‚‹ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£ã‚„é–¢æ•°ç­‰ã‚’  
-	 * ãªã‚‹ã¹ãå…¨ã¦ã®ç’°å¢ƒã§ä½¿ç”¨ã§ãã‚‹ã‚ˆã†ã«ã—ã¾ã™
+	 * ŠÂ‹«•Ê‚Ì·ˆÙ‚ª‚È‚é‚×‚­­‚È‚­‚È‚é—l‚ÉDorothy‚ÌŠÖ”“™‚ğÄ’è‹`‚µ‚Ü‚·  
+	 * DOA‚âDorothy2A‚âDorothy2set“™‚ÌŠÂ‹«•Ê‚É‘¶İ‚µ‚½‚è‚µ‚È‚©‚Á‚½‚è‚·‚éƒvƒƒpƒeƒB‚âŠÖ”“™‚ğ  
+	 * ‚È‚é‚×‚­‘S‚Ä‚ÌŠÂ‹«‚Åg—p‚Å‚«‚é‚æ‚¤‚É‚µ‚Ü‚·
 	 */
 	Utils.redefineDorothy = function(){
 		if(Utils.isRentan){
@@ -1174,7 +1274,7 @@
 				Dorothy.version = '' + Utils.getVersionDorothy2A();
 				Dorothy.temp = dorothy2_temp;
 			}
-			//ã“ã‚Œã‚‰ã®å€¤ã¯this.mainé–¢æ•°å†…ã§Utils.getUserPathã‚„Utils.getUserIniPathç­‰ã‚’ç”¨ã„ã¦æ¯å›æ‰‹å‹•ã§è¨­å®šã—ã¦ãã ã•ã„
+			//‚±‚ê‚ç‚Ì’l‚Íthis.mainŠÖ”“à‚ÅUtils.getUserPath‚âUtils.getUserIniPath“™‚ğ—p‚¢‚Ä–ˆ‰ñè“®‚Åİ’è‚µ‚Ä‚­‚¾‚³‚¢
 			//Dorothy.userPath
 			//Dorothy.userIniPath
 		}else if(Utils.isDorothy2set){
@@ -1203,7 +1303,7 @@
 						}
 					};
 				}
-				//ç„¡ç†çŸ¢ç† é¸æŠã‚¢ã‚¤ãƒ†ãƒ å–å¾—
+				//–³—–î— ‘I‘ğƒAƒCƒeƒ€æ“¾
 				item = new IrvineItem;
 				var count = Irvine.ItemCount;
 				for(var i = 0; i < count; i++){

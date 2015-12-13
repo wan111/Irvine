@@ -11,29 +11,29 @@ Utilsオブジェクト
 
    * メンバー:  
 
-      * (定数) UNDEFINED : {undefined}  
+      * < static, constant > UNDEFINED : {undefined}  
 
-      * isDorothy2A : {boolean}  
+      * < static > isDorothy2A : {boolean}  
          実行環境がDorothy2Aならばtrue  
 
-      * isDorothy2set : {boolean}  
+      * < static > isDorothy2set : {boolean}  
          実行環境がDorothy2setならばtrue  
 
-      * isDorothy2setList : {boolean}  
+      * < static > isDorothy2setList : {boolean}  
          実行環境がOnListMenuClickのDorothy2set(「Dorothy2サイト設定」)ならばtrue  
 
-      * isDOA : {boolean}  
+      * < static > isDOA : {boolean}  
          実行環境がDOAならばtrue  
 
-      * isRentan : {boolean}  
+      * < static > isRentan : {boolean}  
          実行環境がDorothy2Rならばtrue  
 
-      * queueFolder : {string}  
+      * < static > queueFolder : {string}  
          folderdata.Postのコメントオプションから取得したキューフォルダのパス  
 
    * メソッド:  
 
-      * error(message, fileName, line, name) -> {String}  
+      * < static > error(message, fileName, line, name) → {String}  
          エラーメッセージを整形して返します
 
          * パラメータ:
@@ -50,7 +50,7 @@ Utilsオブジェクト
 
             * {String} : 整形した文字列のStringオブジェクト 各引数をプロパティに追加
 
-      * showError(message, fileName, line, name) -> {String}  
+      * < static > showError(message, fileName, line, name) → {String}  
          エラーメッセージを整形してalertで表示します
 
          * パラメータ:
@@ -67,7 +67,7 @@ Utilsオブジェクト
 
             * {String} : 整形した文字列のStringオブジェクト 各引数をプロパティに追加
 
-      * isStr(v) -> {boolean}  
+      * < static > isStr(v) → {boolean}  
          文字列として扱えるか判定します string String StringBufferならばtrue
 
          * パラメータ:
@@ -81,7 +81,7 @@ Utilsオブジェクト
 
             * {boolean}
 
-      * toStr(v) -> {string}  
+      * < static > toStr(v) → {string}  
          文字列に変換
 
          * パラメータ:
@@ -95,7 +95,7 @@ Utilsオブジェクト
 
             * {string}
 
-      * toNumber(v, def) -> {number|T}  
+      * < static > toNumber(v, def) → {number|T}  
          数値に変換 数値に変換できないものはNaNを返します。
 
          * パラメータ:
@@ -110,7 +110,7 @@ Utilsオブジェクト
 
             * {number|T}
 
-      * toInteger(v) -> {number}  
+      * < static > toInteger(v) → {number}  
          整数値に変換
 
          * パラメータ:
@@ -124,7 +124,7 @@ Utilsオブジェクト
 
             * {number}
 
-      * objToPrimitive(v) -> {string|number|boolean|null|undefined}  
+      * < static > objToPrimitive(v) → {string|number|boolean|null|undefined}  
          オブジェクトをプリミティブ値に変換
 
          * パラメータ:
@@ -138,7 +138,7 @@ Utilsオブジェクト
 
             * {string|number|boolean|null|undefined}
 
-      * strToPrimitive(s) -> {string|number|boolean|null|undefined}  
+      * < static > strToPrimitive(s) → {string|number|boolean|null|undefined}  
          文字列をプリミティブ値に変換
          例: "true" -> true
 
@@ -153,7 +153,7 @@ Utilsオブジェクト
 
             * {string|number|boolean|null|undefined}
 
-      * extractName(s) -> {string}  
+      * < static > extractName(s) → {string}  
          渡された値からファイル名を取り出します
 
          * パラメータ:
@@ -167,7 +167,7 @@ Utilsオブジェクト
 
             * {string} : ファイル名
 
-      * extractExt(s) -> {string}  
+      * < static > extractExt(s) → {string}  
          渡された値から拡張子を取り出します
 
          * パラメータ:
@@ -181,7 +181,7 @@ Utilsオブジェクト
 
             * {string} : ファイル名
 
-      * formatTemplate(s, map) -> {string}  
+      * < static > formatTemplate(s, map) → {string}  
          渡された文字列から 置換変数(%～%) を置換して整形します  
          mapのプロパティと同名の置換変数をその値で置き換えます mapに存在しない名前の置換変数は削除されます
 
@@ -197,7 +197,7 @@ Utilsオブジェクト
 
             * {string} : 整形した文字列
 
-      * call(fn, selfObj, var_args) -> {*}  
+      * < static > call(fn, selfObj, var_args) → {*}  
          .call()の代替 関数のモードを変更せずに呼び出します。 戻り値で渡される関数が内部で元とは別の関数として扱われるのを利用しています
 
          * パラメータ:
@@ -213,7 +213,7 @@ Utilsオブジェクト
 
             * {*} : 関数fnの返り値
 
-      * apply(fn, selfObj, argsArray) -> {*}  
+      * < static > apply(fn, selfObj, argsArray) → {*}  
          .apply()の代替 関数のモードを変更せずに呼び出します
 
          * パラメータ:
@@ -229,7 +229,7 @@ Utilsオブジェクト
 
             * {*} : 関数fnの返り値
 
-      * getObject(name, obj, def) -> {*}  
+      * < static > getObject(name, obj, def) → {*}  
          指定した完全修飾名のオブジェクトを取得します objを指定した場合はobjのプロパティから取得します
 
          * パラメータ:
@@ -245,7 +245,7 @@ Utilsオブジェクト
 
             * {*}
 
-      * keys(obj) -> {Array<string>}  
+      * < static > keys(obj) → {Array<string>}  
          オブジェクトの全てのプロパティ名を配列で返します。
 
          * パラメータ:
@@ -259,7 +259,7 @@ Utilsオブジェクト
 
             * {Array<string>}
 
-      * extend(var_args) -> {*}  
+      * < static > extend(var_args) → {*}  
          <pre>
          指定した最初のオブジェクトに複数のオブジェクトをマージして返します。
          オブジェクトの指定が一つだけの場合はその時のthisに対してマージします
@@ -293,23 +293,23 @@ Utilsオブジェクト
                  Obj.extend(source); //Objにsourceの内容をコピー
             ```  
 
-      * objCreate(ctorName, proto, prop) -> {Object}  
+      * < static > objCreate(ctorName, proto, prop) → {Object}  
          指定したプロトタイプとプロパティで新しいオブジェクトを生成します
 
          * パラメータ:
 
-         | 名前     | 型     | 引数   | 説明                                                                                                                                       |
-         |----------|--------|--------|--------------------------------------------------------------------------------------------------------------------------------------------|
-         | ctorName | string |        | 内部で使用するコンストラクタ関数の名前。 DMonkeyではprototypeは同名の関数同士で共有されます。 共有を避けたい場合は一意の名前にしてください |
-         | proto    | Object | 省略可 | 新しいオブジェクトのプロトタイプとなるオブジェクト                                                                                         |
-         | prop     | Object | 省略可 | このオブジェクトの各プロパティを新しいオブジェクトに追加する                                                                               |
+         | 名前     | 型     | 引数   | 説明                                                                                                                                              |
+         |----------|--------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+         | ctorName | string |        | 内部で使用するコンストラクタ関数の名前。<br>    DMonkeyではprototypeは同名の関数同士で共有されます。 共有を避けたい場合は一意の名前にしてください |
+         | proto    | Object | 省略可 | 新しいオブジェクトのプロトタイプとなるオブジェクト                                                                                                |
+         | prop     | Object | 省略可 | このオブジェクトの各プロパティを新しいオブジェクトに追加する                                                                                      |
          
 
          * 戻り値:   
 
             * {Object}
 
-      * inherits(childCtor, parentCtor)  
+      * < static > inherits(childCtor, parentCtor)  
          <pre>
          他のコンストラクタからプロトタイプを継承します。クラスの継承を擬似的に実現させます。
          親のprototypeに constructor プロパティを追加します。 親自身のコンストラクタ関数です。
@@ -354,7 +354,7 @@ Utilsオブジェクト
             Utils.inherits(Child, Parent);
             ```  
 
-      * mixin(dest, src)  
+      * < static > mixin(dest, src)  
          destオブジェクトにsrcオブジェクトの全てのメンバーをコピーします
 
          * パラメータ:
@@ -365,7 +365,7 @@ Utilsオブジェクト
          | src  | Object |      |
          
 
-      * bind(fn, selfObj, var_args) -> {function}  
+      * < static > bind(fn, selfObj, var_args) → {function}  
          thisや引数が束縛された新たな関数を生成して返します
 
          * パラメータ:
@@ -381,7 +381,56 @@ Utilsオブジェクト
 
             * {function}
 
-      * strToDateTime(str) -> {number}  
+      * < static > loadIni(def, ini) → {Object}  
+         iniファイルから設定値を読み込みオブジェクトで返します  
+         各設定値は適切なプリミティブ値に変換されます  
+         iniはiniファイルのパス又はIniオブジェクトを渡してください  
+         Iniオブジェクトを渡した場合はそこから設定値を読み込みます  
+         defを指定した場合は取得したオプションとdefをマージした新しいオブジェクトを返します
+
+         * パラメータ:
+
+         | 名前 | 型         | 引数   | 既定値              | 説明                                 |
+         |------|------------|--------|---------------------|--------------------------------------|
+         | def  | Object     | 省略可 |                     | デフォルト値                         |
+         | ini  | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト |
+         
+
+         * 戻り値:   
+
+            * {Object}
+
+      * < static > saveIni(data, ini)  
+         iniファイルに設定値を保存します  
+         dataオブジェクトに存在しないセクションやキーは削除されます  
+         iniはiniファイルのパス又はIniオブジェクトを渡してください  
+         Iniオブジェクトを渡した場合はそこに設定値を保存します。 Iniオブジェクトの内容は更新されます
+
+         * パラメータ:
+
+         | 名前 | 型         | 引数   | 既定値              | 説明                                          |
+         |------|------------|--------|---------------------|-----------------------------------------------|
+         | data | Object     |        |                     | iniファイルに保存する設定値を持つオブジェクト |
+         | ini  | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト          |
+         
+
+      * < static > loadOption(def, ini, var_args) → {Object}  
+         iniファイルまたJSONファイルから設定値を読み込み
+
+         * パラメータ:
+
+         | 名前     | 型         | 引数   | 既定値              | 説明                                                         |
+         |----------|------------|--------|---------------------|--------------------------------------------------------------|
+         | def      | Object     | 省略可 |                     | デフォルト値                                                 |
+         | ini      | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト、又はJSONファイルのパス |
+         | var_args | *          | 可変長 |                     | JSONファイルの場合にJSON.loadに渡す引数                      |
+         
+
+         * 戻り値:   
+
+            * {Object}
+
+      * < static > strToDateTime(str) → {number}  
          日時を表す文字列をIrvineで使用されているTDateTimeの数値に変換します
 
          * パラメータ:
@@ -395,7 +444,7 @@ Utilsオブジェクト
 
             * {number} : TDateTimeの数値
 
-      * dateTimeToStr(n, formatStr) -> {string}  
+      * < static > dateTimeToStr(n, formatStr) → {string}  
          Irvineで使用されているTDateTimeの数値を日時を表す文字列に変換します
 
          * パラメータ:
@@ -410,10 +459,10 @@ Utilsオブジェクト
 
             * {string} : 日時を表す文字列
 
-      * setFolderData()  
+      * < static > setFolderData()  
          folderdataが存在しない場合にfolderdataを定義します
 
-      * getScriptVersion(path) -> {string|number}  
+      * < static > getScriptVersion(path) → {string|number}  
          指定したスクリプトのバージョンを取得します  
          IrvineとDorothy2のスクリプトに対応しています
 
@@ -428,57 +477,76 @@ Utilsオブジェクト
 
             * {string|number} : スクリプトのバージョン 数値に変換可能な場合は数値それ以外は文字列
 
-      * getSavePath() -> {string}  
-         実行環境別に適切なアイテムの保存パスを取得します  
+      * < static > getSavePath() → {string}  
+         実行環境別に適切なアイテムの保存先のパスを取得します  
          相対パスだった場合は絶対パスになるまで順に上位キューフォルダの保存パスと連結させていきます
 
          * 戻り値:   
 
             * {string}
 
-      * getQueueFolderPath() -> {string}  
+      * < static > expandPath(path, base) → {string}  
+         pathを実行環境別に適切な保存先の絶対パスに変換します  
+         既に絶対パスだった場合は何もしません  
+         ただし 'C:\aaa\..\bbb\' のような指定の場合は "C:\bbb\' に変換されます  
+         baseを指定した場合はbaseを基準パスとして使用します  
+         単純に連結させているだけなので基準パスにファイル名を含ませないで下さい
+
+         * パラメータ:
+
+         | 名前 | 型     | 引数   | 既定値 | 説明         |
+         |------|--------|--------|--------|--------------|
+         | path | string | 省略可 | ''     | 変換するパス |
+         | base | string | 省略可 | ''     | 基準パス     |
+         
+
+         * 戻り値:   
+
+            * {string}
+
+      * < static > getQueueFolderPath() → {string}  
          現在のアイテムのIrvineのキューフォルダのパスを取得します
 
          * 戻り値:   
 
             * {string}
 
-      * getUserPath() -> {string}  
+      * < static > getUserPath() → {string}  
          Dorothy.userPathを取得します Dorothy.userPathが使えないDOA用
 
          * 戻り値:   
 
             * {string}
 
-      * getUserIniPath() -> {string}  
+      * < static > getUserIniPath() → {string}  
          Dorothy.userIniPathを取得します Dorothy.userIniPathが使えないDOA用
 
          * 戻り値:   
 
             * {string}
 
-      * getVersionDorothy2A() -> {number}  
+      * < static > getVersionDorothy2A() → {number}  
          Dorothy2A.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 
          * 戻り値:   
 
             * {number}
 
-      * getVersionDorothy2set() -> {number}  
+      * < static > getVersionDorothy2set() → {number}  
          Dorothy2set.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 
          * 戻り値:   
 
             * {number}
 
-      * getVersionDOA() -> {number}  
+      * < static > getVersionDOA() → {number}  
          DOA.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 
          * 戻り値:   
 
             * {number}
 
-      * setDOA_IT()  
+      * < static > setDOA_IT()  
          <pre>
          DOAスクリプト用
          DOA.statusをDOA_ITにし、itemのプロパティに適切にDOAの各値を設定します
@@ -488,7 +556,7 @@ Utilsオブジェクト
            バイト値に変換して item.filesize に設定します
          </pre>
 
-      * getCommentOption(key, def) -> {string|number|boolean|null|undefined|T}  
+      * < static > getCommentOption(key, def) → {string|number|boolean|null|undefined|T}  
          folderdata.Postとitem.commentに設定されたオプションから指定された名前のオプションを取得します  
          オプションの各値は適切なプリミティブ値に変換されます
 
@@ -504,7 +572,7 @@ Utilsオブジェクト
 
             * {string|number|boolean|null|undefined|T}
 
-      * getCommentOptions(def) -> {Object}  
+      * < static > getCommentOptions(def) → {Object}  
          folderdata.Postとitem.commentに設定された全てのオプションを取得します  
          オプションの各値は適切なプリミティブ値に変換されます  
          defを指定した場合は取得したオプションとdefをマージした新しいオブジェクトを返します
@@ -520,7 +588,7 @@ Utilsオブジェクト
 
             * {Object}
 
-      * redefineDorothy()  
+      * < static > redefineDorothy()  
          環境別の差異がなるべく少なくなる様にDorothyの関数等を再定義します  
          DOAやDorothy2AやDorothy2set等の環境別に存在したりしなかったりするプロパティや関数等を  
          なるべく全ての環境で使用できるようにします
@@ -531,3 +599,7 @@ Utilsオブジェクト
 * 2015/12/03  version 1.0  
    新規作成  
    DorothyEx.dmsのほぼ全ての機能もこちらに統合した  
+
+* 2015/12/12  version 1.1  
+   loadIni(), saveIni(), loadOption() expandPath() メソッドを新規追加。  
+   call(), apply()にてエラー処理を追加。 

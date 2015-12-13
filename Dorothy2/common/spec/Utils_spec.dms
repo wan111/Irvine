@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils_spec
-//version=1.0
+//version=1.1
 //hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
 //match=
 //author=wan
@@ -891,6 +891,157 @@ describe('Utils.bind', function(){
 	});
 });
 
+describe('ini, JSON', function(){
+	var iniPath = Dorothy.path + 'user\yasmine\Utils_test.ini',
+		jsonPath = Dorothy.path + 'user\yasmine\Utils_test.json',
+		iniFile = new File(iniPath),
+		jsonFile = new File(jsonPath),
+		iniStr = [
+			'[A]',
+			'a=abc',
+			'b=123',
+			'',
+			'[B]',
+			'c=true',
+			'd=false',
+			'e=null',
+			'',
+			'[C]',
+			'f=0x1F',
+			'g='
+		].join("\n"),
+		jsonStr = [
+			'{',
+			'  "A": {',
+			'    "a": "abc",',
+			'    "b": 123',
+			'  },',
+			'  "B": {',
+			'    "c": true,',
+			'    "d": false,',
+			'    "e": null',
+			'  },',
+			'  "C": {',
+			'    "f": 31,',
+			'    "g": ""',
+			'  }',
+			'}'
+		].join("\n"),
+		data = {
+			"A": {
+				"a": "abc",
+				"b": 123
+			},
+			"B": {
+				"c": true,
+				"d": false,
+				"e": null
+			},
+			"C": {
+				"f": 0x1F,
+				"g": ""
+			}
+		},
+		defData = {
+			"A": {"a": "a"},
+			"Z": {"z": 123}
+		},
+		data2 = {
+			"A": {
+				"a": "abc",
+				"b": 123
+			},
+			"B": {
+				"c": true,
+				"d": false,
+				"e": null
+			},
+			"C": {
+				"f": 0x1F,
+				"g": ""
+			},
+			"Z": {
+				"z": 123
+			}
+		};
+	afterEach(function(){
+		if(iniFile.exists()) iniFile.remove();
+		if(jsonFile.exists()) jsonFile.remove();
+	});
+	it('Utils.saveIni', function(){
+		expect(function(){Utils.saveIni(data, iniPath);}).not.toThrow();
+		expect(iniFile.exists()).toBeTruthy();
+		var s;
+		try{
+			iniFile.open('r');
+			s = iniFile.read();
+		}catch(e){
+			alert(e);
+		}finally{
+			iniFile.close();
+		}
+		var r = [
+			'[A]',
+			'a=abc',
+			'b=123',
+			'',
+			'[B]',
+			'c=true',
+			'd=false',
+			'e=null',
+			'',
+			'[C]',
+			'f=31',
+			'g=',
+			'',
+			''
+		].join("\n");
+		expect(s).toBe(r);
+	});
+	it('Utils.saveIni relative path', function(){
+		expect(function(){Utils.saveIni(data, iniFile.extractName());}).not.toThrow();
+		expect(iniFile.exists()).toBeTruthy();
+	});
+	it('Utils.loadIni', function(){
+		try{
+			iniFile.open('w');
+			iniFile.write(iniStr);
+		}catch(e){
+			alert(e);
+		}finally{
+			iniFile.close();
+		}
+		expect(Utils.loadIni(null, iniPath)).toEqual(data);
+		expect(Utils.loadIni(null, iniFile.extractName())).toEqual(data);
+		
+		var ini = new Ini(iniPath);
+		expect(Utils.loadIni(null, ini)).toEqual(data);
+		
+		
+		expect(Utils.loadIni(defData, iniPath)).toEqual(data2);
+		expect(Utils.loadIni(defData, ini)).toEqual(data2);
+	});
+	it('Utils.loadOption', function(){
+		try{
+			iniFile.open('w');
+			jsonFile.open('w');
+			iniFile.write(iniStr);
+			jsonFile.write(jsonStr);
+		}catch(e){
+			alert(e);
+		}finally{
+			iniFile.close();
+			jsonFile.close();
+		}
+		var ini = new Ini(iniPath);
+		expect(Utils.loadOption(null, iniPath)).toEqual(data);
+		expect(Utils.loadOption(defData, ini)).toEqual(data2);
+		iniFile.remove();
+		expect(Utils.loadOption(null, jsonPath)).toEqual(data);
+		expect(Utils.loadOption(defData, jsonPath)).toEqual(data2);
+	});
+});
+
 describe('TDateTime <--> ecma time', function(){
 	it('.strToDateTime', function(){
 		expect(Utils.strToDateTime('2013/05/23 20:18:07')).toBe(41417.8459143518485);
@@ -1077,7 +1228,7 @@ describe('Utils Dorothy', function(){
 		expect(Utils.getUserIniPath()).toBe(Dorothy.path + 'user\yasmine\yasmine.ini');
 	});
 
-	describe('getSavePath', function(){
+	describe('getSavePath, expandPath', function(){
 		var fpath, ipath;
 		beforeEach(function(){
 			fpath = folderdata.Folder;
@@ -1093,21 +1244,37 @@ describe('Utils Dorothy', function(){
 			folderdata.folder = 'C:\test\';
 			if(is2Set){
 				expect(Utils.getSavePath()).toBe(Dorothy.userPath);
+				expect(Utils.expandPath()).toBe(Dorothy.userPath);
 			}else{
 				expect(Utils.getSavePath()).toBe('C:\test\aaa\');
+				expect(Utils.expandPath()).toBe('C:\test\aaa\');
 				item.folder = '';
 				expect(Utils.getSavePath()).toBe('C:\test\');
+				expect(Utils.expandPath()).toBe('C:\test\');
 			}
+			expect(Utils.expandPath('C:\aaa\')).toBe('C:\aaa\');
 		});
 		
 		it('relative path', function(){
 			item.folder = 'aaa';
 			folderdata.folder = 'C:\test';
+			var fileName = 'test.txt';
 			if(is2Set){
 				expect(Utils.getSavePath()).toBe(Dorothy.userPath);
+				expect(Utils.expandPath()).toBe(Dorothy.userPath);
+				expect(Utils.expandPath(fileName)).toBe(Dorothy.userPath + fileName);
+				expect(Utils.expandPath('bbb\' + fileName)).toBe(Dorothy.userPath + 'bbb\' + fileName);
+				expect(Utils.expandPath('\bbb\'+ fileName)).toBe(Dorothy.userPath + 'bbb\' + fileName);
 			}else{
 				expect(Utils.getSavePath()).toBe('C:\test\aaa\');
+				expect(Utils.expandPath()).toBe('C:\test\aaa\');
+				expect(Utils.expandPath(fileName)).toBe('C:\test\aaa\' + fileName);
+				expect(Utils.expandPath('bbb\' + fileName)).toBe('C:\test\aaa\bbb\' + fileName);
+				expect(Utils.expandPath('\bbb\'+ fileName)).toBe('C:\test\aaa\bbb\' + fileName);
 			}
+			expect(Utils.expandPath(fileName, 'C:\')).toBe('C:\' + fileName);
+			expect(Utils.expandPath('bbb\' + fileName, 'C:\aaa')).toBe('C:\aaa\bbb\' + fileName);
+			expect(Utils.expandPath('C:\aaa\..\bbb\test.txt')).toBe('C:\bbb\test.txt');
 		});
 	});
 
