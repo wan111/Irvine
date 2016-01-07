@@ -1,10 +1,10 @@
 //Dorothy2
 //caption=Vimeo.com_w
 //version=1.0
-//hint=http://vimeo.com/
+//hint=
 //match=https?://(www\.|player\.)?vimeo(pro)?\.com/\w+
 //author=wan
-//path=program
+//path=DOA
 //priority=500
 //end
 
@@ -27,12 +27,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 function(){
-	user_program_load("vimeo_w");
+//コンストラクタ
+	user_program_load('vimeo_w');
 
+//メイン
+this.main = function(url,itemIndex,itemData){
+	Dorothy.userPath = Utils.getUserPath();
+	Dorothy.userIniPath = Utils.getUserIniPath();
 
 	var vimeo = new Vimeo();
 	
-	vimeo.get(urlinfo.url);
-	println(JSON.stringify(vimeo.info, null, "  "));
-	exit();
+};
+
+
+//デストラクタ
+this._ = function(){
+	
+};
 }

@@ -1,0 +1,31 @@
+//コメントのテスト
+{
+	//test
+  //test
+  	//test	//test
+	"Quality":{
+		"priority":"ADGBEHCFI"
+	},
+	"General":{
+		"skipErr":false
+	},
+	"Filename":{
+		"date":{
+			"setformat":false,
+			"format":"yyyy-mm-dd hh:nn:ss",
+			"utc":false
+		},
+		"rm_slash":true,
+		"savename":"%TITLE%",
+		"duration":{
+			"h_str":":",
+			"s_str":"",
+			"toStr":false,
+			"m_str":":"
+		},
+		"tag":{
+			"delimiter":", ",
+			"max":10
+		}
+	}
+}
