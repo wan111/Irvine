@@ -233,6 +233,13 @@ for(var i in mode){
 				JSON.parse(text, rev, opts);
 				expect(paths).toEqual([ ["a", 0, "b"], ["a", 0], ["a", 1], ["a"], [] ]);
 			});
+			it('call .parse in reviver', function(){
+				var rev = function(k, v){return typeof v == 'string' ? JSON.parse(v) : v;};
+				var text = '{"a": "{\"b\": 1}"}';
+				var value;
+				expect(function(){value = JSON.parse(text, rev);}).not.toThrow();
+				expect(value).toEqual({a: {b: 1}});
+			});
 		});
 		if(opts.relaxed){
 			describe('Relaxed Mode', function(){
@@ -493,6 +500,12 @@ describe('JSON.stringify', function(){
 			JSON.stringify(value, rep);
 			expect(paths).toEqual([ [], ["a"], ["a", 0], ["a", 0, "b"], ["a", 1] ]);
 		});
+		it('call .stringify in replacer', function(){
+			var rep = function(k, v){return JSON.stringify(v);};
+			var s = '';
+			expect(function(){s = JSON.stringify({"a": 1}, rep);}).not.toThrow();
+			expect(s).toBe('"{\"a\":1}"');
+		});
 	});
 	describe('replacer array', function(){
 		it('do nothing when value is array', function(){
@@ -515,6 +528,13 @@ describe('JSON.stringify', function(){
 			var value = {"1":1, "a":2, "true":3, "null":4, "undefined":5};
 			var rep = [1, "a", true, null, _undefined];
 			expect(JSON.stringify(value, rep)).toBe('{"1":1,"a":2}');
+		});
+		it('does not have', function(){
+			var value = {a: 1};
+			var rep = ["a", "b"];
+			var s;
+			expect(function(){s = JSON.stringify(value, rep);}).not.toThrow();
+			expect(s).toBe('{"a":1}');
 		});
 	});
 	describe('space', function(){

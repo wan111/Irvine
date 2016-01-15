@@ -1,4 +1,5 @@
-json.dms
+common\json.dms
+===============
 
 JSONオブジェクト
 
@@ -128,9 +129,15 @@ JSON.save(path, value, replacer, space, options){
 
 
 更新履歴
+========
 
-2015-11-06 version 0.51
+- 2016/01/16 version 0.52
+	.stringifyにてオブジェクトが持っていないプロパティ名をreplacer(配列)で指定するとエラーになっていた問題を修正した
+	内部でいくつかの変数が共有されてしまっていた問題を修正した
+	JSONオブジェクトのコードの書き方を変更した
+
+- 2015/11/06 version 0.51
 	.stringifyにてreplacerでundefinedを置換できなくなっていた問題を修正した
 
-2014-12-08 version 0.50
+- 2014/12/08 version 0.50
 	一から作り直し
