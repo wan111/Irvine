@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils
-//version=1.1
+//version=1.2
 //hint=
 //match=
 //author=wan
@@ -57,7 +57,7 @@
 		str.line = line ? Utils.toStr(line) : '';
 		str.name = name ? Utils.toStr(name) : 'Error';
 		str.text = format('%s: %s %s: %s', str.name, str.fileName, str.line, str.message);
-		
+
 		return str;
 	};
 
@@ -135,7 +135,7 @@
 		}
 		return r;
 	};
-	
+
 	/**
 	 * 文字列をプリミティブ値に変換
 	 * 例: "true" -> true
@@ -144,7 +144,7 @@
 	 */
 	Utils.strToPrimitive = function(s){
 		var r = s = typeof s == 'object' ? Utils.objToPrimitive(s) : s;
-		
+
 		if(/^\s*(true|false|null|NaN|undefined|-?\d+(\.\d+)?([eE][+\-]?\d+)?|0[xX][\da-fA-F]+)\s*$/.test(s)){
 			s = RegExp.$1;
 			switch(s){
@@ -184,7 +184,7 @@
 		}
 		return s;
 	};
-	
+
 	/**
 	 * 渡された値から拡張子を取り出します
 	 * @param {*} s
@@ -344,7 +344,7 @@
 		}
 		return r;
 	};
-	
+
 	/**
 	 * <pre>
 	 * 指定した最初のオブジェクトに複数のオブジェクトをマージして返します。
@@ -509,11 +509,11 @@
 	Utils.objCreate = function(ctorName, proto, prop){
 		var s = [
 			'function ' + ctorName + '(){}',
-			
+
 			'if(typeof proto == "object" || isNull(proto)) ' + ctorName + '.prototype = proto;',
-			
+
 			'var obj = new ' + ctorName + ';',
-			
+
 			'if(typeof prop == "object"){',
 			'    var key, keys = Utils.keys(prop);',
 			'    for(var i in keys){',
@@ -521,7 +521,7 @@
 			'        obj[key] = prop[key];',
 			'    }',
 			'}',
-			
+
 			'return obj;'
 		].join("\n");
 
@@ -596,7 +596,7 @@
 			})(parentCtor.prototype);
 		};
 	})();
-	
+
 	/**
 	 * destオブジェクトにsrcオブジェクトの全てのメンバーをコピーします
 	 * @param {Object} dest
@@ -656,7 +656,7 @@
 		}
 		return typeof def == 'object' ? Utils.extend(true, {}, def, obj) : obj;
 	};
-	
+
 	/**
 	 * iniファイルに設定値を保存します  
 	 * dataオブジェクトに存在しないセクションやキーは削除されます  
@@ -672,7 +672,7 @@
 		for(var i in secs){
 			ini.eraseSection(secs[i]);
 		}
-		
+
 		for(var sec in data){
 			if(typeof data[sec] == 'object'){
 				for(var key in data[sec]){
@@ -684,7 +684,7 @@
 		}
 		ini.update();
 	};
-	
+
 	/**
 	 * iniファイルまたJSONファイルから設定値を読み込み
 	 * @param {Object} [def] デフォルト値
@@ -722,7 +722,7 @@
 			d.setMinutes(RegExp.$7);
 			d.setSeconds(RegExp.$8);
 			d.setMilliseconds(0);
-			
+
 			return (d.getTime() - offset + unixDateDelta * oneday) / oneday;
 			//return (d.getTime() - offset) / oneday + UnixDateDelta;
 		};
@@ -747,12 +747,12 @@
 	 */
 	Utils.setFolderData = function(){
 		if(typeof folderdata == 'object' && nameOf(folderdata) == 'IrvineFolderData') return;
-		
+
 		if(!Utils.queueFolder) throw Utils.showError('Utils.queueFolderが空', 'Utils.dms', '.setFolderData');
-		
+
 		var folder;
 		var nowTime = Utils.strToDateTime(new Date().toString());
-		
+
 		folderdata = new IrvineFolderData;
 
 		try{
@@ -778,7 +778,7 @@
 			}
 			folder = {Values: v};
 		}
-		
+
 		//型変換はfolderdata側がやってくれる
 		//folderdata.AbsolutePath        = folder.AbsolutePath;
 		folderdata.Agent               = folder.Values['agent'];
@@ -885,7 +885,7 @@
 		folderdata.UseRollBack         = folder.Values['userollback'] ;
 		folderdata.ViewIndex           = folder.Values['viewindex'];
 	};
-	
+
 	/**
 	 * 指定したスクリプトのバージョンを取得します  
 	 * IrvineとDorothy2のスクリプトに対応しています
@@ -932,8 +932,8 @@
 			ipath += "\\";//C: -> C:\  \が二重になっても問題ない
 			return new Directory(ipath).path;
 		}
-	
-		
+
+
 		//絶対パスになるまで順に上位キューフォルダから保存パスを取得
 		var path;
 		if(Utils.isDOA && (typeof folderdata.Folder == 'undefined' || !folderdata.Folder)){
@@ -1000,7 +1000,7 @@
 	 * 実行環境がOnListMenuClickのDorothy2set(「Dorothy2サイト設定」)ならばtrue
 	 * @type {boolean}
 	 */
-	Utils.isDorothy2setList = false;
+	Utils.isDorothy2ListMenu = false;
 
 	/**
 	 * 実行環境がDOAならばtrue
@@ -1029,7 +1029,7 @@
 				break;
 			case 'Dorothy2R_listmenu.dms':
 			case 'Dorothy2ListMenu.dms':
-				Utils.isDorothy2setList = true;
+				Utils.isDorothy2ListMenu = true;
 				//next
 			case 'Dorothy2set.dms':
 			case 'Dorothy2R_set.dms':
@@ -1071,7 +1071,7 @@
 	Utils.getUserPath = function(){
 		return typeof Dorothy.userPath != 'undefined' ? Dorothy.userPath : Dorothy.path + "user\\" + Dorothy.matchFile + "\\";
 	};
-	
+
 	/**
 	 * Dorothy.userIniPathを取得します Dorothy.userIniPathが使えないDOA用
 	 * @return {string}
@@ -1079,7 +1079,7 @@
 	Utils.getUserIniPath = function(){
 		return typeof Dorothy.userIniPath != 'undefined' ? Dorothy.userIniPath : Utils.getUserPath() + Dorothy.matchFile + '.ini';
 	};
-	
+
 	/**
 	 * Dorothy2A.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 	 * @return {number}
@@ -1087,7 +1087,7 @@
 	Utils.getVersionDorothy2A = function(){
 		return Utils.isRentan ? Dorothy.rVersion : (Utils.isDorothy2A ? parseFloat(Dorothy.version) : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms'));
 	};
-	
+
 	/**
 	 * Dorothy2set.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 	 * @return {number}
@@ -1095,7 +1095,11 @@
 	Utils.getVersionDorothy2set = function(){
 		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2set.dms');
 	};
-	
+
+	Utils.getVersionDorothy2ListMenu = function(){
+		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2ListMenu.dms');
+	};
+
 	/**
 	 * DOA.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 	 * @return {number}
@@ -1103,7 +1107,7 @@
 	Utils.getVersionDOA = function(){
 		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'DOA.dms');
 	};
-	
+
 	/**
 	 * <pre>
 	 * DOAスクリプト用
@@ -1118,16 +1122,9 @@
 		if(!Utils.isDOA) throw Utils.showError('.setDOA_IT()は DOA でしか使用できません', 'Utils.dms', '.setDOA_IT');
 
 		if(typeof DOA_IT != 'number' || typeof item != 'object' || nameOf(item) != 'IrvineItem'){
-			if(Dorothy.isRentan){
-				if(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2R_doa_list.dms') < 20141124){
-					throw Utils.showError('古いバージョンのDorothy2R_doa_list.dmsが使用されています。version 20141124以上を使用してください', 'Utils.dms', '.setDOA_IT');
-				}
-			}else if(Utils.getVersionDOA() < 0.26){
-				throw Utils.showError('古いバージョンのDOA.dmsが使用されています。version 0.26以上を使用してください', 'Utils.dms', '.setDOA_IT');
-			}
 			throw Utils.showError('未知のエラー。DOA_ITまたはitemが正しく定義されていません', 'Utils.dms', '.setDOA_IT');
 		}
-		
+
 		DOA.status = DOA_IT;
 		if(DOA.name) item.filename = DOA.name;
 		if(DOA.comment) item.comment += DOA.comment;
@@ -1167,7 +1164,7 @@
 					o[name] = Utils.strToPrimitive(value);
 				});
 			};
-			
+
 			return function(){
 				if(typeof folderdata.Post == 'undefined' || typeof item.comment == 'undefined'){
 					Utils.showError('folderdata.Postまたはitem.commentが正しく定義されていません', 'Utils.dms', 'loadOption');
@@ -1199,7 +1196,7 @@
 				return opt.hasKey(key) ? opt[key] : def;
 			};
 		})(loadOption);
-		
+
 		/**
 		 * folderdata.Postとitem.commentに設定された全てのオプションを取得します  
 		 * オプションの各値は適切なプリミティブ値に変換されます  
@@ -1241,7 +1238,7 @@
 					urlinfo.url = url.url;
 					headers.host = url.host;
 				};
-				
+
 			}
 			dorothy2_path                = Dorothy.path;
 			dorothy2_temp                = dorothy2_path + "temp\\";
@@ -1275,34 +1272,16 @@
 				Dorothy.temp = dorothy2_temp;
 			}
 			//これらの値はthis.main関数内でUtils.getUserPathやUtils.getUserIniPath等を用いて毎回手動で設定してください
-			//Dorothy.userPath
-			//Dorothy.userIniPath
+			Dorothy.userPath = Utils.getUserPath();
+			Dorothy.userIniPath = Utils.getUserIniPath();
+
 		}else if(Utils.isDorothy2set){
 			if(!Utils.isRentan){
 				Global.print_debug = function(str){
 					if(debug) println(str);
 				};
 			}
-			if(!Utils.isDorothy2setList){
-				if(!Utils.isRentan){
-					Global.program_load = function(name){
-						return file_load("program\\" + name + '.dms');
-					};
-					Global.user_load = function(name){
-						return file_load("user\\" + Dorothy.matchFile + "\\" + name);//'
-					};
-					Global.user_program_load = function(){
-						for(var i = 0 ; i < arguments.length ; i++){
-							try{
-								eval( file_load("user\\" + Dorothy.matchFile + "\\" + arguments[i] + '.dms') );
-							}
-							catch(e){
-								println(e+' '+Dorothy.matchFile + "\\" + arguments[i]+'.dms');
-								eval( file_load("user\\" + Dorothy.matchFile + "\\" + arguments[i] + '.dms') );
-							}
-						}
-					};
-				}
+			if(!Utils.isDorothy2ListMenu){
 				//無理矢理 選択アイテム取得
 				item = new IrvineItem;
 				var count = Irvine.ItemCount;
@@ -1322,9 +1301,59 @@
 					Dorothy.url = item.url;
 				}
 			}
+			urlinfo = new IrvineUrlInfo;
+			urlinfo.url = item.url;
+			headers = {
+				"Referer": "",
+				"User-Agent": Irvine.FolderData('http' ,'agent'),
+				"Cookie": "",
+				"Host": new URL(item.url).host
+			};
+		}
+		Utils.setFolderData();
+	};
+
+	/**
+	 * Dorothyの各実行環境で古いバージョンが使用されていないかチェックします  
+	 * 古いバージョンが使用されていた場合はエラーメッセージを表示してスクリプトを終了します
+	 */
+	Utils.checkVersion = function(){
+		function err(name, version){
+			Utils.showError('古いバージョンの' + name + 'が使用されています。version ' + version + ' 以上を使用してください', 'Utils.dms', '.checkVersion');
+			exit();
+		}
+		var v = {
+			a: 0.32,
+			doa: 0.26,
+			list: 0.44,
+			set: 0.20,
+			rentan: 20150316
+		};
+		if(Utils.isRentan){
+			if(Dorothy.rVersion < v.rentan){
+				err(WScript.ScriptName, v.rentan);
+			}
+		}else if(Utils.isDorothy2A){
+			if(Dorothy.version < v.a){
+				err('Dorothy2A.dms', v.a);
+			}
+		}else if(Utils.isDOA){
+			if(Utils.getVersionDOA() < v.doa){
+				err('DOA.dms', v.doa);
+			}
+		}else if(Utils.isDorothy2ListMenu){
+			if(Utils.getVersionDorothy2ListMenu() < v.list){
+				err('Dorothy2ListMenu.dms', v.list);
+			}
+		}else if(Utils.isDorothy2set){
+			if(Utils.getVersionDorothy2set() < v.set){
+				err('Dorothy2set.dms', v.set);
+			}
 		}
 	};
-	
+
+	//このスクリプトは古いバージョンでは一部が正常に機能しないので強制的にバージョンチェックを行います
+	Utils.checkVersion();
 //====================================================================================================
 
 

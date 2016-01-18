@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils_spec
-//version=1.1
+//version=1.2
 //hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
 //match=
 //author=wan
@@ -28,6 +28,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 common_load('Utils');
 
 UNDEFINED = (function(){})();
+
+var dorothy2AVersion = 0.32;
+var dorothy2setVersion = 0.20;
+var dorothy2ListMenuVersion = 0.44;
+var doaVersion = 0.26;
+
 
 function keys(o){
 	var r = [];
@@ -191,7 +197,7 @@ describe('Utils.toInteger', function(){
 describe('Utils.error', function(){
 	it('error message', function(){
 		var err = Utils.error('test message');
-		
+
 		expect(err).toEqual(jasmine.any(String));
 		expect(err.toString()).toBe('Error: yasmine.dms : test message');
 		expect(err.text).toBe('Error: yasmine.dms : test message');
@@ -200,7 +206,7 @@ describe('Utils.error', function(){
 		expect(err.line).toBe('');
 		expect(err.name).toBe('Error');
 	});
-	
+
 	cases([
 		['test1', 'aaa.dms', 123, 'TEST', 'TEST: aaa.dms 123: test1', ['aaa.dms', '123', 'TEST']],
 		['test2', null, '/Utils.error', UNDEFINED, 'Error: yasmine.dms /Utils.error: test2', ['yasmine.dms', '/Utils.error', 'Error']]
@@ -214,7 +220,7 @@ describe('Utils.error', function(){
 		expect(err.line).toBe(p[1]);
 		expect(err.name).toBe(p[2]);
 	});
-	
+
 	it('throw', function(){
 		expect(function(){throw Utils.error('throw test', 'Utils_spec.dms', '(Utils.error throw)');}).toThrow('Error: Utils_spec.dms (Utils.error throw): throw test');
 	});
@@ -252,7 +258,7 @@ describe('Utils.getObject', function(){
 		expect(isFn ? r() : r).toBe(isFn ? v() : v);
 		expect(isFn ? r2() : r2).toBe(isFn ? v() : v);
 	});
-	
+
 	cases([
 		['a', Test, Test.a],
 		['b.b2', Test, Test.b.b2],
@@ -263,7 +269,7 @@ describe('Utils.getObject', function(){
 	]).it('get value for object', function(name, obj, value){
 		expect(Utils.getObject(name, obj)).toBe(value);
 	});
-	
+
 	it('def', function(){
 		expect(Utils.getObject('c', Test, true)).toBeTruthy();
 		expect(Utils.getObject('', Test, null)).toBeNull();
@@ -843,11 +849,11 @@ describe('Utils.mixin', function(){
 	source.prototype.f = Number.POSITIVE_INFINITY;
 	source.prototype.g = UNDEFINED;
 	source.prototype.h = function(){};
-	
+
 	function target(){}
 	target.prototype.a = null;
 	target.prototype.i = function(){};
-	
+
 	it('mixin', function(){
 		Utils.mixin(target.prototype, source.prototype);
 		expect(target.prototype).toContainKeys(['a', 'b', 'c', 'e', 'f', 'g', 'h', 'i']);
@@ -861,7 +867,7 @@ describe('Utils.mixin', function(){
 		expect(typeof target.prototype.h).toBe('function');
 		expect(typeof target.prototype.i).toBe('function');
 	});
-	
+
 });
 
 describe('Utils.bind', function(){
@@ -1013,11 +1019,11 @@ describe('ini, JSON', function(){
 		}
 		expect(Utils.loadIni(null, iniPath)).toEqual(data);
 		expect(Utils.loadIni(null, iniFile.extractName())).toEqual(data);
-		
+
 		var ini = new Ini(iniPath);
 		expect(Utils.loadIni(null, ini)).toEqual(data);
-		
-		
+
+
 		expect(Utils.loadIni(defData, iniPath)).toEqual(data2);
 		expect(Utils.loadIni(defData, ini)).toEqual(data2);
 	});
@@ -1056,7 +1062,7 @@ describe('TDateTime <--> ecma time', function(){
 		var s = Utils.dateTimeToStr(folderdata.CreateDate);
 		var d = Utils.strToDateTime(s);
 		expect(d).toBe(folderdata.CreateDate);
-		
+
 		s = Utils.dateTimeToStr(folderdata.BeginTime);
 		d = Utils.strToDateTime(s);
 		expect(d).toBe(folderdata.BeginTime);
@@ -1072,7 +1078,7 @@ describe('Utils.setFolderData', function(){
 	afterEach(function(){
 		folderdata = oldFolderdata;
 	});
-	
+
 	it('setFolderData', function(){
 		expect(folderdata).toBeNull();
 		Utils.setFolderData();
@@ -1093,11 +1099,12 @@ describe('Utils.setFolderData', function(){
 
 describe('Utils.getScriptVersion', function(){
 	it('get version of Irvine Script', function(){
-		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms')).toBe(0.31);
-		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2set.dms')).toBe(0.19);
-		expect(Utils.getScriptVersion((new irvinePath).scripts + 'DOA.dms')).toBe(0.26);
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms')).toBe(dorothy2AVersion);
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2set.dms')).toBe(dorothy2setVersion);
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2ListMenu.dms')).toBe(dorothy2ListMenuVersion);
+		expect(Utils.getScriptVersion((new irvinePath).scripts + 'DOA.dms')).toBe(doaVersion);
 	});
-	
+
 	it('get version of Dorothy2 Script', function(){
 		expect(Utils.getScriptVersion(Dorothy.path + 'common\Utils.dms')).toBe(parseFloat(Dorothy.common.Utils.version));
 	});
@@ -1190,7 +1197,7 @@ describe('Utils Dorothy', function(){
 		expect(Utils.isDorothy2set).toBe(is2Set);
 		expect(Utils.isDOA).toBe(isDOA);
 	});
-	
+
 	it('queueFolder', function(){
 		if(is2A){
 			expect(Utils.queueFolder).toBe(/queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '');
@@ -1200,7 +1207,7 @@ describe('Utils Dorothy', function(){
 			expect(Utils.queueFolder).toBe(DOA.CurrentQueueFolder);
 		}
 	});
-	
+
 	it('getQueueFolderPath', function(){
 		if(is2A){
 			expect(Utils.getQueueFolderPath()).toBe(/queue\s*=\s*(\/[^;]+)/g.test(folderdata.Post) ? RegExp.$1 : '');
@@ -1210,16 +1217,17 @@ describe('Utils Dorothy', function(){
 			expect(Utils.getQueueFolderPath()).toBe(DOA.CurrentQueueFolder);
 		}
 	});
-	
+
 	it('getVersion', function(){
 		if(isRentan){
 			expect(Utils.getVersionDorothy2A()).toBe(Dorothy.rVersion);
 			expect(Utils.getVersionDorothy2set()).toBe(Dorothy.rVersion);
 			expect(Utils.getVersionDOA()).toBe(Dorothy.rVersion);
 		}else{
-			expect(Utils.getVersionDorothy2A()).toBe(0.31);
-			expect(Utils.getVersionDorothy2set()).toBe(0.19);
-			expect(Utils.getVersionDOA()).toBe(0.26);
+			expect(Utils.getVersionDorothy2A()).toBe(dorothy2AVersion);
+			expect(Utils.getVersionDorothy2set()).toBe(dorothy2setVersion);
+			expect(Utils.getVersionDorothy2ListMenu()).toBe(dorothy2ListMenuVersion);
+			expect(Utils.getVersionDOA()).toBe(doaVersion);
 		}
 	});
 
@@ -1238,7 +1246,7 @@ describe('Utils Dorothy', function(){
 			folderdata.folder = fpath;
 			item.folder = ipath;
 		});
-		
+
 		it('absolute path', function(){
 			item.folder = 'C:\test\aaa';
 			folderdata.folder = 'C:\test\';
@@ -1254,7 +1262,7 @@ describe('Utils Dorothy', function(){
 			}
 			expect(Utils.expandPath('C:\aaa\')).toBe('C:\aaa\');
 		});
-		
+
 		it('relative path', function(){
 			item.folder = 'aaa';
 			folderdata.folder = 'C:\test';
@@ -1304,7 +1312,7 @@ describe('Utils Dorothy', function(){
 				DOA.status = old.status;
 			}
 		});
-		
+
 		it('setDOA_IT', function(){
 			var r;
 			if(!isDOA){
@@ -1325,7 +1333,7 @@ describe('Utils Dorothy', function(){
 				expect(item.url).toBe(urlinfo.url);
 			}
 		});
-		
+
 		cases([
 			['2.0GB', 2 * 1024 * 1024 * 1024],
 			['2.0gb', 2 * 1024 * 1024 * 1024],
@@ -1342,7 +1350,7 @@ describe('Utils Dorothy', function(){
 			expect(item.filesize).toBe(size);
 		});
 	});
-	
+
 	describe('commentOption', function(){
 		var oldComment = item.comment;
 		var oldPost = folderdata.Post;
@@ -1351,7 +1359,7 @@ describe('Utils Dorothy', function(){
 			item.comment = oldComment;
 			folderdata.Post = oldPost;
 		});
-		
+
 		cases([
 			['', '', {}],
 			['aaa=abc', '', {aaa: 'abc'}],
@@ -1365,7 +1373,7 @@ describe('Utils Dorothy', function(){
 			var o = Utils.getCommentOptions();
 			expect(o).toEqual(opt);
 		});
-		
+
 		cases([
 			['', {a: 1}, {a: 1}],
 			['', null, {}],
@@ -1377,7 +1385,7 @@ describe('Utils Dorothy', function(){
 			expect(r).toEqual(opt);
 			expect(r).not.toBe(def);
 		});
-		
+
 		it('getCommentOption', function(){
 			item.comment = 'a=1; b=abc; c=true; d=null; e=NaN; f=undefined';
 			folderdata.Post = '';
@@ -1390,7 +1398,7 @@ describe('Utils Dorothy', function(){
 			expect(Utils.getCommentOption('g', true)).toBeTruthy();
 		});
 	});
-	
+
 	describe('Utils.redefineDorothy', function(){
 		var names;
 		if(is2A){
@@ -1571,7 +1579,7 @@ describe('Utils Dorothy', function(){
 			}
 			expect(function(){eval(name);}).not.toThrow();
 		});
-		
+
 	});
 
 });

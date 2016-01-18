@@ -19,7 +19,7 @@ Utilsオブジェクト
       * < static > isDorothy2set : {boolean}  
          実行環境がDorothy2setならばtrue  
 
-      * < static > isDorothy2setList : {boolean}  
+      * < static > isDorothy2ListMenu : {boolean}  
          実行環境がOnListMenuClickのDorothy2set(「Dorothy2サイト設定」)ならばtrue  
 
       * < static > isDOA : {boolean}  
@@ -593,13 +593,24 @@ Utilsオブジェクト
          DOAやDorothy2AやDorothy2set等の環境別に存在したりしなかったりするプロパティや関数等を  
          なるべく全ての環境で使用できるようにします
 
+      * < static > checkVersion()  
+         Dorothyの各実行環境で古いバージョンが使用されていないかチェックします  
+         古いバージョンが使用されていた場合はエラーメッセージを表示してスクリプトを終了します
+
 変更履歴:
 =========
+
+* 2016/01/18  version 1.2  
+   isDorothy2setListをisDorothy2ListMenuに変更。
+   .getVersionDorothy2ListMenu()を追加。
+   .redefineDorothyを更新 urlinfo headers folderdataの定義も追加。
+   .checkVersion()を追加 バージョンチェックを行う様にした。
+
+* 2015/12/12  version 1.1  
+   loadIni(), saveIni(), loadOption() expandPath() メソッドを新規追加。  
+   call(), apply()にてエラー処理を追加。 
 
 * 2015/12/03  version 1.0  
    新規作成  
    DorothyEx.dmsのほぼ全ての機能もこちらに統合した  
 
-* 2015/12/12  version 1.1  
-   loadIni(), saveIni(), loadOption() expandPath() メソッドを新規追加。  
-   call(), apply()にてエラー処理を追加。 
