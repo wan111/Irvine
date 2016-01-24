@@ -69,7 +69,7 @@ function (){
 		var label = this.label(caption, width1, Alignment, fontName, fontSize);
 		var spin = this.spinEdit(value, minValue, maxValue, width2, fontName, fontSize);
 		spin.left = label.left + label.width + 5;
-		
+
 		label.height = spin.height;
 		label.Alignment = this.Alignment[Alignment];
 		label.Layout = 'tlCenter';
@@ -80,13 +80,15 @@ function (){
 
 	user_program_load('vimeo_w');
 	var opt = new Vimeo().opt;
-	
+
 	var d = new EZDialog('vimeo_w');
 	var frm = {};
 
 	frm.groupGeneral = d.group('一般');
 	frm.checkDebug = d.checkBox('デバッグモード', opt.general.debug);
+	frm.checkTrace = d.checkBox('トレースモード', opt.general.trace);
 	frm.checkSkip = d.checkBox('ファイル名情報が取得出来なくても続行する', opt.general.skipError);
+	frm.checkQuiet = d.checkBox('メッセージを表示しない', opt.general.quiet);
 	d.groupEnd(frm.groupGeneral);
 
 
@@ -94,9 +96,11 @@ function (){
 	frm.label270 = d.label('A: 270p', null, null, 'g');
 	frm.label360 = d.label('B: 360p', null, null, 'g');
 	frm.label480 = d.label('C: 480p', null, null, 'g');
-	frm.label720 = d.label('D: 720p', null, null, 'g');
-	frm.label1080 = d.label('E: 1080p', null, null, 'g');
-	var priorityWidth = d.sWidth('ABCDE  ');
+	frm.label540 = d.label('D: 540p', null, null, 'g');
+	frm.label720 = d.label('E: 720p', null, null, 'g');
+	frm.label1080 = d.label('F: 1080p', null, null, 'g');
+	frm.labelOriginal = d.label('Z: Original', null, null, 'g');
+	var priorityWidth = d.sWidth('ABCDEF  ');
 	frm.editPriority = d.label_edit('優先順位', opt.download.priority, null, priorityWidth);
 	frm.checkReQueue = d.checkBox('新規アイテムとして追加する', opt.download.reQueue);
 	d.groupEnd(frm.groupDL);
@@ -134,6 +138,14 @@ function (){
 	frm.editTagDelimiter = d.label_edit('区切り文字', opt.fileName.tag.delimiter, null, d.sWidth('ABCD'));
 	frm.spinTagLen = d.label_spinEdit('文字列化後の最大文字数', opt.fileName.tag.len, 0, null, null, d.sWidth('12431234'));
 	d.contOff();
+	d.contOn();
+	frm.labelCat       = d.label('%CATEGORY%----------カテゴリ', null, null,'g');
+	d.widthSpace(10);
+	frm.spinCatMax = d.label_spinEdit('カテゴリ最大数', opt.fileName.category.max, 0, null, null, d.sWidth('12341234'));
+	frm.labelCat.height = frm.spinCatMax.label.height;
+	frm.editCatDelimiter = d.label_edit('区切り文字', opt.fileName.category.delimiter, null, d.sWidth('ABCD'));
+	frm.spinCatLen = d.label_spinEdit('文字列化後の最大文字数', opt.fileName.category.len, 0, null, null, d.sWidth('12431234'));
+	d.contOff();
 	frm.labelPFUrl     = d.label('%PORTFOLIO_URL%-----ポートフォリオURL', null, null, 'g');
 	frm.labelPFID      = d.label('%PORTFOLIO_ID%------ポートフォリオID', null, null, 'g');
 	frm.labelChName    = d.label('%CHANNEL_NAME%------チャンネル名', null, null, 'g');
@@ -156,12 +168,14 @@ function (){
 	frm.editMusic =    d.label_edit('music     ', opt.fileName.template.music, nameCapWidth, nameWidth);
 	d.groupEnd(frm.groupName);
 
-	
+
 	frm.ok = d.ok_cancel();
 
 	if(d.showModal() == 1){
 		opt.general.debug = frm.checkDebug.Checked;
+		opt.general.trace = frm.checkTrace.Checked;
 		opt.general.skipError = frm.checkSkip.Checked;
+		opt.general.quiet = frm.checkQuiet.Checked;
 		opt.addItem.Mode = frm.editMode.edit.Text;
 		opt.addItem.Queue = frm.editQueue.edit.Text;
 		opt.addItem.Listname = frm.editListName.edit.Text;
@@ -174,6 +188,9 @@ function (){
 		opt.fileName.tag.max = frm.spinTagMax.spinEdit.Value;
 		opt.fileName.tag.len = frm.spinTagLen.spinEdit.Value;
 		opt.fileName.tag.delimiter = frm.editTagDelimiter.edit.Text;
+		opt.fileName.category.max = frm.spinCatMax.spinEdit.Value;
+		opt.fileName.category.len = frm.spinCatLen.spinEdit.Value;
+		opt.fileName.category.delimiter = frm.editCatDelimiter.edit.Text;
 		opt.download.priority = frm.editPriority.edit.Text;
 		opt.download.reQueue = frm.checkReQueue.Checked;
 		Utils.saveOption(opt, 'vimeo_w.json');

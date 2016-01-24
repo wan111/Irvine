@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,10 +29,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function(){
 	user_program_load("vimeo_w");
 
+	var testMode = false;
 
 	var vimeo = new Vimeo();
-	
-	vimeo.get(urlinfo.url);
-	println(JSON.stringify(vimeo.info, null, "  "));
-	exit();
+
+	var r = vimeo.get(urlinfo.url);
+
+	if(testMode){
+		if(r){
+			Util.remove_this();
+			return;
+		}
+		exit();
+	}
+
+	if(r){
+		vimeo.download();
+	}
+	vimeo.end();
 }
