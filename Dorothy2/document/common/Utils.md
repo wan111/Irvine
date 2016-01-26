@@ -153,6 +153,20 @@ Utilsオブジェクト
 
             * {string|number|boolean|null|undefined}
 
+      * < static > extractPath(s) → {string}  
+         渡された値からパスを取り出します
+
+         * パラメータ:
+
+         | 名前 | 型 | 説明 |
+         |------|----|------|
+         | s    | *  |      |
+         
+
+         * 戻り値:   
+
+            * {string} : パス
+
       * < static > extractName(s) → {string}  
          渡された値からファイル名を取り出します
 
@@ -179,7 +193,7 @@ Utilsオブジェクト
 
          * 戻り値:   
 
-            * {string} : ファイル名
+            * {string} : 拡張子
 
       * < static > formatTemplate(s, map) → {string}  
          渡された文字列から 置換変数(%～%) を置換して整形します  
@@ -228,6 +242,21 @@ Utilsオブジェクト
          * 戻り値:   
 
             * {*} : 関数fnの返り値
+
+      * < static > has(obj, key) → {boolean}  
+         objがkeyを持っているか
+
+         * パラメータ:
+
+         | 名前 | 型     | 説明 |
+         |------|--------|------|
+         | obj  | object |      |
+         | key  | string |      |
+         
+
+         * 戻り値:   
+
+            * {boolean}
 
       * < static > getObject(name, obj, def) → {*}  
          指定した完全修飾名のオブジェクトを取得します objを指定した場合はobjのプロパティから取得します
@@ -381,10 +410,10 @@ Utilsオブジェクト
 
             * {function}
 
-      * < static > loadIni(def, ini) → {Object}  
+      * < static > loadIni(def, path) → {Object}  
          iniファイルから設定値を読み込みオブジェクトで返します  
          各設定値は適切なプリミティブ値に変換されます  
-         iniはiniファイルのパス又はIniオブジェクトを渡してください  
+         pathはiniファイルのパス又はIniオブジェクトを渡してください  
          Iniオブジェクトを渡した場合はそこから設定値を読み込みます  
          defを指定した場合は取得したオプションとdefをマージした新しいオブジェクトを返します
 
@@ -393,17 +422,17 @@ Utilsオブジェクト
          | 名前 | 型         | 引数   | 既定値              | 説明                                 |
          |------|------------|--------|---------------------|--------------------------------------|
          | def  | Object     | 省略可 |                     | デフォルト値                         |
-         | ini  | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト |
+         | path | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト |
          
 
          * 戻り値:   
 
             * {Object}
 
-      * < static > saveIni(data, ini)  
+      * < static > saveIni(data, path)  
          iniファイルに設定値を保存します  
          dataオブジェクトに存在しないセクションやキーは削除されます  
-         iniはiniファイルのパス又はIniオブジェクトを渡してください  
+         pathはiniファイルのパス又はIniオブジェクトを渡してください  
          Iniオブジェクトを渡した場合はそこに設定値を保存します。 Iniオブジェクトの内容は更新されます
 
          * パラメータ:
@@ -411,24 +440,38 @@ Utilsオブジェクト
          | 名前 | 型         | 引数   | 既定値              | 説明                                          |
          |------|------------|--------|---------------------|-----------------------------------------------|
          | data | Object     |        |                     | iniファイルに保存する設定値を持つオブジェクト |
-         | ini  | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト          |
+         | path | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト          |
          
 
-      * < static > loadOption(def, ini, var_args) → {Object}  
-         iniファイルまたJSONファイルから設定値を読み込み
+      * < static > loadOption(def, path, var_args) → {Object}  
+         iniファイルまたはJSONファイルから設定値を読み込みます
 
          * パラメータ:
 
          | 名前     | 型         | 引数   | 既定値              | 説明                                                         |
          |----------|------------|--------|---------------------|--------------------------------------------------------------|
          | def      | Object     | 省略可 |                     | デフォルト値                                                 |
-         | ini      | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト、又はJSONファイルのパス |
+         | path     | string,Ini | 省略可 | Dorothy.userIniPath | iniファイルのパス又はIniオブジェクト、又はJSONファイルのパス |
          | var_args | *          | 可変長 |                     | JSONファイルの場合にJSON.loadに渡す引数                      |
          
 
          * 戻り値:   
 
             * {Object}
+
+      * < static > saveOption(data, path, var_args)  
+         iniファイルまたはJSONファイルに設定値を保存します  
+         pathはJSONファイルのパス又はiniファイルのパス又はIniオブジェクトを渡してください  
+         Iniオブジェクトを渡した場合はそこに設定値を保存します。 Iniオブジェクトの内容は更新されます
+
+         * パラメータ:
+
+         | 名前     | 型         | 引数   | 既定値              | 説明                                                       |
+         |----------|------------|--------|---------------------|------------------------------------------------------------|
+         | data     | Object     |        |                     | ファイルに保存する設定値を持つオブジェクト                 |
+         | path     | string,Ini | 省略可 | Dorothy.userIniPath | JSONファイルのパス又はiniファイルのパス又はIniオブジェクト |
+         | var_args | *          | 可変長 |                     | JSONファイルの場合にJSON.saveに渡す引数                    |
+         
 
       * < static > strToDateTime(str) → {number}  
          日時を表す文字列をIrvineで使用されているTDateTimeの数値に変換します
@@ -600,6 +643,9 @@ Utilsオブジェクト
 変更履歴:
 =========
 
+* 2016/01/26  version 1.3
+   .extractPath(), .has(), .saveOption() を追加
+
 * 2016/01/18  version 1.2  
    isDorothy2setListをisDorothy2ListMenuに変更。
    .getVersionDorothy2ListMenu()を追加。
@@ -607,7 +653,7 @@ Utilsオブジェクト
    .checkVersion()を追加 バージョンチェックを行う様にした。
 
 * 2015/12/12  version 1.1  
-   loadIni(), saveIni(), loadOption() expandPath() メソッドを新規追加。  
+   loadIni(), saveIni(), loadOption() exxpandPath() メソッドを新規追加。  
    call(), apply()にてエラー処理を追加。 
 
 * 2015/12/03  version 1.0  

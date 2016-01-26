@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils
-//version=1.2
+//version=1.3
 //hint=
 //match=
 //author=wan
@@ -9,7 +9,7 @@
 
 /**
  * @license
- * Copyright (C) 2015 wan <thewanwan111@gmail.com>
+ * Copyright (C) 2015,2016 wan <thewanwan111@gmail.com>
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -169,6 +169,15 @@
 	};
 
 	/**
+	 * 渡された値からパスを取り出します
+	 * @param {*} s
+	 * @return {string} パス
+	 */
+	Utils.extractPath = function(s){
+		return /^(.*[\\\/])/.test(s) ? RegExp.$1 : '';
+	};
+
+	/**
 	 * 渡された値からファイル名を取り出します
 	 * @param {*} s
 	 * @return {string} ファイル名
@@ -188,7 +197,7 @@
 	/**
 	 * 渡された値から拡張子を取り出します
 	 * @param {*} s
-	 * @return {string} ファイル名
+	 * @return {string} 拡張子
 	 */
 	Utils.extractExt = function(s){
 		return /\.[^.]+$/.test(Utils.extractName(s)) ? RegExp.$0 : '';
@@ -272,6 +281,26 @@
 		*/
 		var f = (function(f){return f;})(fn);
 		return f.apply(selfObj, (argsArray || []));
+	};
+
+	/**
+	 * objがkeyを持っているか
+	 * @param {object} obj
+	 * @param {string} key
+	 * @return {boolean}
+	 */
+	Utils.has = function(obj, key){
+		var r = true;
+		if(nameOf(obj) == 'Array' && isFinite(key)){
+			r = obj.length > key;
+		}else{
+			try{
+				obj[key];
+			}catch(e){
+				r = false;
+			}
+		}
+		return r;
 	};
 
 	/**
@@ -633,16 +662,16 @@
 	/**
 	 * iniファイルから設定値を読み込みオブジェクトで返します  
 	 * 各設定値は適切なプリミティブ値に変換されます  
-	 * iniはiniファイルのパス又はIniオブジェクトを渡してください  
+	 * pathはiniファイルのパス又はIniオブジェクトを渡してください  
 	 * Iniオブジェクトを渡した場合はそこから設定値を読み込みます  
 	 * defを指定した場合は取得したオプションとdefをマージした新しいオブジェクトを返します
 	 * @param {Object} [def] デフォルト値
-	 * @param {string|Ini} [ini=Dorothy.userIniPath] iniファイルのパス又はIniオブジェクト
+	 * @param {string|Ini} [path=Dorothy.userIniPath] iniファイルのパス又はIniオブジェクト
 	 * @return {Object}
 	 */
-	Utils.loadIni = function(def, ini){
-		ini = nameOf(ini) == 'Ini' ? ini : new Ini(ini && Utils.expandPath(ini) || Utils.getUserIniPath());
+	Utils.loadIni = function(def, path){
 		var sec, key, keys,
+			ini = nameOf(path) == 'Ini' ? path : new Ini(path && Utils.expandPath(path) || Utils.getUserIniPath()),
 			obj = {},
 			secs = ini.readSections();
 		for(var i in secs){
@@ -654,21 +683,23 @@
 				obj[sec][key] = Utils.strToPrimitive(ini.read(sec, key, ""));
 			}
 		}
-		return typeof def == 'object' ? Utils.extend(true, {}, def, obj) : obj;
+		return typeof def == 'object' ? Utils.extend(true, true, {}, def, obj) : obj;
 	};
 
 	/**
 	 * iniファイルに設定値を保存します  
 	 * dataオブジェクトに存在しないセクションやキーは削除されます  
-	 * iniはiniファイルのパス又はIniオブジェクトを渡してください  
+	 * pathはiniファイルのパス又はIniオブジェクトを渡してください  
 	 * Iniオブジェクトを渡した場合はそこに設定値を保存します。 Iniオブジェクトの内容は更新されます  
 	 * @param {Object} data iniファイルに保存する設定値を持つオブジェクト
-	 * @param {string|Ini} [ini=Dorothy.userIniPath] iniファイルのパス又はIniオブジェクト
+	 * @param {string|Ini} [path=Dorothy.userIniPath] iniファイルのパス又はIniオブジェクト
 	 */
-	Utils.saveIni = function(data, ini){
+	Utils.saveIni = function(data, path){
 		if(typeof data != 'object') return;
-		ini = nameOf(ini) == 'Ini' ? ini : new Ini(ini && Utils.expandPath(ini) || Utils.getUserIniPath());
-		var v, secs = ini.readSections();
+		var v,
+			ini = nameOf(path) == 'Ini' ? path : new Ini(path && Utils.expandPath(path) || Utils.getUserIniPath()),
+			dir = new Directory(Utils.extractPath(ini.filename)),
+			secs = ini.readSections();
 		for(var i in secs){
 			ini.eraseSection(secs[i]);
 		}
@@ -682,26 +713,49 @@
 				}
 			}
 		}
+		if(!dir.exists()) dir.make();
+		println('save ini: ' + ini.filename);
 		ini.update();
 	};
 
 	/**
-	 * iniファイルまたJSONファイルから設定値を読み込み
+	 * iniファイルまたはJSONファイルから設定値を読み込みます
 	 * @param {Object} [def] デフォルト値
-	 * @param {string|Ini} [ini=Dorothy.userIniPath] iniファイルのパス又はIniオブジェクト、又はJSONファイルのパス
+	 * @param {string|Ini} [path=Dorothy.userIniPath] iniファイルのパス又はIniオブジェクト、又はJSONファイルのパス
 	 * @param {...*} var_args JSONファイルの場合にJSON.loadに渡す引数
 	 * @return {Object}
 	 */
-	Utils.loadOption = function(def, ini, var_args){
-		if(/\.json$/.test(ini)){
+	Utils.loadOption = function(def, path, var_args){
+		if(/\.json$/.test(path)){
 			common_load('json');
-			var obj = Utils.apply(JSON.load, JSON, [ini].concat(arguments.slice(2))) || {};
-			return typeof def == 'object' ? Utils.extend(true, {}, def, obj) : obj;
+			if(path.slice(-4) == '.json') path = Dorothy.matchFile + path;
+			if(!/^[a-z]:/i.test(path)) path = Utils.getUserPath() + path.replace('^\s*\\', '');
+			var obj = Utils.apply(JSON.load, JSON, [path].concat(arguments.slice(2))) || {};
+			return typeof def == 'object' ? Utils.extend(true, true, {}, def, obj) : obj;
 		}else{
-			return Utils.loadIni(def, ini);
+			return Utils.loadIni(def, path);
 		}
 	};
 
+	/**
+	 * iniファイルまたはJSONファイルに設定値を保存します  
+	 * pathはJSONファイルのパス又はiniファイルのパス又はIniオブジェクトを渡してください  
+	 * Iniオブジェクトを渡した場合はそこに設定値を保存します。 Iniオブジェクトの内容は更新されます  
+	 * @param {Object} data ファイルに保存する設定値を持つオブジェクト
+	 * @param {string|Ini} [path=Dorothy.userIniPath] JSONファイルのパス又はiniファイルのパス又はIniオブジェクト
+	 * @param {...*} var_args JSONファイルの場合にJSON.saveに渡す引数
+	 */
+	Utils.saveOption = function(data, path, var_args){
+		if(/\.json$/.test(path)){
+			common_load('json');
+			if(path.slice(-4) == '.json') path = Dorothy.matchFile + path;
+			if(!/^[a-z]:/i.test(path)) path = Utils.getUserPath() + path.replace('^\s*\\', '');
+			Utils.apply(JSON.save, JSON, [path, data].concat(arguments.slice(2)));
+		}else{
+			Utils.saveIni(data, path);
+		}
+	};
+	
 	/**
 	 * 日時を表す文字列をIrvineで使用されているTDateTimeの数値に変換します
 	 * @param {string} str 「yyyy/mm/dd hh:nn:ss」または「hh:nn:ss」形式の文字列
@@ -1327,7 +1381,7 @@
 			doa: 0.26,
 			list: 0.44,
 			set: 0.20,
-			rentan: 20150316
+			rentan: 20160118
 		};
 		if(Utils.isRentan){
 			if(Dorothy.rVersion < v.rentan){

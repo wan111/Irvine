@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils_spec
-//version=1.2
+//version=1.3
 //hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
 //match=
 //author=wan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2015.2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -223,6 +223,28 @@ describe('Utils.error', function(){
 
 	it('throw', function(){
 		expect(function(){throw Utils.error('throw test', 'Utils_spec.dms', '(Utils.error throw)');}).toThrow('Error: Utils_spec.dms (Utils.error throw): throw test');
+	});
+});
+
+describe('Utils.has', function(){
+	function hasTest(){this.b = 1;}
+	hasTest.prototype.a = null;
+	var o = new hasTest;
+	cases([
+		[{a: 1}, 'a', true],
+		[{a: 1}, 'b', false],
+		[{a: UNDEFINED}, 'a', true],
+		[{a: 1}, UNDEFINED, false],
+		[{a: 1}, null, false],
+		[[1], 0, true],
+		[[1], 1, false],
+		[o, 'a', true],
+		[o, 'b', true],
+		[o, 'c', false],
+		[hasTest.prototype, 'a', true],
+		[hasTest.prototype, 'b', false]
+	]).it('has', function(o, k, bool){
+		expect(Utils.has(o, k)).toBe(bool);
 	});
 });
 
@@ -916,22 +938,39 @@ describe('ini, JSON', function(){
 			'f=0x1F',
 			'g='
 		].join("\n"),
+		iniStr2 = [
+			'[A]',
+			'a=abc',
+			'b=123',
+			'',
+			'[B]',
+			'c=true',
+			'd=false',
+			'e=null',
+			'',
+			'[C]',
+			'f=31',
+			'g=',
+			'',
+			''
+		].join("\n"),
 		jsonStr = [
 			'{',
-			'  "A": {',
-			'    "a": "abc",',
-			'    "b": 123',
-			'  },',
-			'  "B": {',
-			'    "c": true,',
-			'    "d": false,',
-			'    "e": null',
-			'  },',
-			'  "C": {',
-			'    "f": 31,',
-			'    "g": ""',
-			'  }',
-			'}'
+			'	"A": {',
+			'		"a": "abc",',
+			'		"b": 123',
+			'	},',
+			'	"B": {',
+			'		"c": true,',
+			'		"d": false,',
+			'		"e": null',
+			'	},',
+			'	"C": {',
+			'		"f": 31,',
+			'		"g": ""',
+			'	}',
+			'}',
+			''
 		].join("\n"),
 		data = {
 			"A": {
@@ -986,23 +1025,7 @@ describe('ini, JSON', function(){
 		}finally{
 			iniFile.close();
 		}
-		var r = [
-			'[A]',
-			'a=abc',
-			'b=123',
-			'',
-			'[B]',
-			'c=true',
-			'd=false',
-			'e=null',
-			'',
-			'[C]',
-			'f=31',
-			'g=',
-			'',
-			''
-		].join("\n");
-		expect(s).toBe(r);
+		expect(s).toBe(iniStr2);
 	});
 	it('Utils.saveIni relative path', function(){
 		expect(function(){Utils.saveIni(data, iniFile.extractName());}).not.toThrow();
@@ -1045,6 +1068,33 @@ describe('ini, JSON', function(){
 		iniFile.remove();
 		expect(Utils.loadOption(null, jsonPath)).toEqual(data);
 		expect(Utils.loadOption(defData, jsonPath)).toEqual(data2);
+	});
+	it('Utils.saveOption', function(){
+		expect(function(){Utils.saveOption(data, iniPath);}).not.toThrow();
+		expect(iniFile.exists()).toBeTruthy();
+		var s;
+		try{
+			iniFile.open('r');
+			s = iniFile.read();
+		}catch(e){
+			alert(e);
+		}finally{
+			iniFile.close();
+		}
+		expect(s).toBe(iniStr2);
+		
+		expect(function(){Utils.saveOption(data, jsonPath);}).not.toThrow();
+		expect(jsonFile.exists()).toBeTruthy();
+		var s;
+		try{
+			jsonFile.open('r');
+			s = jsonFile.read();
+		}catch(e){
+			alert(e);
+		}finally{
+			jsonFile.close();
+		}
+		expect(s).toBe(jsonStr);
 	});
 });
 
@@ -1148,31 +1198,32 @@ describe('Utils.strToPrimitive', function(){
 	});
 });
 
-describe('Utils.extractName, Utils.extractExt', function(){
+describe('Utils.extractPath, Utils.extractName, Utils.extractExt', function(){
 	cases([
-		['http://example.com/aaa/test.txt', 'test.txt', '.txt'],
-		['http://example.com/aaa/testtxt', 'testtxt', ''],
-		['http://example.com/test.txt.zip', 'test.txt.zip', '.zip'],
-		['http://example.com/test.txt?aaa=bbb.ccc', 'test.txt', '.txt'],
-		['http://example.com/aaa/test.txt#aaa.bbb', 'test.txt', '.txt'],
-		['http://example.com/aaa/test.txt#aaa.bbb?ccc=ddd.eee', 'test.txt', '.txt'],
-		['/test.txt', 'test.txt', '.txt'],
-		['./test.txt', 'test.txt', '.txt'],
-		['../test.txt', 'test.txt', '.txt'],
-		['/test.txt?aaa=bbb', 'test.txt', '.txt'],
-		['test.txt?aaa=bbb', 'test.txt', '.txt'],
-		['C:\aaa\test.txt', 'test.txt', '.txt'],
-		['C:\aaa\test#aaa.txt', 'test#aaa.txt', '.txt'],
-		['\aaa\test.txt', 'test.txt', '.txt'],
-		['..\aaa\test.txt', 'test.txt', '.txt'],
-		['C:\aaa\testtxt', 'testtxt', ''],
-		['C:\aaa\test.txt.zip', 'test.txt.zip', '.zip'],
-		['\test.txt', 'test.txt', '.txt'],
-		['test.txt', 'test.txt', '.txt'],
-		[null, 'null', ''],
-		[UNDEFINED, 'undefined', ''],
-		[new URL('http://example.com/aaa/test.txt#aaa.bbb?ccc=ddd.eee'), 'test.txt', '.txt']
-	]).it('extractName,Ext', function(s, name, ext){
+		['http://example.com/aaa/test.txt', 'http://example.com/aaa/', 'test.txt', '.txt'],
+		['http://example.com/aaa/testtxt', 'http://example.com/aaa/', 'testtxt', ''],
+		['http://example.com/test.txt.zip', 'http://example.com/', 'test.txt.zip', '.zip'],
+		['http://example.com/test.txt?aaa=bbb.ccc', 'http://example.com/', 'test.txt', '.txt'],
+		['http://example.com/aaa/test.txt#aaa.bbb', 'http://example.com/aaa/', 'test.txt', '.txt'],
+		['http://example.com/aaa/test.txt#aaa.bbb?ccc=ddd.eee', 'http://example.com/aaa/', 'test.txt', '.txt'],
+		['/test.txt', '/', 'test.txt', '.txt'],
+		['./test.txt', './', 'test.txt', '.txt'],
+		['../test.txt', '../', 'test.txt', '.txt'],
+		['/test.txt?aaa=bbb', '/', 'test.txt', '.txt'],
+		['test.txt?aaa=bbb', '', 'test.txt', '.txt'],
+		['C:\aaa\test.txt', 'C:\aaa\', 'test.txt', '.txt'],
+		['C:\aaa\test#aaa.txt', 'C:\aaa\', 'test#aaa.txt', '.txt'],
+		['\aaa\test.txt', '\aaa\', 'test.txt', '.txt'],
+		['..\aaa\test.txt', '..\aaa\', 'test.txt', '.txt'],
+		['C:\aaa\testtxt', 'C:\aaa\', 'testtxt', ''],
+		['C:\aaa\test.txt.zip', 'C:\aaa\', 'test.txt.zip', '.zip'],
+		['\test.txt', '\', 'test.txt', '.txt'],
+		['test.txt', '', 'test.txt', '.txt'],
+		[null, '', 'null', ''],
+		[UNDEFINED, '', 'undefined', ''],
+		[new URL('http://example.com/aaa/test.txt#aaa.bbb?ccc=ddd.eee'), 'http://example.com/aaa/', 'test.txt', '.txt']
+	]).it('extractName,Ext', function(s, path, name, ext){
+		expect(Utils.extractPath(s)).toBe(path);
 		expect(Utils.extractName(s)).toBe(name);
 		expect(Utils.extractExt(s)).toBe(ext);
 	});
