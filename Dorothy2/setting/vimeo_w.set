@@ -139,33 +139,33 @@ function (){
 	frm.spinTagLen = d.label_spinEdit('文字列化後の最大文字数', opt.fileName.tag.len, 0, null, null, d.sWidth('12431234'));
 	d.contOff();
 	d.contOn();
-	frm.labelCat       = d.label('%CATEGORY%----------カテゴリ', null, null,'g');
+	frm.labelCat       = d.label('%CATEGORIES%--------カテゴリ', null, null,'g');
 	d.widthSpace(10);
 	frm.spinCatMax = d.label_spinEdit('カテゴリ最大数', opt.fileName.category.max, 0, null, null, d.sWidth('12341234'));
 	frm.labelCat.height = frm.spinCatMax.label.height;
 	frm.editCatDelimiter = d.label_edit('区切り文字', opt.fileName.category.delimiter, null, d.sWidth('ABCD'));
 	frm.spinCatLen = d.label_spinEdit('文字列化後の最大文字数', opt.fileName.category.len, 0, null, null, d.sWidth('12431234'));
 	d.contOff();
-	frm.labelPFUrl     = d.label('%PORTFOLIO_URL%-----ポートフォリオURL', null, null, 'g');
-	frm.labelPFID      = d.label('%PORTFOLIO_ID%------ポートフォリオID', null, null, 'g');
+	//frm.labelPFUrl     = d.label('%PORTFOLIO_URL%-----ポートフォリオURL', null, null, 'g');
+	//frm.labelPFID      = d.label('%PORTFOLIO_ID%------ポートフォリオID', null, null, 'g');
 	frm.labelChName    = d.label('%CHANNEL_NAME%------チャンネル名', null, null, 'g');
 	frm.labelChUrl     = d.label('%CHANNEL_URL%-------チャンネルURL', null, null, 'g');
 	frm.labelChId      = d.label('%CHANNEL_ID%--------チャンネルID', null, null, 'g');
 	frm.labelGrName    = d.label('%GROUP_NAME%--------グループ名', null, null, 'g');
 	frm.labelGrUrl     = d.label('%GROUP_URL%---------グループURL', null, null, 'g');
 	frm.labelGrID      = d.label('%GROUP_ID%----------グループID', null, null, 'g');
-	frm.labelODID      = d.label('%ALBUM_ID%----------アルバムID', null, null, 'g');
-	frm.labelODUrl     = d.label('%ONDEMAND_URL%------オンデマンドURL', null, null, 'g');
-	frm.labelTrackID   = d.label('%TRACK_ID%----------トラックID', null, null, 'g');
-	frm.labelMusicUrl  = d.label('%MUSIC_URL%---------ミュージックURL', null, null, 'g');
-	frm.labelMusicName = d.label('%MUSIC_NAME%--------ミュージック名', null, null, 'g');
+	//frm.labelODID      = d.label('%ALBUM_ID%----------アルバムID', null, null, 'g');
+	//frm.labelODUrl     = d.label('%ONDEMAND_URL%------オンデマンドURL', null, null, 'g');
+	//frm.labelTrackID   = d.label('%TRACK_ID%----------トラックID', null, null, 'g');
+	//frm.labelMusicUrl  = d.label('%MUSIC_URL%---------ミュージックURL', null, null, 'g');
+	//frm.labelMusicName = d.label('%MUSIC_NAME%--------ミュージック名', null, null, 'g');
 
 	var nameWidth = d.sWidth('%TITLE% %USER_ID% %USER_URL% %USER_NAME% %WIDTH% %HEIGHT% %DURATION% %VIDEO_ID% %QUALITY% %FPS%');
 	var nameCapWidth = d.sWidth('AAAAAAAA');
 	frm.editVideo =    d.label_edit('通常動画', opt.fileName.template.video, nameCapWidth, nameWidth);
-	frm.editPro =      d.label_edit('vimeopro ', opt.fileName.template.pro, nameCapWidth, nameWidth);
-	frm.editOndemand = d.label_edit('ondemand', opt.fileName.template.ondemand, nameCapWidth, nameWidth);
-	frm.editMusic =    d.label_edit('music     ', opt.fileName.template.music, nameCapWidth, nameWidth);
+	//frm.editPro =      d.label_edit('vimeopro ', opt.fileName.template.pro, nameCapWidth, nameWidth);
+	//frm.editOndemand = d.label_edit('ondemand', opt.fileName.template.ondemand, nameCapWidth, nameWidth);
+	//frm.editMusic =    d.label_edit('music     ', opt.fileName.template.music, nameCapWidth, nameWidth);
 	d.groupEnd(frm.groupName);
 
 
@@ -182,9 +182,9 @@ function (){
 		opt.addItem.Workaround = frm.checkWorkaround.Checked;
 		opt.fileName.zen2han = frm.checkZen2han.Checked;
 		opt.fileName.template.video = frm.editVideo.edit.Text;
-		opt.fileName.template.pro = frm.editPro.edit.Text;
-		opt.fileName.template.ondemand = frm.editOndemand.edit.Text;
-		opt.fileName.template.music = frm.editMusic.edit.Text;
+		//opt.fileName.template.pro = frm.editPro.edit.Text;
+		//opt.fileName.template.ondemand = frm.editOndemand.edit.Text;
+		//opt.fileName.template.music = frm.editMusic.edit.Text;
 		opt.fileName.tag.max = frm.spinTagMax.spinEdit.Value;
 		opt.fileName.tag.len = frm.spinTagLen.spinEdit.Value;
 		opt.fileName.tag.delimiter = frm.editTagDelimiter.edit.Text;

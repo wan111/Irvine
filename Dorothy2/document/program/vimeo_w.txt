@@ -1,109 +1,159 @@
 説明
+====
 	Vimeoから動画をダウンロードします
-	設定によりDLする動画の画質と保存ファイル名を指定できます
+	1.0以前のバージョンとは仕様が大幅に異なります
+	設定ファイルも異なる為、以前のバージョンを使用していた方は設定し直してください
+
+外部ファイル
+============
+	このスクリプトは下記のrentanさんのスクリプトを使用しています。別途入手して導入してください
+	https://github.com/rentan/Irvine/tree/master/Dorothy2/common
+		getter.dms
+		rutil.dms
+		rutil_dorothy2r.dms
+		additem.dms
+		utf8.dms
+		utf8_charref.dms
+		namebuilder.dms
 
 対応URL
-	・http://vimeo.com/[数字]
-		通常の動画URL
+=======
+	・https://vimeo.com/[動画ID]
+		通常の動画ページ
 	
-	・http://vimeo.com/channels/staffpicks/[数字]
-		公式スタッフが選んだ動画
+	・https://vimeo.com/m/[動画ID]
+		動画ページに転送
+
+	・https://vimeo.com/[ユーザーURL]/[動画URL]
+		動画ページに転送
+
+	・https://vimeo.com/channels/staffpicks/[動画ID]
+		StaffPicksチャンネルから選んだ動画
 	
-	・http://vimeo.com/channels/[チャンネル名]/[数字]
-		チャンネルから動画を選んだ場合
+	・https://vimeo.com/channels/[チャンネルURL・ID]/[動画ID]
+		チャンネルから選んだ動画
+
+	・https://vimeo.com/groups/[グループURL・ID]/videos/[動画ID]
+		グループから選んだ動画
 	
-	・http://vimeo.com/groups/[グループ名]/videos/[数字]
-		グループから動画を選んだ場合
-	
-	・http://vimeo.com/[ユーザーURL]/[動画名?]
-		http://vimeo.com/\d+ にリダイレクトされる
 
 未対応URL
-	・オンデマンド
-	   http://vimeo.com/channels/staffpicks/ondemand
-	   http://vimeo.com/ondemand
-	・動画の一覧ページ
-	・埋め込み動画URL
+=========
+	・動画以外のページ(ユーザーページや一覧ページ等)
+	
+	・https://vimeo.com/album/[アルバムID]/video/[動画ID]
+		アルバムから選んだ動画
+
+	・https://vimeo.com/ondemand/[オンデマンドURL]
+		オンデマンドのタイトルページ
+
+	・https://vimeo.com/ondemand/[オンデマンドURL]/[動画ID]
+		オンデマンドのトレーラー視聴ページ
+
+	・https://vimeo.com/musicstore/track/[トラックID]/[音楽URL]
+		musicstoreの音楽
+
+	・https://vimeo.com/musicstore/track/[トラックID]
+		音楽ページに転送
+
+	・https://vimeopro.com/[ポートフォリオURL]/video/[動画ID]
+		VimeoProの動画
+
+	・https://player.vimeo.com/[動画ID]?portfolio_id=[ポートフォリオID]
+		VimeoProでの動画のプレイヤーURL
+
+	・https://player.vimeo.com/video/[動画ID]
+		動画のプレイヤーURL
+	
 
 仕様
-	・Private VideoとなりDLできないものは/channels/staffpicks/ からDLできないか試行します
-	  また http://vimeo.com/channels/[チャンネル名]/[数字] のURLから再生できるものもあるようですが
-	  チャンネル名を取得できないため未対応です
-	・HLSの動画には未対応です
-設定
-	・保存ファイル名
-		動画の保存ファイル名を指定します
+====
+	現在は通常の動画URLとチャンネルとグループの動画のみに対応しています
+	
+	動画投稿者による公開設定により特定のURLでしか閲覧できない動画が存在します
+	その様なURLが指定された場合はStaffPicksやURLの直接指定等により動画が取得できないか試行します
+	試行に成功し動画のURLが取得出来た場合でも保存ファイル名に必要なファイル名情報の一部が取得できない場合も有ります
+	
+	ダウンロード対象とする動画のURLは通常の再生と同じく取得出来る動画とサイト上のダウンロードリンクに「Original」と表示される動画になります
+	Originalの動画のみファイル名情報の%FPS%と%QUALITY% は取得できません
+	
+	通常の動画と内容が同一の為HLSとDASHには非対応です
 
-		%TITLE%---------タイトル
-		%FILENAME%------動画URLのファイル名
-		%ID%------------動画ID
-		%WIDTH%---------幅
-		%HEIGHT%--------高さ
-		%DURATION%------再生時間
-		%CODEC%---------コーデック
-		%QUALITY%-------画質
-		%BITRATE%-------ビットレート
-		%TAGS%----------タグ
-		%UPLOAD_DATE%---投稿日時
-		%USER_NAME%-----投稿者
-		%USER_ID%-------投稿者のID
-		%USER_URL%------投稿者のユーザーURL
-		%ACCOUNT_TYPE%--投稿者のアカウントタイプ
+設定
+====
+	・一般
+		・デバッグモード
+			デバックモードを有効にします
+			エラーが起きた場合にエラーファイルを保存したり動画やファイル名情報の一覧等を表示します
 		
-		例: (vimeo) [%USER_NAME%(%USER_URL%)] %TITLE% (%ID%)(%CODEC% %WIDTH%x%HEIGHT%)
+		・トレースモード
+			トレースモードを有効にします
+			問題が起きた場合にその箇所を見つけ易くする為の物なので通常は必要ありません
+		
+		・ファイル名情報が取得出来なくても続行する
+			仕様変更や一部の動画等でファイル名生成に必要な情報が取得できなくても中断せずに処理を続行します
+		
+		・メッセージを表示しない
+			ログのメッセージ表示をなるべく抑制します
+
+	・ダウンロード
+		・優先順位
+			DLしたい動画の画質を指定します
+			指定された優先順位で動画を探します 見つからなかった場合は何もDLしません
+			「Original」はサイト上の公式ダウンロードリンクにOriginalと表示されている動画で解像度等は不定です
+			A: 270p
+			B: 360p
+			C: 480p
+			D: 540p
+			E: 720p
+			F: 1080p
+			Z: Original
+			
+			例: ZFEDCBA
+		
+		・新規アイテムとして追加する
+			現在のアイテムでダウンロードを行わずにIrvineにファイルURLを新規に登録します
 	
-	・画質設定
-		DLしたい動画を指定します
-		指定された優先順位で動画を探します 見つからなかった場合は何もDLしません
+	・AddItem
+		内部で使用しているAddItemの設定です
+		詳しくはadditem.dmsのドキュメントを参照してください
+
+	・保存ファイル名
+		動画の保存ファイル名を指定します。拡張子の指定は不要です。
+
+		%TITLE%-------------タイトル
+		%QUALITY%-----------画質(360p,480p,...)
+		%FPS%---------------fps
+		%WIDTH%-------------幅
+		%HEIGHT%------------高さ
+		%DURATION%----------再生時間
+		%VIDEO_ID%----------動画ID
+		%VIDEO_URL%---------動画URL
+		%USER_NAME%---------投稿者
+		%USER_URL%----------投稿者のユーザーURL
+		%USER_ID%-----------投稿者のID
+		%UPLOAD_DATE%-------投稿日時
+		%TAGS%--------------タグ
+		%CATEGORIES%--------カテゴリ
+		%CHANNEL_NAME%------チャンネル名
+		%CHANNEL_URL%-------チャンネルURL
+		%CHANNEL_ID%--------チャンネルID
+		%GROUP_NAME%--------グループ名
+		%GROUP_URL%---------グループURL
+		%GROUP_ID%----------グループID
+
+		例: Vimeo - %USER_NAME%(%USER_URL%) - %TITLE% (%VIDEO_ID%)(%WIDTH%x%HEIGHT%)
 		
-		A: H264 HD
-		B: H264 SD
-		C: H264 mobile
-		D: VP8 HD
-		E: VP8 SD
-		F: VP8 mobile
-		G: VP6 HD
-		H: VP6 SD
-		I: VP6 mobile
-		
-		例: ADGBEHCFI
-	
-	・条件による選択
-		チェックを入れると指定された条件でDLする動画を選択します
-		
-		条件文: キー名 演算子 値;
-		演算子: ==, !=, <, <=, >, >=
-		
-		キー名      値
-		  key:      画質設定A～I
-		  codec:    h264, vp8, vp6
-		  quality:  hd, sd, mobile
-		  ext:      .mp4, .webm, .flv
-		  url:      動画本体のURL
-		  filename: 動画URLのファイル名
-		  width:    動画の縦サイズ
-		  height:   動画の横サイズ
-		  bitrate:  動画のビットレート
-		
-		キー名==max; キー名==min; とした場合は最大値,最小値を選択
-		条件は左から順に行われ最後に優先順位によって選択されます
-		
-		例えば
-		条件をquality==hd; width==max;
-		優先順位をABCDEFGHIと指定し
-		動画が
-		(1) h264 hd 1920x1080
-		(2) h264 hd 1280x720
-		(3) h264 mobile 480x360
-		(4) vp8 hd 1920x1080 
-		とあった場合には
-		まず(1), (2), (4) が選択され
-		次に(1), (4) が選択され
-		最後に優先順位によって(1)が選択されます
-		
-		例: codec==h264; width>=1280; bitrate==max;
+		%VIDEO_URL% は指定されたURLにこれが含まれていた場合のみ使用可能です(vimeo.com/[ユーザーURL]/[動画URL])
+		動画の画質が「Original」の場合は%FPS%と%QUALITY%は使用できません
+		%CHANNEL_NAME% %CHANNEL_URL% %CHANNEL_ID% はチャンネルのURLを指定した場合のみ使用可能です(vimeo.com/channels/[チャンネルURL・ID]/[動画ID])
+		%GROUP_NAME% %GROUP_URL% %GROUP_ID% はグループのURLを指定した場合のみ使用可能です(vimeo.com/groups/[グループURL・ID]/videos/[動画ID])
 
 変更履歴
+========
+	1.0 - 2016/01/26
+		・仕様変更に伴い新規に作り直し
+	
 	0.20 - 2013/11/06
 		・http://vimeo.com/channels/[チャンネル名]/[数字] にて指定された動画がDLされない問題を修正
 		   uploade_dateが指定された動画以外のものになる問題を修正
