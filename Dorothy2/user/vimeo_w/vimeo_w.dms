@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Vimeo.com_w
-//version=1.1
+//version=1.2
 //hint=Vimeo
 //author=wan
 //path=user\vimeo_w
@@ -114,6 +114,8 @@ Vimeo.prototype._requestUrls = {
 	'channels_id/video': {url: 'https://vimeo.com/channels/%CHANNEL_ID%/%VIDEO_ID%'},
 	'groups_url/video': {url: 'https://vimeo.com/groups/%GROUP_URL%/videos/%VIDEO_ID%'},
 	'groups_id/video': {url: 'https://vimeo.com/groups/%GROUP_ID%/videos/%VIDEO_ID%'},
+	'groups_url': {url: 'https://vimeo.com/groups/%GROUP_URL%'},
+	'groups_id': {url: 'https://vimeo.com/groups/%GROUP_ID%'},
 	'album/video': {url: 'https://vimeo.com/album/%ALBUM_ID%/video/%VIDEO_ID%'},
 	'ondemand_url/title': {url: 'https://vimeo.com/ondemand/%ONDEMAND_URL%'},
 	'ondemand_url/trailer': {url: 'https://vimeo.com/ondemand/%ONDEMAND_URL%/%VIDEO_ID%'},
@@ -408,6 +410,7 @@ Vimeo.prototype._checkInfo = function(names, info, msg){
 Vimeo.prototype._makeRequestUrl = function(type, info, msg){
 	type = type || this.pageType;
 	info = info || this.info;
+	msg = isUndefined(msg) ? '_makeRequestUrl' : msg;
 	var url,
 		r = false,
 		requestUrls = this._requestUrls,
@@ -416,7 +419,7 @@ Vimeo.prototype._makeRequestUrl = function(type, info, msg){
 	if(typeof requestUrls[type] != 'undefined'){
 		url = requestUrls[type].url;
 		url.replace(/%([^%]+)%/g, function(a, name){names.push(name);});
-		if(this._checkInfo(names, info, msg || '_makeRequestUrl')) r = Utils.formatTemplate(url, info);
+		if(this._checkInfo(names, info, msg)) r = Utils.formatTemplate(url, info);
 	}
 	return r;
 };
@@ -446,10 +449,10 @@ Vimeo.prototype._parseDataConfig = function(s){
 	info.TITLE = info.TITLE || Utils.getObject('video.title', dc, null);
 
 	embedContext = Utils.getObject('embed.context', dc, '');
-	if(/^channel\.main\.(\d+)/.test(embedContext)){
-		info.CHANNEL_ID = RegExp.$1;
-	}else if(/^group\.clip\.(\d+)/.test(embedContext)){
-		info.GROUP_ID = RegExp.$1;
+	if(/^channel\.(clip|main(_beta)?)\.(\d+)/.test(embedContext)){
+		info.CHANNEL_ID = RegExp.$3;
+	}else if(/^group\.(clip|main(_beta)?)\.(\d+)/.test(embedContext)){
+		info.GROUP_ID = RegExp.$3;
 	}
 
 	if(typeof Utils.getObject('request.files', dc) == 'undefined') return this._unknown('reqeust.filesが見つかりません');
@@ -724,23 +727,17 @@ Vimeo.prototype._getInfo_channel = function(data){
 
 /** グループの動画ページのhtmlから情報取得 */
 Vimeo.prototype._getInfo_group = function(data){
-	var pageHeader, groupHeader, keywords,
-		info = this.info,
-		tags = [],
-		jsonLd = this._getJsonLd(data);
+	var pageHeader, groupHeader, tmplName,
+		http = this.http,
+		info = this.info;
 	
-	if(jsonLd){
-		info.TITLE = Utils.getObject('name', jsonLd, '').replace('in ' + info.CHANNEL_NAME + '$', '') || null;
-		info.DURATION = this._durationToSec(Utils.getObject('duration', jsonLd, null));
-		info.UPLOAD_DATE = Utils.getObject('uploadDate', jsonLd, null);
-		info.USER_NAME = Utils.getObject('author.name', jsonLd, null);
-		info.USER_URL = Utils.getObject('author.url', jsonLd, '').replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
-		keywords = Utils.getObject('keywords', jsonLd);
-		if(nameOf(keywords) == 'Array'){
-			info.TAGS = keywords;
-		}
+	r = this._getInfo_video(data);
+
+	if(/^group\.(clip|main(_beta)?)\.(\d+)/.test(this._dataConfigUrl)){
+		info.GROUP_ID = RegExp.$3;
 	}
 
+	//group_header,page_headerは無くなった様だけど一応残しておく
 	if(/header id\s*=\s*"group_header">(.+?)<\/header>/.test(data)){
 		groupHeader = RegExp.$1;
 		if(/a href\s*=\s*"([^"]+)" title\s*=\s*"([^"]+)">/.test(groupHeader) ||
@@ -749,7 +746,7 @@ Vimeo.prototype._getInfo_group = function(data){
 			info.GROUP_URL = RegExp.$1.replace(/^(\/groups)?\//, '').replace(/\/videos$/, '');
 		}
 	}else{
-		this._p('group_headerが見つかりません');
+		//this._p('group_headerが見つかりません');
 	}
 
 	if(/<header id\s*=\s*"page_header">(.+?)<\/header>/.test(data)){
@@ -765,19 +762,32 @@ Vimeo.prototype._getInfo_group = function(data){
 			info.UPLOAD_DATE = RegExp.$1;
 		}
 	}else{
-		this._p('page_headerが見つかりません');
+		//this._p('page_headerが見つかりません');
 	}
 
-	if(!info.TAGS.length){
-		data.replace(/<meta property="video:tag" content="([^"]+)/g, function(a, tag){tags.push(tag);});
-		if(tags.length){
-			info.TAGS = tags;
-		}else{
-			this._noTags = true;
-			this._p('Tagが見つかりません。Tagが設定されていないか仕様変更です');
+	if(!info.GROUP_NAME || !info.GROUP_URL){
+		tmplName = this._getTmplFileName('video');
+		if(/%GROUP_(NAME|URL)%/.test(tmplName)){
+			http = http.clone();
+			url = this._makeRequestUrl('groups_url', info, false) || this._makeRequestUrl('groups_id');
+			if(http.get(url)){
+				if(/<meta property\s*=\s*"og:url"\s*content\s*=\s*"(https:\/\/vimeo.com\/groups\/)?([^"]+)"/.test(http.data)){
+					info.GROUP_URL = RegExp.$2;
+				}else{
+					r = this._ng('<meta property="og:url"が見つかりません');
+				}
+				if(/<meta property\s*=\s*"og:title"\s*content\s*=\s*"([^"]+)">/.test(http.data)){
+					info.GROUP_NAME = RegExp.$1;
+				}else{
+					r = this._ng('<meta property="og:title"が見つかりません');
+				}
+			}else{
+				r = this._httpError();
+			}
 		}
 	}
-	return this._checkInfo(['TITLE', 'DURATION', 'UPLOAD_DATE', 'USER_NAME', 'USER_URL', 'GROUP_NAME', 'GROUP_URL', 'TAG'], info, '_getInfo_group');
+	
+	return r;
 };
 
 //内容が通常の動画ページとほぼ同じ為省略
@@ -917,7 +927,7 @@ Vimeo.prototype._getVideoPage_group = function(url){
 	
 	r = this._getInfo_group(http.data);
 	
-	if(!this.files.length) r = this._getDCFromHtml(http.data) && r;
+	if(!this.files.length) r = (this._dataConfigUrl ? this._getDCFromUrl(this._dataConfigUrl) : this._getDCFromHtml(http.data)) && r;
 	return r;
 };
 
