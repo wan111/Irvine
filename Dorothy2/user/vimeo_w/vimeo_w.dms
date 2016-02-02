@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Vimeo.com_w
-//version=1.0
+//version=1.1
 //hint=Vimeo
 //author=wan
 //path=user\vimeo_w
@@ -101,7 +101,9 @@ Vimeo.prototype.priorities = {
 	D: {"quality": "540p"},
 	E: {"quality": "720p"},
 	F: {"quality": "1080p"},
-	Z: {"original": true}
+	G: {"quality": "1440p"},
+	H: {"quality": "2160p"},
+	Z: {"quality": "Original", "original": true}
 };
 
 /** ページの種類とリクエストURLのテンプレート */
@@ -113,16 +115,19 @@ Vimeo.prototype._requestUrls = {
 	'groups_url/video': {url: 'https://vimeo.com/groups/%GROUP_URL%/videos/%VIDEO_ID%'},
 	'groups_id/video': {url: 'https://vimeo.com/groups/%GROUP_ID%/videos/%VIDEO_ID%'},
 	'album/video': {url: 'https://vimeo.com/album/%ALBUM_ID%/video/%VIDEO_ID%'},
-	'ondemand/title': {url: 'https://vimeo.com/ondemand/%ONDEMAND_URL%'},
-	'ondemand/trailer': {url: 'https://vimeo.com/ondemand/%ONDEMAND_URL%/%VIDEO_ID%'},
+	'ondemand_url/title': {url: 'https://vimeo.com/ondemand/%ONDEMAND_URL%'},
+	'ondemand_url/trailer': {url: 'https://vimeo.com/ondemand/%ONDEMAND_URL%/%VIDEO_ID%'},
+	'ondemand_id/title': {url: 'https://vimeo.com/ondemand/%ONDEMAND_ID%'},
+	'ondemand_id/trailer': {url: 'https://vimeo.com/ondemand/%ONDEMAND_ID%/%VIDEO_ID%'},
 	'musicstore/music': {url: 'https://vimeo.com/musicstore/track/%TRACK_ID%/%MUSIC_URL%'},
 	'musicstore/trackId': {url: 'https://vimeo.com/musicstore/track/%TRACK_ID%'},//redirect
+	'musicstore/preview': {url: 'https://vimeo.com/musicstore/preview?id=%TRACK_ID%'},
 	'm/video': {url: 'https://vimeo.com/m/%VIDEO_ID%'},//redirect
 	'm/user': {url: 'https://vimeo.com/m/user%USER_ID%'},//redirect
 	'userUrl/videoUrl': {url: 'https://vimeo.com/%USER_URL%/%VIDEO_URL%'},//redirect
 	'pro/video': {url: 'https://vimeopro.com/%PORTFOLIO_URL%/video/%VIDEO_ID%'},
-	'pro/player': {url: 'https://player.vimeo.com/%VIDEO_ID%?portfolio_id=%PORTFOLIO_ID%'},
 	'player': {url: 'https://player.vimeo.com/video/%VIDEO_ID%'},
+	'player/pro': {url: 'https://player.vimeo.com/%VIDEO_ID%?portfolio_id=%PORTFOLIO_ID%'},
 	'dataConfig': {url: 'https://player.vimeo.com/video/%VIDEO_ID%/config'},
 	'officialDL': {url: 'https://vimeo.com/%VIDEO_ID%?action=load_download_config'}
 };
@@ -191,9 +196,9 @@ Vimeo.prototype.init = function(opt){
 		GROUP_ID:      null,//(/groups/[groupName,id]/[videoId]) 
 		ALBUM_ID:      null,//(/albums/[albumId]/[videoId]) 
 		ONDEMAND_URL:  null,//(/ondemand/[ondemand_url])
+		ONDEMAND_ID:   null,//(/ondemand/[ondemand_id])
 		TRACK_ID:      null,//(/musicstore/track/[tack_id])
-		MUSIC_URL:     null,//(/musicstore/track/[tack_id]/[music_url])
-		MUSIC_NAME:    null//(/musicstore/track/[tack_id]/[music_name]) html
+		MUSIC_URL:     null//(/musicstore/track/[tack_id]/[music_url])
 	};
 
 
@@ -219,6 +224,8 @@ Vimeo.prototype.init = function(opt){
 	this._dataConfigUrl = '';
 	this._noTags = false;
 	this._noCats = false;
+	this._noOfficialDL = false;
+	this._isMusic = false;
 };
 
 Vimeo.prototype._print = function(s){
@@ -307,6 +314,10 @@ Vimeo.prototype._selectFiles = function(files, conditions, all){
 	return r;
 };
 
+/** ページの種類に適した保存ファイル名のテンプレートを取得する
+ * @param {string} [pageType="video"]
+ * @return {string}
+ */
 Vimeo.prototype._getTmplFileName = function(pageType){
 	pageType = pageType || this.pageType;
 
@@ -355,11 +366,11 @@ Vimeo.prototype._setItems = function(){
 
 	if(files.length){
 		Utils.extend(nb, this.info); //NameBuilderにthis.infoのファイル名情報を登録
-		nb.TAGS = nb.TAGS.slice(0, tag.max).join(tag.delimiter).slice(0, tag.len);
+		nb.TAGS = new Utf8(nb.TAGS.slice(0, tag.max).join(tag.delimiter).slice(0, tag.len));
 		nb.CATEGORIES = nb.CATEGORIES.slice(0, cat.max).join(cat.delimiter).slice(0, cat.len);
 		nb.TITLE = new Utf8(nb.TITLE).decodeCharRef();
 
-		dls = this._selectFiles(files, conditions, false);
+		dls = this._isMusic ? files : this._selectFiles(files, conditions, false);
 		for(var i = 0; i < dls.length; i++){
 			items.push(this._createItem(dls[i], nb));
 		}
@@ -381,7 +392,7 @@ Vimeo.prototype._checkInfo = function(names, info, msg){
 			v = info[name];
 			if(!v || (name == 'TAGS' && !this._noTags && !v.length) || (name == 'CATEGORIES' && !this._noCats && !v.length)){
 				r = false;
-				if(msg != false) this._p( format('%sが取得できませんでした。 %s', name, (msg || '')) );
+				if(msg != false) this._p( format('%sが取得出来ませんでした。 %s', name, (msg || '')) );
 			}
 		}
 	}
@@ -405,7 +416,7 @@ Vimeo.prototype._makeRequestUrl = function(type, info, msg){
 	if(typeof requestUrls[type] != 'undefined'){
 		url = requestUrls[type].url;
 		url.replace(/%([^%]+)%/g, function(a, name){names.push(name);});
-		if(this._checkInfo(names, info, '_makeRequestUrl', msg)) r = Utils.formatTemplate(url, info);
+		if(this._checkInfo(names, info, msg || '_makeRequestUrl')) r = Utils.formatTemplate(url, info);
 	}
 	return r;
 };
@@ -468,7 +479,7 @@ Vimeo.prototype._parseDataConfig = function(s){
 	this._print('==================================================');
 
 	//テスト用
-	//JSON.save(info.VIDEO_ID + '.json', dc);
+	//JSON.save('\dataConfig\' + info.VIDEO_ID + '.json', dc);
 
 	return true;
 };
@@ -516,28 +527,33 @@ Vimeo.prototype._getDCFromHtml = function(data){
 	return r;
 };
 
-Vimeo.prototype._errorHtml = function(data){
+Vimeo.prototype._errorHtml = function(http){
+	http = http || this.http;
 	var r;
-	if(/<h1>\s*(Page not found)\s*<\/h1>/.test(data)){
-		//動画が存在しない
-		this._print('動画が存在しません');
-		r = this._exit('Page not found');
-	}else if(/<h1>\s*(Video unavailable)\s*<\/h1>/.test(data)){
-		this._print('利用できない動画です。削除または無効化されています(HTTP 451)');
-		r = this._exit('Video unavailable');
-	}else if(/<h1>\s*We couldn(&rsquo;|')t find that page.\s*<\/h1>/.test(data)){
-		//動画が存在する可能性がある 例:×staffpicks/1234 -> ○vimeo.com/1234
-		//存在しない場合でもstaffpicks/[videoId] 等はPage not foundにはならない
-		this._print('ページが見つかりません');
-		r = this._ng("We couldn't find that page.");
-	}else if(/<h1>\s*(Permission Denied)\s*<\/h1>/.test(data)){
-		//動画が存在するが動画の限定公開設定によりアクセスできない 視聴可能な場所や人 埋め込みの許可等が設定されている
-		//oEmbedかiframe_urlかdataConfig_urlから情報を取得できる場合がある
-		this._print('動画の限定公開設定によりこのURLでは情報を取得できませんでした');
-		r = this._ng('Permission Denied');
+	if(http.code == 404 || http.code == 410 || http.code == 451){
+		if(/<h1>\s*(Page not found)\s*<\/h1>/.test(http.data)){
+			//動画が存在しない
+			this._print('動画が存在しません');
+			r = this._exit('Page not found');
+		}else if(/<h1>\s*(Video unavailable)\s*<\/h1>/.test(http.data)){
+			this._print('利用できない動画です。削除または無効化されています(HTTP 451)');
+			r = this._exit('Video unavailable');
+		}else if(/<h1>\s*We couldn(&rsquo;|')t find that page.\s*<\/h1>/.test(http.data)){
+			//動画が存在する可能性がある 例:×staffpicks/1234 -> ○vimeo.com/1234
+			//存在しない場合でもstaffpicks/[videoId] 等はPage not foundにはならない
+			this._print('ページが見つかりません');
+			r = this._ng("We couldn't find that page.");
+		}else if(/<h1>\s*(Permission Denied)\s*<\/h1>/.test(http.data)){
+			//動画が存在するが動画の限定公開設定によりアクセスできない 視聴可能な場所や人 埋め込みの許可等が設定されている
+			//oEmbedかiframe_urlかdataConfig_urlから情報を取得できる場合がある
+			this._print('動画の限定公開設定によりこのURLでは情報を取得出来ませんでした: ' + http.previousUrl);
+			r = this._ng('Permission Denied');
+		}else{
+			r = this._unknown('Unknown Error');
+			if(this.debug) http.capture('vimeo_unkown_error.html');
+		}
 	}else{
-		r = this._unknown('Unknown Error');
-		if(this.debug) this.http.capture();
+		r = this._httpError();
 	}
 	return r;
 };
@@ -557,49 +573,11 @@ Vimeo.prototype._get_clip_page_config = function(data){
 	return r || null;
 };
 
-/** 標準の動画ページのhtmlから情報取得 */
-Vimeo.prototype._getInfo_video = function(data){
-	var name,
-		info = this.info,
-		config = this._get_clip_page_config(data),
-		tags = [],
-		cats = [];
-	if(!config) return false;
-
-	info.TITLE = Utils.getObject('clip.title', config, null);
-	info.USER_ID = Utils.getObject('owner.id', config, null);
-	info.USER_URL = Utils.getObject('owner.url', config, '').replace(/^\//, '') || null;
-	info.USER_NAME = Utils.getObject('owner.display_name', config, null);
-
-	this._dataConfigUrl = Utils.getObject('player.config_url', config, '');
-
-	data.replace(/<meta property="video:tag" content="([^"]+)/g, function(a, tag){tags.push(tag);});
-	if(tags.length){
-		info.TAGS = tags;
-	}else{
-		this._noTags = true;
-		this._p('Tagが見つかりません。Tagが設定されていないか仕様変更です');
-	}
-
-	cats = Utils.getObject('categories_config.categories', config);
-	if(nameOf(cats) == 'Array' && cats.length){
-		for(var i = 0; i < cats.length; i++){
-			name = Utils.getObject('name', cats[i]);
-			if(name) info.CATEGORIES.push(name);
-		}
-	}else{
-		this._noCats = true;
-		this._p('Categoryが見つかりません。Categoryが設定されていないか仕様変更です');
-	}
-
-	//<time datetime="2009-09-11T21:29:20-04:00"
-	if(/<time datetime="([^"]+)" title/.test(data)){
-		info.UPLOAD_DATE = RegExp.$1;
-	}
-
-	return this._checkInfo(['TITLE', 'USER_ID', 'USER_URL', 'USER_NAME', 'TAGS', 'CATEGORIES', 'UPLOAD_DATE'], info, '_getInfo_video');
-};
-
+/** htmlから JSON LD(schema.org) を取得 
+ * @param {string} data
+ * @param {string} [type='VideoObject'] @type
+ * @return {Object|null} Object 失敗ならnull
+ */
 Vimeo.prototype._getJsonLd = function(data, type){
 	var arr,
 		vObj = null;
@@ -621,6 +599,69 @@ Vimeo.prototype._getJsonLd = function(data, type){
 	return vObj;
 };
 
+/** ISO 8601 Duration を秒に変換 */
+Vimeo.prototype._durationToSec = function(d){
+	var h, m, s;
+	if(/^PT(\d+H)?(\d+M)?(\d+S)?/.test(d)){
+		h = RegExp.$1.slice(0, -1) || 0;
+		m = RegExp.$2.slice(0, -1) || 0;
+		s = RegExp.$3.slice(0, -1) || 0;
+		d = h * 60 * 60 + m * 60 + (s | 0);
+	}
+	return d;
+};
+
+/** 標準の動画ページのhtmlから情報取得 */
+Vimeo.prototype._getInfo_video = function(data){
+	var name, keywords,
+		info = this.info,
+		config = this._get_clip_page_config(data),
+		jsonLd = this._getJsonLd(data),
+		tags = [],
+		cats = [];
+
+	info.TITLE = Utils.getObject('clip.title', config) || Utils.getObject('name', jsonLd, null);
+	info.DURATION = this._durationToSec(Utils.getObject('duration', jsonLd, null));
+	info.UPLOAD_DATE = Utils.getObject('uploadDate', jsonLd, null);
+	info.USER_ID = Utils.getObject('owner.id', config, null);
+	info.USER_URL = (Utils.getObject('owner.url', config, '') || Utils.getObject('author.url', jsonLd, '')).replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
+	info.USER_NAME = Utils.getObject('owner.display_name', config) || Utils.getObject('author.name', jsonLd, null);;
+	keywords = Utils.getObject('keywords', jsonLd);
+	if(nameOf(keywords) == 'Array'){
+		info.TAGS = keywords;
+	}
+
+	this._dataConfigUrl = Utils.getObject('player.config_url', config, '');
+
+	if(!info.TAGS.length){
+		data.replace(/<meta property="video:tag" content="([^"]+)/g, function(a, tag){tags.push(tag);});
+		if(tags.length){
+			info.TAGS = tags;
+		}else{
+			this._noTags = true;
+			this._p('Tagが見つかりません。Tagが設定されていないか仕様変更です');
+		}
+	}
+
+	cats = Utils.getObject('categories_config.categories', config);
+	if(nameOf(cats) == 'Array' && cats.length){
+		for(var i = 0; i < cats.length; i++){
+			name = Utils.getObject('name', cats[i]);
+			if(name) info.CATEGORIES.push(name);
+		}
+	}else{
+		this._noCats = true;
+		this._p('Categoryが見つかりません。Categoryが設定されていないか仕様変更です');
+	}
+
+	//<time datetime="2009-09-11T21:29:20-04:00"
+	if(/<time datetime="([^"]+)" title/.test(data)){
+		info.UPLOAD_DATE = RegExp.$1;
+	}
+
+	return this._checkInfo(['TITLE', 'USER_ID', 'USER_URL', 'USER_NAME', 'TAGS', 'CATEGORIES', 'UPLOAD_DATE'], info, '_getInfo_video');
+};
+
 /** Staff Picksの動画ページのhtmlから情報取得 */
 Vimeo.prototype._getInfo_staff = function(data){
 	//var info = this.info;
@@ -635,29 +676,23 @@ Vimeo.prototype._getInfo_staff = function(data){
 	return this._getInfo_channel(data);
 };
 
-Vimeo.prototype._durationToSec = function(d){
-	var h, m, s;
-	if(/^PT(\d+H)?(\d+M)?(\d+S)?/.test(d)){
-		h = RegExp.$1.slice(0, -1) || 0;
-		m = RegExp.$2.slice(0, -1) || 0;
-		s = RegExp.$3.slice(0, -1) || 0;
-		d = h * 60 * 60 + m * 60 + (s || 0);
-	}
-	return d;
-};
-
+/** チャンネルの動画ページのhtmlから情報取得 */
 Vimeo.prototype._getInfo_channel = function(data){
-	var info = this.info, title_reg, chHeader,
+	var info = this.info, title_reg, chHeader, keywords,
 		date_reg = new RegExp('(vimeo.com/' + info.VIDEO_ID + '.+?|class\s*=\s*"meta">\s*)<span class="time">\s*Uploaded <time datetime="([^"]+)"'),
-		o = this._getJsonLd(data);
+		jsonLd = this._getJsonLd(data);
 
 	
-	if(o){
-		info.TITLE = Utils.getObject('name', o, '').replace('in ' + info.CHANNEL_NAME + '$', '') || null;
-		info.DURATION = this._durationToSec(Utils.getObject('duration', o, null));
-		info.UPLOAD_DATE = Utils.getObject('uploadDate', o, null);
-		info.USER_NAME = Utils.getObject('author.name', o, null);
-		info.USER_URL = Utils.getObject('author.url', o, '').replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
+	if(jsonLd){
+		info.TITLE = Utils.getObject('name', jsonLd, '').replace('in ' + info.CHANNEL_NAME + '$', '') || null;
+		info.DURATION = this._durationToSec(Utils.getObject('duration', jsonLd, null));
+		info.UPLOAD_DATE = Utils.getObject('uploadDate', jsonLd, null);
+		info.USER_NAME = Utils.getObject('author.name', jsonLd, null);
+		info.USER_URL = Utils.getObject('author.url', jsonLd, '').replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
+		keywords = Utils.getObject('keywords', jsonLd);
+		if(nameOf(keywords) == 'Array'){
+			info.TAGS = keywords;
+		}
 	}
 
 	if(/header id="channel_header">(.+?)<\/header>/.test(data)){
@@ -687,18 +722,23 @@ Vimeo.prototype._getInfo_channel = function(data){
 	return this._checkInfo(['TITLE', 'DURATION', 'UPLOAD_DATE', 'USER_NAME', 'USER_URL'], info, '_getInfo_channel');
 };
 
+/** グループの動画ページのhtmlから情報取得 */
 Vimeo.prototype._getInfo_group = function(data){
-	var pageHeader, groupHeader,
+	var pageHeader, groupHeader, keywords,
 		info = this.info,
 		tags = [],
-		o = this._getJsonLd(data);
+		jsonLd = this._getJsonLd(data);
 	
-	if(o){
-		info.TITLE = Utils.getObject('name', o, '').replace('in ' + info.CHANNEL_NAME + '$', '') || null;
-		info.DURATION = this._durationToSec(Utils.getObject('duration', o, null));
-		info.UPLOAD_DATE = Utils.getObject('uploadDate', o, null);
-		info.USER_NAME = Utils.getObject('author.name', o, null);
-		info.USER_URL = Utils.getObject('author.url', o, '').replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
+	if(jsonLd){
+		info.TITLE = Utils.getObject('name', jsonLd, '').replace('in ' + info.CHANNEL_NAME + '$', '') || null;
+		info.DURATION = this._durationToSec(Utils.getObject('duration', jsonLd, null));
+		info.UPLOAD_DATE = Utils.getObject('uploadDate', jsonLd, null);
+		info.USER_NAME = Utils.getObject('author.name', jsonLd, null);
+		info.USER_URL = Utils.getObject('author.url', jsonLd, '').replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
+		keywords = Utils.getObject('keywords', jsonLd);
+		if(nameOf(keywords) == 'Array'){
+			info.TAGS = keywords;
+		}
 	}
 
 	if(/header id\s*=\s*"group_header">(.+?)<\/header>/.test(data)){
@@ -728,14 +768,62 @@ Vimeo.prototype._getInfo_group = function(data){
 		this._p('page_headerが見つかりません');
 	}
 
-	data.replace(/<meta property="video:tag" content="([^"]+)/g, function(a, tag){tags.push(tag);});
+	if(!info.TAGS.length){
+		data.replace(/<meta property="video:tag" content="([^"]+)/g, function(a, tag){tags.push(tag);});
+		if(tags.length){
+			info.TAGS = tags;
+		}else{
+			this._noTags = true;
+			this._p('Tagが見つかりません。Tagが設定されていないか仕様変更です');
+		}
+	}
+	return this._checkInfo(['TITLE', 'DURATION', 'UPLOAD_DATE', 'USER_NAME', 'USER_URL', 'GROUP_NAME', 'GROUP_URL', 'TAG'], info, '_getInfo_group');
+};
+
+//内容が通常の動画ページとほぼ同じ為省略
+//Vimeo.prototype._getInfo_album = function(data){};
+
+/** オンデマンドのトレーラー動画ページのhtmlから情報取得 */
+Vimeo.prototype._getInfo_ondemand = function(data){
+	var info = this.info,
+		config = this._get_clip_page_config(data),
+		jsonLd = this._getJsonLd(data);
+	
+	info.TITLE = Utils.getObject('name', jsonLd, '').replace(/\s*\|\s*Vimeo On Demand$/, '') || null;
+	if(/^Watch\s*(.+)\s*Online$/.test(info.TITLE)) info.TITLE = RegExp.$1;
+	info.DURATION = this._durationToSec(Utils.getObject('duration', jsonLd, null));
+	info.UPLOAD_DATE = Utils.getObject('uploadDate', jsonLd, null);
+	info.USER_URL = Utils.getObject('author.url', jsonLd, '').replace(/^(https?:\/\/vimeo\.com\/|\/)/, '') || null;
+	info.USER_NAME = Utils.getObject('author.name', jsonLd, null);
+	info.ONDEMAND_URL = Utils.getObject('vod_on_site_url', config, '').replace(/^(\/ondemand)?\//, '') || null;
+	info.ONDEMAND_ID = Utils.getObject('vod_id', config, null);
+	info.VIDEO_ID = Utils.getObject('trailer_id', config, null);
+	
+	return this._checkInfo(['TITLE', 'DURATION', 'UPLOAD_DATE', 'USER_URL', 'USER_NAME', 'ONDEMAND_URL', 'ONDEMAND_ID', 'VIDEO_ID'], info, '_getInfo_ondemand');
+};
+
+Vimeo.prototype._getInfo_music = function(data){
+	var info = this.info,
+		tags = [],
+		jsonLd = this._getJsonLd(data, 'AudioObject');
+	
+	info.TITLE = Utils.getObject('name', jsonLd, null);
+	info.USER_URL = Utils.getObject('creator.url', jsonLd, null);
+	info.USER_NAME = Utils.getObject('creator.name', jsonLd, null);
+	info.DURATION = this._durationToSec(Utils.getObject('duration', jsonLd, null));
+
+	tags = [];
+	data.replace(/<li><a href="\/musicstore\?tokens=[^"]+" class="genres" title="[^"]+">([^<]+)<\/a><\/li>/g, function(a, tag){
+		tags.push(tag);
+	});
 	if(tags.length){
 		info.TAGS = tags;
 	}else{
 		this._noTags = true;
 		this._p('Tagが見つかりません。Tagが設定されていないか仕様変更です');
 	}
-	return this._checkInfo(['TITLE', 'DURATION', 'UPLOAD_DATE', 'USER_NAME', 'USER_URL', 'TAG'], info, '_getInfo_group');
+	
+	return this._checkInfo(['TITLE', 'USER_URL', 'USER_NAME', 'DURATION', 'TAG'], info, '_getInfo_music');
 };
 
 /** player(iframe)を取得して解析 */
@@ -748,10 +836,22 @@ Vimeo.prototype._getPlayer = function(url){
 	if(http.get(url)){
 		r = this._getDCFromPlayer(http.data);
 	}else{
-		r = this._httpError();
+		if(/>This video does not exist\.?</.test(http.data)){
+			this._p('動画が存在しません');
+			r = this._exit('This video does not exist.');
+		}else{
+			this._p('playerを取得出来ません');
+			r = this._httpError();
+		}
 	}
 	return r;
 };
+
+Vimeo.prototype._getPlayer_pro = function(url){
+	url = url || this._makeRequestUrl('player/pro');
+	return this._getPlayer(url);
+};
+
 /** 標準の動画ページを取得して解析 */
 Vimeo.prototype._getVideoPage = function(url){
 	var r = false,
@@ -761,7 +861,7 @@ Vimeo.prototype._getVideoPage = function(url){
 	url = url || this._makeRequestUrl('video');
 	if(!url) return false;
 
-	if(!http.get(url)) return http.code == 404 || http.code == 451 ? this._errorHtml(http.data) : this._httpError();
+	if(!http.get(url)) return this._errorHtml(http);
 
 	r = this._getInfo_video(http.data);
 
@@ -769,6 +869,7 @@ Vimeo.prototype._getVideoPage = function(url){
 
 	return r;
 };
+
 /** Staff Picksの動画ページを取得して解析 */
 Vimeo.prototype._getVideoPage_staff = function(url){
 	var r = false,
@@ -778,7 +879,7 @@ Vimeo.prototype._getVideoPage_staff = function(url){
 	url = url || this._makeRequestUrl('staffpicks/video');
 	if(!url) return r;
 
-	if(!http.get(url)) return http.code == 404 || http.code == 451 ? this._errorHtml(http.data) : this._httpError();
+	if(!http.get(url)) return this._errorHtml(http);
 
 	r = this._getInfo_staff(http.data);
 
@@ -786,6 +887,7 @@ Vimeo.prototype._getVideoPage_staff = function(url){
 	return r;
 };
 
+/** チャンネルの動画ページを取得して解析 */
 Vimeo.prototype._getVideoPage_channel = function(url){
 	var r = false,
 		info = this.info,
@@ -794,7 +896,7 @@ Vimeo.prototype._getVideoPage_channel = function(url){
 	url = url || this._makeRequestUrl('channels_url/video', info, false) || this._makeRequestUrl('channels_id/video');
 	if(!url) return r;
 	
-	if(!http.get(url)) return http.code == 404 || http.code == 451 ? this._errorHtml(http.data) : this._httpError;
+	if(!http.get(url)) return this._errorHtml(http);
 
 	r = this._getInfo_channel(http.data);
 	
@@ -802,6 +904,7 @@ Vimeo.prototype._getVideoPage_channel = function(url){
 	return r;
 };
 
+/** グループの動画ページを取得して解析 */
 Vimeo.prototype._getVideoPage_group = function(url){
 	var r = false,
 		info = this.info,
@@ -810,7 +913,7 @@ Vimeo.prototype._getVideoPage_group = function(url){
 	url = url || this._makeRequestUrl('groups_url/video', info, false) || this._makeRequestUrl('groups_id/video');
 	if(!url) return r;
 	
-	if(!http.get(url)) return http.code == 404 || http.code == 451 ? this._errorHtml(http.data) : this._httpError();
+	if(!http.get(url)) return this._errorHtml(http);
 	
 	r = this._getInfo_group(http.data);
 	
@@ -818,50 +921,230 @@ Vimeo.prototype._getVideoPage_group = function(url){
 	return r;
 };
 
+//内容が通常の動画ページとほぼ同じ為省略
+//Vimeo.prototype._getVideoPage_album = function(url){}
+
+/** オンデマンドのトレーラー動画ページを取得して解析 */
+Vimeo.prototype._getVideoPage_ondemand = function(url){
+	var r = false,
+		info = this.info,
+		http = this.http;
+	
+	url = url || this._makeRequestUrl('ondemand_url/title', info, false) || this._makeRequestUrl('ondemand_id/title');
+	if(!url) return r;
+	
+	if(!http.get(url)) return this._errorHtml(http);
+	
+	r = this._getInfo_ondemand(http.data);
+	
+	r = this._getDCFromHtml(http.data) && r;
+	return r;
+};
+
+/** vimeoproの動画ページから動画を取得して解析 */
+Vimeo.prototype._getVideoPage_pro = function(url){
+	var r = false, player_url, links, type,
+		info = this.info,
+		http = this.http;
+	
+	url = url || this._makeRequestUrl('pro/video');
+	if(!url) return r;
+	
+	if(!http.get(url)) return this._httpError();
+	
+	r = true;
+	if(/<iframe src\s*=\s*"([^"]+portfolio_id=\d+[^"]*)"/.test(http.data)){
+		player_url = http.expandUrl(RegExp.$1);
+		type = this._selectUrl(player_url);//URLの確認とPORTFOLIO_IDの取得
+		if(type == 'player/pro'){
+			if(!this.files.length){
+				r = this._getPlayer_pro(player_url);
+			}
+		}else{
+			r = this._exit('未知のplayer urlです: ' + player_url);
+		}
+	}else{
+		r = this._exit('player url が見つかりません');
+	}
+	r = r && this._officialDL_html(http.data);
+	return r;
+};
+
+Vimeo.prototype._getMusicPage = function(url){
+	var r = false, play_reg, previewUrl, music, location,
+		info = this.info,
+		files = this.files,
+		http = this.http;
+	
+	url = url || this._makeRequestUrl('musicstore/music');
+	if(!url) return r;
+	
+	if(!http.get(url)) return this._httpError();
+	
+	r = this._getInfo_music(http.data);
+	
+	previewUrl = this._makeRequestUrl('musicstore/preview');
+	if(!previewUrl) return this._exit();
+	http = http.clone();
+	music = {};
+	location = http.getLocation(previewUrl);
+	if(!location){
+		return this._exit('転送先の取得に失敗しました');
+	}
+	do{
+		music.url = location;
+	}while(location = http.headLocation(location));
+	music.ext = Utils.extractExt(music.url) || '.mp3';
+	music.original = false;
+	music.width = music.height = music.quality = music.fps = null;
+	files.push(music);
+	return r;
+};
+
 /** 公式のダウンロード用リンクを取得して解析
- * 2015/01/24現在 Originalはここからしか取得できない
- * 各ファイルはOriginal以外はdataConfigと同じなのでOriginalのみ取得する
- * Originalの動画はQUALITYとFPSは取得不可
+ * 2015/01/29現在 Original, HD 1440p, Ultra HD 4K(2160p)はここからしか取得できない
+ * 上記の動画はFPSは取得不可 QUALITYは Original, 1440p, 2160p とする
+ * 公開設定によりダウンロードリンクが無かったりOriginalが無い物も有るので明確に失敗したと分かる場合のみエラーとする
  */
 Vimeo.prototype._officialDL = function(url){
-	var dl, srcFile, v, name,
+	var dl, dlFiles, v, dlName, pName, file, isSrc,
+		seq = ['quality', 'fps', 'width', 'height', 'url', 'ext'],
 		files = this.files,
 		http = this.http;
 
 	url = url || this._makeRequestUrl('officialDL');
 	if(!url) return false;
 
-	if(http.getXhr(url)){
-		dl = JSON.parse(http.data);
-		if(typeof dl != 'object'){
-			if(dl === null || /<html/.test(http.data)){
-				return this._p('ダウンロードリンクが許可されていない動画か仕様変更です');
-			}else{
-				if(this.debug) http.capture();
-				return this._ng('ダウンロードリンクの解析に失敗しました');
-			}
+	if(!http.getXhr(url) || !/application\/json/.test(http.getResponseHeader('Content-Type'))){
+		return this._p('ダウンロードリンクが許可されていない動画か仕様変更です') || true;
+	}
+	
+	dl = JSON.parse(http.data);
+	if(nameOf(dl) != 'Object'){
+		if(dl === null || /<html/.test(http.data)){
+			return this._p('ダウンロードリンクが許可されていない動画か仕様変更です') || true;
 		}
-		srcFile = Utils.getObject('source_file', dl);
-		if(!srcFile){
-			return this._p('source_fileは見つかりませんでした。ソースは公開されていないか仕様変更です');
-		}else if(Utils.getObject('public_name', srcFile) != 'Original' ||
-		         !Utils.getObject('is_source', srcFile)){
-			return this._unknown('未知のsource_fileです');
+		if(this.debug) http.capture();
+		return this._exit('ダウンロードリンクの解析に失敗しました');
+	}
+
+	//JSON.save('\officialDL\' + this.info.VIDEO_ID + '.json', dl);
+
+	dlFiles = Utils.getObject('files', dl);
+	if(!dlFiles){
+		return this._exit('filesが見つかりませんでした');
+	}else if(nameOf(dlFiles) != 'Array'){
+		return this._exit('filesの解析に失敗しました');
+	}
+	
+	//Originalがsource_fileの方にしか無い場合とfilesの方にも存在する場合が有る
+	srcFile = Utils.getObject('source_file', dl);
+	if(srcFile){
+		if(nameOf(srcFile) != 'Object' ||
+		   Utils.getObject('public_name', srcFile) != 'Original' ||
+		   !Utils.getObject('is_source', srcFile)){
+			return this._ng('未知のsource_fileです');
 		}
-		name = Utils.getObject('download_name', srcFile) || this._p('download_nameが見つかりませんでした');
+		dlFiles.push(srcFile);
+	}
+	
+	for(var i = 0; i < dlFiles.length; i++){
+		file = dlFiles[i];
+		dlName = Utils.getObject('download_name', file) || this._exit('download_nameが見つかりません');
+		pName = Utils.getObject('public_name', file) || this._exit('public_nameが見つかりません');
+		if(!dlName || !pName) return false;
 		v = {};
-		v.url = Utils.getObject('download_url', srcFile) || this._unknown('download_urlが見つかりません');
-		v.width = Utils.getObject('width', srcFile) || this._unknown('widthが見つかりません');
-		v.height = Utils.getObject('height', srcFile) || this._unknown('heightが見つかりません');
-		v.quality = v.fps = null;
-		v.ext = Utils.extractExt(name) || '.mp4';
-		v.original = true;
+		v.url = Utils.getObject('download_url', file) || this._exit('download_urlが見つかりません');
+		v.width = Utils.getObject('width', file) || this._exit('widthが見つかりません');
+		v.height = Utils.getObject('height', file) || this._exit('heightが見つかりません');
 		if(!(v.url && v.width && v.height)) return false;
-		this._p('Originalが見つかりました: ' + JSON.stringify(srcFile));
+		v.quality = v.fps = null;
+		v.ext = Utils.extractExt(dlName) || '.mp4';
+		v.original = false;
+		
+		//"public_name": "Mobile SD"
+		//"public_name": "SD"
+		//"public_name": "SD 540p"
+		//"public_name": "MP4 SD"
+		//"public_name": "MP4 HD (On2)"
+		//"public_name": "HD 720p"
+		//"public_name": "HD 720p60"
+		//"public_name": "HD 1080p"
+		//"public_name": "HD 1080p60"
+		//"public_name": "HD 1440p"
+		//"public_name": "Ultra HD 4K"
+		//"public_name": "Original"
+		if(/^(SD\s*(540p)?|HD\s*(720p|1080p)|MP4\s*[HS]D|Mobile\s*SD)/.test(pName)){
+			//dataConfigと同じ動画なので無視
+			continue;
+		}else if(/^HD 1440p/.test(pName)){
+			v.quality = '1440p';
+			this._p('「HD 1440p」が見つかりました: ' + JSON.stringify(v, seq));
+		}else if(/^Ultra HD 4K/.test(pName)){
+			v.quality = '2160p';
+			this._p('「Ultra HD 4k」(2160p)が見つかりました: ' + JSON.stringify(v, seq));
+		}else if(/^Original$/.test(pName)){
+			if(!Utils.getObject('is_source', file)){
+				return this._ng('未知のsource_fileです: ' + pName);
+			}
+			if(isSrc) continue; //source_fileからの物との重複回避
+			v.original = isSrc = true;
+			v.quality = 'Original';
+			this._p('「Original」が見つかりました: ' + JSON.stringify(v, seq));
+		}else{
+			this._p('未知のDLリンクです: ' + JSON.stringify(file));
+			continue;
+		}
 		files.push(v);
+	}
+	if(!isSrc){
+		this._p('source_fileは見つかりませんでした。ソースは公開されていないか仕様変更です');
+	}
+	
+	return true;
+};
+
+/** 公式のダウンロード用リンクを取得して解析 旧タイプ vimeoproはまだこちらを使用 */
+Vimeo.prototype._officialDL_html = function(data){
+	var v, self = this,
+		seq = ['quality', 'fps', 'width', 'height', 'url', 'ext'],
+		files = this.files;
+
+	if(/div class="download_links clearfix">(.+?)<\/div>/.test(data)){
+		links = RegExp.$1;
+		links.replace(/<li class="iconify_down_b">\s*<a href="([^"]+)" download="([^"]+)" rel="nofollow">([^<]+)<\/a>\s*<span>\((\d+)x(\d+)/g, function(a, url, dlName, pName, width, height){
+			v = {};
+			v.url = url;
+			v.width = width;
+			v.height = height;
+			v.original = false;
+			v.fps = null;
+			v.ext = Utils.extractExt(dlName) || '.mp4';
+			if(/^(SD\s*(540p)?|HD\s*(720p|1080p)|MP4\s*[HS]D|Mobile\s*SD)/.test(pName)){
+				//dataConfigと同じ動画なので無視
+				return;
+			}else if(/^HD 1440p/.test(pName)){
+				v.quality = '1440p';
+				self._p('「HD 1440p」が見つかりました: ' + JSON.stringify(v, seq));
+			}else if(/^Ultra HD 4K/.test(pName)){
+				v.quality = '2160p';
+				self._p('「Ultra HD 4k」(2160p)が見つかりました: ' + JSON.stringify(v, seq));
+			}else if(/^Original$/.test(pName)){
+				v.original = true;
+				v.quality = 'Original';
+				self._p('「Original」が見つかりました: ' + JSON.stringify(v, seq));
+			}else{
+				self._p('未知のDLリンクです: ' + JSON.stringify(v, seq));
+				return;
+			}
+			files.push(v);
+		});
+		if(!v){
+			return this._exit('ダウンロードリンクを取得出来ませんでした');
+		}
+		this._noOfficialDL = true; //._officalDL()を実行しない様にする為の物
 	}else{
-		this._p('ダウンロードリンクが許可されていない動画か仕様変更です');
-		return this._httpError();
+		this._p('ダウンロードリンクが設定されていない動画か仕様変更です');
 	}
 	return true;
 };
@@ -878,7 +1161,7 @@ Vimeo.prototype._selectUrl = function(url){
 		http = this.http;
 	for(var i = 0; i < 3; i++){
 		redirect = false;
-		if(/^https?:\/\/vimeo.com\/(\d+)/.test(url)){
+		if(/^https?:\/\/vimeo.com\/(\d+)([#?]|\/?$)/.test(url)){
 			type = 'video';
 			info.VIDEO_ID = RegExp.$1;
 		}else if(/^https?:\/\/vimeo.com\/channels\/staffpicks\/(\d+)/.test(url)){
@@ -912,16 +1195,36 @@ Vimeo.prototype._selectUrl = function(url){
 			info.ALBUM_ID = RegExp.$1;
 			info.VIDEO_ID = RegExp.$2;
 		}else if(/^https?:\/\/vimeo.com\/ondemand\/([^\/]+)\/(\d+)/.test(url)){
-			type = 'ondemand/trailer';
-			info.ONDEMAND_URL = RegExp.$1;
+			type = 'ondemand_url/trailer';
 			info.VIDEO_ID = RegExp.$2;
+			urlOrId = RegExp.$1;
+			if(/^\d+$/.test(urlOrId)){
+				type = 'ondemand_id/trailer';
+				info.ONDEMAND_ID = urlOrId;
+				redirect = true;
+			}else{
+				info.ONDEMAND_URL = urlOrId;
+			}
 		}else if(/^https?:\/\/vimeo.com\/ondemand\/([^\/]+)/.test(url)){
-			type = 'ondemand/title';
-			info.ONDEMAND_URL = RegExp.$1;
+			type = 'ondemand_url/title';
+			urlOrId = RegExp.$1;
+			if(/^\d+$/.test(urlOrId)){
+				type = 'ondemand_id/title';
+				info.ONDEMAND_ID = urlOrId;
+				redirect = true;
+			}else{
+				info.ONDEMAND_URL = urlOrId;
+			}
 		}else if(/^https?:\/\/vimeo.com\/musicstore\/track\/(\d+)\/([^\/]+)/.test(url)){
-			type = 'musicstore/music';
-			info.TRACK_ID = RegExp.$1;
-			info.MUSIC_URL = RegExp.$2;
+			if(!i){
+				//MUSIC_URLが間違っている可能性も有るのでリダイレクトさせる
+				url = 'https://vimeo.com/musicstore/track/' + RegExp.$1;
+				redirect = true;
+			}else{
+				type = 'musicstore/music';
+				info.TRACK_ID = RegExp.$1;
+				info.MUSIC_URL = RegExp.$2;
+			}
 		}else if(/^https?:\/\/vimeo.com\/musicstore\/track\/(\d+)\/?$/.test(url)){
 			redirect = true;
 		}else if(/^https?:\/\/vimeo.com\/m\/(\d+)/.test(url)){
@@ -935,37 +1238,34 @@ Vimeo.prototype._selectUrl = function(url){
 			}else{
 				redirect = true;
 			}
-		}else if(/^https?:\/\/vimeopro.com\/staff\/tutorials\/video\/(\d+)/.test(url)){
-			type = 'pro/tutorials/video';
-			info.VIDEO_ID = RegExp.$1;
-		}else if(/^https?:\/\/vimeopro.com\/frame\/video\/(\d+)/.test(url)){
-			type = 'pro/frame/video';
-			info.VIDEO_ID = RegExp.$1;
-		}else if(/^https?:\/\/vimeopro.com\/staff\/originals\/video\/(\d+)/.test(url)){
-			type = 'pro/originals/video';
-			info.VIDEO_ID = RegExp.$1;
-		}else if(/^https?:\/\/vimeopro.com\/([^\/]+\/[^\/]+)\/video\/(\d+)/.test(url)){
+		}else if(/^https?:\/\/vimeopro.com\/([^\/?#]+\/[^\/?#]+)\/video\/(\d+)/.test(url)){
 			type = 'pro/video';
 			info.PORTFOLIO_URL = RegExp.$1;
 			info.VIDEO_ID = RegExp.$2;
-		}else if(/^https?:\/\/player.vimeo.com\/(\d+)\?portfolio_id=(\d+)/.test(url)){
-			type = 'pro/player';
-			info.PORTFOLIO_URL = RegExp.$1;
-			info.PORTFOLIE_ID = RegExp.$2;
+		}else if(/^https?:\/\/player.vimeo.com\/video\/(\d+)\?portfolio_id=(\d+)/.test(url)){
+			type = 'player/pro';
+			info.VIDEO_ID = RegExp.$1;
+			info.PORTFOLIO_ID = RegExp.$2;
 		}else if(/^https?:\/\/player.vimeo.com\/video\/(\d+)/.test(url)){
 			type = 'player';
 			info.VIDEO_ID = RegExp.$1;
 		}else{
-			r = this._exit('未対応のURLです: ' + url);
+			r = this._mis('未対応のURLです: ' + url);
 		}
 
-		if(type && /^http:/.test(url)){
+		if(type && !i && /^http:/.test(url)){
 			return this._exit('urlのhttp://をhttps://に変更してください');
 		}
 		if(redirect){
-			url = http.expandUrl(http.getLocation(url));
-			if(url) continue;
-			r = this._ng('転送先のURLが取得できませんでした: ' + http.previousUrl);
+			url = http.headLocation(url);
+			if(url && (url = http.expandUrl(url))){
+				continue;
+			}
+			if(type.indexOf('ondemand') != -1){
+				//稀に転送されない物がある
+				break;
+			}
+			r = this._ng('転送先のURLが取得出来ませんでした: ' + http.previousUrl);
 		}
 		break;
 	}
@@ -1003,7 +1303,7 @@ Vimeo.prototype._getFileInfo = function(url){
 
 
 	for(var i = 0; i < 2; i++){
-		this.pagetType = type = this._selectUrl(url);
+		this.pageType = type = this._selectUrl(url);
 		if(!type) return false;
 		url = this.requestUrl = this._makeRequestUrl(type);
 
@@ -1021,15 +1321,30 @@ Vimeo.prototype._getFileInfo = function(url){
 
 		switch(type){
 			case 'video':
-				r = this._getVideoPage(url);
+			case 'album/video':
+			case 'player':
+				r = this._getVideoPage(type != 'video' ? '' : url);
 				if(!r){
+					if(this.status == this.EXIT || this.status == this.RETRY) return false;
 					if(http.location){
 						url = http.expandUrl(http.location);
 						continue;
 					}
 					if(/Permission Denied/.test(this.comment)){
-						this._print('staffpicksに動画が有るか試行します');
-						r = this._getVideoPage_staff() || this._ng('失敗しました');
+						if(type == 'album'){
+							r = this._getVideoPage(url);//albumのurlで試行
+						}else{
+							this._print('staffpicksに動画が有るか試行します');
+							r = this._getVideoPage_staff() || this._ng('失敗しました');
+						}
+					}
+					if(type == 'player'){
+						this._p('各ページにアクセス出来なかった為埋め込み専用動画として扱います');
+						this.embed_only = true;
+						r = this._getPlayer(url);
+						if(!r && /Private Video/.test(this.comment)){
+							return this._exit('動画を取得出来ませんでした');
+						}
 					}
 				}
 				break;
@@ -1058,9 +1373,46 @@ Vimeo.prototype._getFileInfo = function(url){
 					}
 				}
 				break;
+			case 'ondemand_url/title':
+			case 'ondemand_url/trailer':
+			case 'ondemand_id/title':
+			case 'ondemand_id/trailer':
+				r = this._getVideoPage_ondemand(url);
+				this._noOfficialDL = true;
+				break;
+			case 'pro/video':
+				r = this._getVideoPage();
+				if(!r || !this._checkInfo(['PORTFOLIO_ID'], info, false)){
+					if(!files.length) this._noOfficialDL = true;
+					r = this._getVideoPage_pro(url);
+					if(this.status == this.EXIT || this.status == this.RETRY) return false;
+					if(!files.length) return this._exit('動画を取得出来ませんでした');
+				}
+				break;
+			case 'player/pro':
+				r = this._getVideoPage();
+				if(!r || !this._checkInfo(['PORTFOLIO_ID'], info, false)){
+					if(!files.length) this._noOfficialDL = true;
+					r = this._getPlayer_pro(url) || r;
+					if(!files.length) return this._exit('動画を取得出来ませんでした');
+				}
+				break;
+			case 'musicstore/music':
+				this._isMusic = true;
+				r = this._getMusicPage(url);
+				if(!r){
+					if(this.status == this.EXIT || this.status == this.RETRY) return false;
+					if(!files.length){
+						return this._exit('音楽を取得出来ませんでした');
+					}else if(!this._checkInfo(infoList, info)){
+						this._p('ファイル名生成に必要な情報を取得出来ませんでした');
+						if(!skipErr) return this._exit();
+					}
+				}
+				return this._ok();
+				break;
 			default:
-				this._exit('作業中のため未対応です: ' + url);
-				return false;
+				return this._exit('未知のエラー: ' + url);
 		}
 		break;
 	}
@@ -1069,23 +1421,26 @@ Vimeo.prototype._getFileInfo = function(url){
 
 	if(!files.length){
 		this._p('直接動画を取得できるか試行します');
-		r = this._getDCFromUrl() || this._getPlayer() || this._ng('直接取得に失敗しました');
-		if(!r) return this._exit('動画を取得できませんでした');
+		r = this._getDCFromUrl() || (type != 'player' ? this._getPlayer() : null) || this._ng('直接取得に失敗しました');
+		if(!r) return this._exit('動画を取得出来ませんでした');
 	}
 
-	if(priority.indexOf('Z') != -1) this._officialDL();
+	this._noOfficialDL = this._noOfficialDL || (/[ZGH]/.test(priority) ? false : true);
+	if(!this.embed_only && !this._noOfficialDL){
+		r = this._officialDL() && r;
+	}
 
 
 	if(!this._checkInfo(this.embed_only ? embedInfo : infoList, info)){
-		this._p('ファイル名生成に必要な情報が取得できませんでした');
+		this._p('ファイル名生成に必要な情報が取得出来ませんでした');
 		if(!skipErr) return this._exit();
-		r = true;
+		r = this._ok();
 	}
 	if(this.embed_only && notEmbedInfo.length && !this._checkInfo(notEmbedInfo, info)){
-		this._print('埋め込み専用動画の為これらの情報は取得できません: ' + notEmbedInfo);
+		r = this._ok('埋め込み専用動画の為これらの情報は取得出来ません: ' + notEmbedInfo);
 	}
 
-	return r;
+	return r && this._ok();
 };
 
 /**

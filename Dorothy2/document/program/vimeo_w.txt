@@ -1,6 +1,6 @@
 説明
 ====
-	Vimeoから動画をダウンロードします
+	Vimeoから動画や音楽をダウンロードします
 	1.0以前のバージョンとは仕様が大幅に異なります
 	設定ファイルも異なる為、以前のバージョンを使用していた方は設定し直してください
 
@@ -20,7 +20,7 @@
 =======
 	・https://vimeo.com/[動画ID]
 		通常の動画ページ
-	
+
 	・https://vimeo.com/m/[動画ID]
 		動画ページに転送
 
@@ -29,18 +29,13 @@
 
 	・https://vimeo.com/channels/staffpicks/[動画ID]
 		StaffPicksチャンネルから選んだ動画
-	
+
 	・https://vimeo.com/channels/[チャンネルURL・ID]/[動画ID]
 		チャンネルから選んだ動画
 
 	・https://vimeo.com/groups/[グループURL・ID]/videos/[動画ID]
 		グループから選んだ動画
-	
 
-未対応URL
-=========
-	・動画以外のページ(ユーザーページや一覧ページ等)
-	
 	・https://vimeo.com/album/[アルバムID]/video/[動画ID]
 		アルバムから選んだ動画
 
@@ -51,7 +46,7 @@
 		オンデマンドのトレーラー視聴ページ
 
 	・https://vimeo.com/musicstore/track/[トラックID]/[音楽URL]
-		musicstoreの音楽
+		musicstoreの音楽ページ
 
 	・https://vimeo.com/musicstore/track/[トラックID]
 		音楽ページに転送
@@ -59,25 +54,45 @@
 	・https://vimeopro.com/[ポートフォリオURL]/video/[動画ID]
 		VimeoProの動画
 
+	・https://player.vimeo.com/video/[動画ID]
+		動画のプレイヤーURL
+
 	・https://player.vimeo.com/[動画ID]?portfolio_id=[ポートフォリオID]
 		VimeoProでの動画のプレイヤーURL
 
-	・https://player.vimeo.com/video/[動画ID]
-		動画のプレイヤーURL
-	
+
+未対応URL
+=========
+	・動画や音楽以外のページ(ユーザーページや一覧ページ等)
 
 仕様
 ====
-	現在は通常の動画URLとチャンネルとグループの動画のみに対応しています
-	
 	動画投稿者による公開設定により特定のURLでしか閲覧できない動画が存在します
 	その様なURLが指定された場合はStaffPicksやURLの直接指定等により動画が取得できないか試行します
 	試行に成功し動画のURLが取得出来た場合でも保存ファイル名に必要なファイル名情報の一部が取得できない場合も有ります
-	
-	ダウンロード対象とする動画のURLは通常の再生と同じく取得出来る動画とサイト上のダウンロードリンクに「Original」と表示される動画になります
-	Originalの動画のみファイル名情報の%FPS%と%QUALITY% は取得できません
-	
+
+	公開設定により外部サイトでしか閲覧できない動画の場合はURLにプレイヤーURL(player.vimeo.com/video/[動画ID])を指定してください
+	この埋め込み専用動画の場合は取得できるファイル名情報は%TITLE%, %VIDEO_ID%, %DURATION%, %USER_NAME%, %USER_URL%, %USER_ID% のみです
+
+	ダウンロード対象とする動画URLは
+	通常の動画閲覧時に選択できるのと同じ 270p, 360p, 480p, 540p, 720p, 1080p の動画と
+	サイト上のダウンロードリンクに表示される「Original」「HD 1440p」「Ultra HD 4K」の動画になります
+	上記三つは現在ダウンロードリンクからのみ取得可能です
+	ダウンロードリンクの動画は投稿者が公開設定でダウンロードを許可している場合のみ取得可能です
+	ダウンロードリンクの動画はファイル名情報の%FPS%は取得できません
+	%QUALITY%はそれぞれ Original, 1440p, 2160p となります
+
+	Originalの動画の解像度等は不定です
+	なかにはファイルサイズが2GBを超える物も有るので負荷を掛け過ぎない様に注意してください
+
+	720p fps30, 720p fps50 等の様にqualityが同じでもfps等の他の要素が異なる動画が複数存在する場合が有ります
+	上記の例で優先順位で720pが指定された場合はその二つ共をIrvineに新規アイテムとして登録します
+
 	通常の動画と内容が同一の為HLSとDASHには非対応です
+
+	音楽の場合は音質等の種類は無く一つのファイルのみです
+	取得できるファイル名情報は%TITLE%, %TRACK_ID%, %MUSIC_URL%, %DURATION%, %TAGS%, %USER_NAME%, %USER_URL% のみです
+
 
 設定
 ====
@@ -85,14 +100,14 @@
 		・デバッグモード
 			デバックモードを有効にします
 			エラーが起きた場合にエラーファイルを保存したり動画やファイル名情報の一覧等を表示します
-		
+
 		・トレースモード
 			トレースモードを有効にします
 			問題が起きた場合にその箇所を見つけ易くする為の物なので通常は必要ありません
-		
+
 		・ファイル名情報が取得出来なくても続行する
 			仕様変更や一部の動画等でファイル名生成に必要な情報が取得できなくても中断せずに処理を続行します
-		
+
 		・メッセージを表示しない
 			ログのメッセージ表示をなるべく抑制します
 
@@ -107,13 +122,15 @@
 			D: 540p
 			E: 720p
 			F: 1080p
+			G: 1440p
+			H: 2160p
 			Z: Original
-			
-			例: ZFEDCBA
-		
+
+			例: ZHGFEDCBA
+
 		・新規アイテムとして追加する
 			現在のアイテムでダウンロードを行わずにIrvineにファイルURLを新規に登録します
-	
+
 	・AddItem
 		内部で使用しているAddItemの設定です
 		詳しくはadditem.dmsのドキュメントを参照してください
@@ -135,25 +152,44 @@
 		%UPLOAD_DATE%-------投稿日時
 		%TAGS%--------------タグ
 		%CATEGORIES%--------カテゴリ
+		%PORTFOLIO_URL%-----ポートフォリオURL
+		%PORTFOLIO_ID%------ポートフォリオID
 		%CHANNEL_NAME%------チャンネル名
 		%CHANNEL_URL%-------チャンネルURL
 		%CHANNEL_ID%--------チャンネルID
 		%GROUP_NAME%--------グループ名
 		%GROUP_URL%---------グループURL
 		%GROUP_ID%----------グループID
+		%ALBUM_ID%----------アルバムID
+		%ONDEMAND_URL%------オンデマンドURL
+		%ONDEMAND_ID%-------オンデマンドID
+		%TRACK_ID%----------トラックID
+		%MUSIC_URL%---------ミュージックURL
 
 		例: Vimeo - %USER_NAME%(%USER_URL%) - %TITLE% (%VIDEO_ID%)(%WIDTH%x%HEIGHT%)
-		
+
 		%VIDEO_URL% は指定されたURLにこれが含まれていた場合のみ使用可能です(vimeo.com/[ユーザーURL]/[動画URL])
 		動画の画質が「Original」の場合は%FPS%と%QUALITY%は使用できません
-		%CHANNEL_NAME% %CHANNEL_URL% %CHANNEL_ID% はチャンネルのURLを指定した場合のみ使用可能です(vimeo.com/channels/[チャンネルURL・ID]/[動画ID])
-		%GROUP_NAME% %GROUP_URL% %GROUP_ID% はグループのURLを指定した場合のみ使用可能です(vimeo.com/groups/[グループURL・ID]/videos/[動画ID])
+		%PORTFOLIO_URL% %PORTFOLIO_ID% はvimeopro.comの動画URLを指定した場合のみ使用可能です
+		%CHANNEL_NAME% %CHANNEL_URL% %CHANNEL_ID% はチャンネルの動画URLを指定した場合のみ使用可能です(vimeo.com/channels/[チャンネルURL・ID]/[動画ID])
+		%GROUP_NAME% %GROUP_URL% %GROUP_ID% はグループの動画URLを指定した場合のみ使用可能です(vimeo.com/groups/[グループURL・ID]/videos/[動画ID])
+		%ALBUM_ID% はアルバムの動画URLを指定した場合のみ使用可能です(vimeo.com/album/[アルバムID]/video/[動画ID])
+		%TRACK_ID% %MUSIC_URL% はmusicstoreのURLを指定した場合のみ使用可能です
 
 変更履歴
 ========
+	1.1
+		・1440p, 2160pの動画のダウンロードに対応
+		・「Original」の動画の場合の%QUALITY%に"Original"を設定する様にした
+		・albumの動画に対応
+		・ondemandのトレーラー動画に対応
+		・vimeopro.comの動画に対応
+		・musicstoreの音楽に対応
+		・動画のplayer urlに対応
+
 	1.0 - 2016/01/26
 		・仕様変更に伴い新規に作り直し
-	
+
 	0.20 - 2013/11/06
 		・http://vimeo.com/channels/[チャンネル名]/[数字] にて指定された動画がDLされない問題を修正
 		   uploade_dateが指定された動画以外のものになる問題を修正
