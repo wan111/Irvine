@@ -166,6 +166,11 @@
 		%TRACK_ID%----------トラックID
 		%MUSIC_URL%---------ミュージックURL
 
+		・通常動画  URLが下記以外の時のファイル名。 下記を省略した場合もこのファイル名が使用されます
+		・vimeopro  URLがvimeopro.comの時のファイル名。
+		・ondemand  URLがondemandの時のファイル名。
+		・music     URLがmusicstoreの時のファイル名。
+
 		例: Vimeo - %USER_NAME%(%USER_URL%) - %TITLE% (%VIDEO_ID%)(%WIDTH%x%HEIGHT%)
 
 		%VIDEO_URL% は指定されたURLにこれが含まれていた場合のみ使用可能です(vimeo.com/[ユーザーURL]/[動画URL])
@@ -178,6 +183,11 @@
 
 変更履歴
 ========
+	1.3 - 2016/02/04
+		・DOAスクリプトに対応
+		・新規アイテム追加時にアイテムのコメントにquaylityとfpsを表示する様にした
+		・ややこしくなるのでそれぞれのスクリプトのバージョン番号を統一させた
+	
 	1.2 - 2016/02/02
 		・groupsの動画ページの仕様変更に対応
 	

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Vimeo.com_w
-//version=1.0
+//version=1.3
 //hint=
 //match=https?://(www\.|player\.)?vimeo(pro)?\.com/\w+
 //author=wan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,19 +29,53 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 function(){
 //コンストラクタ
 	user_program_load('vimeo_w');
+	var opts = this.opts = Utils.loadOption(null, 'vimeo_w.json');
+	opts.general.quiet = true;
+	opts.general.trace = false;
+	opts.download.all = true;
 
 //メイン
 this.main = function(url,itemIndex,itemData){
-	Dorothy.userPath = Utils.getUserPath();
-	Dorothy.userIniPath = Utils.getUserIniPath();
+	Utils.setDOA(itemData);
 
-	var vimeo = new Vimeo();
-	
+	var vimeo = new Vimeo(this.opts);
+	if(vimeo.get(url)){
+		DOA.status = DOA_OK;
+		var file;
+		for(var i = 0; i < vimeo.items.length; i++){
+			file = vimeo.items[i];
+			Utils.doaItemAdd_IT(file);
+		}
+		return;
+	}else{
+		switch(vimeo.status){
+			case vimeo.NG:
+			case vimeo.EXIT:
+				DOA.status = DOA_NG;
+				DOA.comment = vimeo.comment;
+				return;
+			case vimeo.RETRY:
+				DOA.status = DOA_BS;
+				DOA.comment = vimeo.comment || vimeo.http.code;
+				return;
+			case vimeo.UNKNOWN:
+				DOA.status = DOA_UK;
+				DOA.comment = vimeo.comment;
+				return;
+			case vimeo.MIS:
+				DOA.status = DOA_UM;
+				DOA.comment = '未対応のURLです';
+				return;
+			default:
+				DOA.status = DOA_ER;
+				return;
+		}
+	}
 };
 
 
 //デストラクタ
 this._ = function(){
-	
+
 };
 }

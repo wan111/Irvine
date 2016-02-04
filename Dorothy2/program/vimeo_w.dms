@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Vimeo.com_w
-//version=1.2
+//version=1.3
 //hint=http://vimeo.com/
 //match=https?://(www\.|player\.)?vimeo(pro)?\.com/\w+
 //author=wan
