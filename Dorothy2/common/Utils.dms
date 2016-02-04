@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils
-//version=1.3
+//version=1.4
 //hint=
 //match=
 //author=wan
@@ -755,7 +755,7 @@
 			Utils.saveIni(data, path);
 		}
 	};
-	
+
 	/**
 	 * 日時を表す文字列をIrvineで使用されているTDateTimeの数値に変換します
 	 * @param {string} str 「yyyy/mm/dd hh:nn:ss」または「hh:nn:ss」形式の文字列
@@ -1204,6 +1204,93 @@
 		return true;
 	};
 
+	/** DOAにて不足している各変数やプロパティを設定します DOAスクリプトのmain関数内で毎回呼び出してください
+	 * @param {IrvineItem} itemData main関数内でのitemData
+	 */
+	Utils.setDOA = function(itemData){
+		if(!Utils.isDOA){
+			throw Utils.showError('.setDOA()は DOA でしか使用できません', 'Utils.dms', '.setDOA');
+		}else if(typeof itemData != 'object' || nameOf(itemData) != 'IrvineItem'){
+			throw Utils.showError('未知のエラー。itemDataが正しく指定されていません', 'Utils.dms', '.setDOA');
+		}
+		Dorothy.userPath = Utils.getUserPath();
+		Dorothy.userIniPath = Utils.getUserIniPath();
+		item = itemData;//Global.item とはしない様にする事
+
+		headers = {
+			"Referer": "",
+			"User-Agent": Irvine.FolderData('http' ,'agent'),
+			"Cookie": "",
+			"Host": new URL(item.url).host
+		};
+
+		if(nameOf(urlinfo) != 'IrvineUrlInfo'){
+			urlinfo = Utils.extend(new IrvineUrlInfo, urlinfo);
+		}
+	};
+
+	/** DOA画面にアイテムを追加します
+	 * @param {string} url アイテムのURL
+	 * @param {string} [filename=''] アイテムのファイル名
+	 * @param {string|number} [filesize=''] アイテムのファイルサイズ
+	 * @param {string} [comment=''] アイテムのコメント
+	 */
+	Utils.doaItemAdd = function(url, filename, filesize, comment){
+		if(!Utils.isDOA) throw Utils.showError('.doaItemAdd()は DOA でしか使用できません', 'Utils.dms', '.doaItemAdd');
+		filename = filename || '';
+		comment = comment || '';
+		filesize = filesize || '';
+		var listItem = frmDOA.ListView1.Items.add();
+		listItem.Caption = url;
+		listItem.url = url;
+		listItem.irvItem = -1;
+		listItem.doa_status = '';
+		listItem.doa_link = '';
+		listItem.doa_name = filename;
+		listItem.SubItems.add('');
+		listItem.SubItems.add(filesize);
+		listItem.SubItems.add(joint(' / ', filename, comment));
+		DOA.urls.add(url);
+		DOA.itemsIndex.add(-1);
+	};
+
+	/** DOA画面にアイテムを追加します 追加したアイテムのDOA.statusはDOA_ITになります
+	 * @param {object|IrvineItem} itemData IrvineItemオブジェクトまたはそれと同じ名前のプロパティをもつオブジェクト
+	 */
+	Utils.doaItemAdd_IT = function(itemData){
+		if(!Utils.isDOA) throw Utils.showError('.doaItemAdd_IT()は DOA でしか使用できません', 'Utils.dms', '.doaItemAdd_IT');
+		var url, filename, filesize, comment,
+			listItem = frmDOA.ListView1.Items.add();
+
+		if(nameOf(itemData) == 'IrvineItem'){
+			listItem.itemData = itemData;
+		}else if(typeof itemData == 'object'){
+			listItem.itemData = new IrvineItem();
+			for(var key in itemData){
+				if(listItem.itemData.hasKey(key)){
+					listItem.itemData[key] = itemData[key];
+				}
+			}
+		}else{
+			listItem.itemData = new IrvineItem();
+		}
+		url = listItem.itemData.url;
+		filename = listItem.itemData.filename || '';
+		filesize = listItem.itemData.filesize || '';
+		comment = listItem.itemData.comment || '';
+		listItem.Caption = url;
+		listItem.url = url;
+		listItem.irvItem = -1;
+		listItem.doa_status = DOA_IT;
+		listItem.doa_link = '';
+		listItem.doa_name = filename;
+		listItem.SubItems.add(DOA_MSG[DOA_IT]);
+		listItem.SubItems.add(filesize);
+		listItem.SubItems.add(joint(' / ', filename, comment));
+		DOA.urls.add(url);
+		DOA.itemsIndex.add(-1);
+	};
+
 
 	(function(){
 		var loadOption = (function(){
@@ -1325,10 +1412,9 @@
 				Dorothy.version = '' + Utils.getVersionDorothy2A();
 				Dorothy.temp = dorothy2_temp;
 			}
-			//これらの値はthis.main関数内でUtils.getUserPathやUtils.getUserIniPath等を用いて毎回手動で設定してください
-			Dorothy.userPath = Utils.getUserPath();
-			Dorothy.userIniPath = Utils.getUserIniPath();
-
+			var item = new IrvineItem();
+			item.url = urlinfo.url;
+			Utils.setDOA(new IrvineItem);
 		}else if(Utils.isDorothy2set){
 			if(!Utils.isRentan){
 				Global.print_debug = function(str){
