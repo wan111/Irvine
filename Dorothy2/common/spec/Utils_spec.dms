@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils_spec
-//version=1.3
+//version=1.4
 //hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
 //match=
 //author=wan
@@ -1082,7 +1082,7 @@ describe('ini, JSON', function(){
 			iniFile.close();
 		}
 		expect(s).toBe(iniStr2);
-		
+
 		expect(function(){Utils.saveOption(data, jsonPath);}).not.toThrow();
 		expect(jsonFile.exists()).toBeTruthy();
 		var s;
@@ -1399,6 +1399,54 @@ describe('Utils Dorothy', function(){
 			DOA.size = s;
 			Utils.setDOA_IT();
 			expect(item.filesize).toBe(size);
+		});
+	});
+
+	describe('Utils.setDOA', function(){
+		if(isDOA){
+			var old = {
+				item: item,
+				urlinfo: urlinfo,
+				headers: headers,
+				userPath: Dorothy.userPath,
+				userIniPath: Dorothy.userIniPath
+			};
+			beforeEach(function(){
+				Dorothy.removeKey('userPath');
+				Dorothy.removeKey('userIniPath');
+			});
+			afterEach(function(){
+				item = old.item;
+				urlinfo = old.urlinfo;
+				headers = old.headers;
+				Dorothy.userPath = old.userPath;
+				Dorothy.userIniPath = old.userIniPath;
+			});
+		}
+
+		it('setDOA', function(){
+			if(!isDOA){
+				var r;
+				expect(function(){r = Utils.setDOA();}).toThrow('Error: Utils.dms .setDOA: .setDOA()‚Í DOA ‚Å‚µ‚©Žg—p‚Å‚«‚Ü‚¹‚ñ');
+				expect(r).toBeFalsy();
+			}else{
+				var item_ = new IrvineItem();
+				item_.url = 'http://example.com';
+				item_.filename = 'test.txt';
+				item_.comment = 'hoge';
+				item_.filesize = 1234;
+				var headers_ = {
+					"Referer": "",
+					"User-Agent": Irvine.FolderData('http' ,'agent'),
+					"Cookie": "",
+					"Host": new URL(item_.url).host
+				};
+				Utils.setDOA(item_);
+				expect(item).toBe(item_);
+				expect(headers).toEqual(headers_);
+				expect(nameOf(urlinfo)).toBe('IrvineUrlInfo');
+				expect(urlinfo.url).toBe(old.urlinfo.url);
+			}
 		});
 	});
 

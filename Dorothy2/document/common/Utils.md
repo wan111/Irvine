@@ -599,6 +599,39 @@ Utilsオブジェクト
            バイト値に変換して item.filesize に設定します
          </pre>
 
+      * < static > setDOA(itemData)  
+         DOAにて不足している各変数やプロパティを設定します DOAスクリプトのmain関数内で毎回呼び出してください
+
+         * パラメータ:
+
+         | 名前     | 型         | 説明                   |
+         |----------|------------|------------------------|
+         | itemData | IrvineItem | main関数内でのitemData |
+         
+
+      * < static > doaItemAdd(url, filename, filesize, comment)  
+         DOA画面にアイテムを追加します
+
+         * パラメータ:
+
+         | 名前     | 型            | 引数   | 既定値 | 説明                     |
+         |----------|---------------|--------|--------|--------------------------|
+         | url      | string        |        |        | アイテムのURL            |
+         | filename | string        | 省略可 | ''     | アイテムのファイル名     |
+         | filesize | string,number | 省略可 | ''     | アイテムのファイルサイズ |
+         | comment  | string        | 省略可 | ''     | アイテムのコメント       |
+         
+
+      * < static > doaItemAdd_IT(itemData)  
+         DOA画面にアイテムを追加します 追加したアイテムのDOA.statusはDOA_ITになります
+
+         * パラメータ:
+
+         | 名前     | 型                | 説明                                                                     |
+         |----------|-------------------|--------------------------------------------------------------------------|
+         | itemData | object,IrvineItem | IrvineItemオブジェクトまたはそれと同じ名前のプロパティをもつオブジェクト |
+         
+
       * < static > getCommentOption(key, def) → {string|number|boolean|null|undefined|T}  
          folderdata.Postとitem.commentに設定されたオプションから指定された名前のオプションを取得します  
          オプションの各値は適切なプリミティブ値に変換されます
@@ -642,6 +675,10 @@ Utilsオブジェクト
 
 変更履歴:
 =========
+
+* 2016/02/04  version 1.4
+   .setDOA(), .doaItemAdd(), .doaItemAdd_IT() を追加
+   .redefineDorothy()にてDOAの場合に.setDOA()を実行するようにした
 
 * 2016/01/26  version 1.3
    .extractPath(), .has(), .saveOption() を追加
