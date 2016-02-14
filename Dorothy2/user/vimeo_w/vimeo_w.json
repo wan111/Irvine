@@ -1,0 +1,30 @@
+{
+	"general": {
+		"debug": true,
+		"skipError": false
+	},
+	"download": {
+		"priority": "ABCDE",
+		"reQueue": false
+	},
+	"fileName": {
+		"template": {
+			"pro": "%TITLE% (pro)",
+			"ondemand": "%TITLE% (ondemand)",
+			"music": "%TITLE% (music)",
+			"video": "%TITLE% %QUALITY% %FPS% %TAGS%"
+		},
+		"zen2han": false,
+		"tag": {
+			"len": 50,
+			"delimiter": ", ",
+			"max": 10
+		}
+	},
+	"addItem": {
+		"Listname": "",
+		"Mode": "OptionQueue",
+		"Workaround": true,
+		"Queue": ""
+	}
+}

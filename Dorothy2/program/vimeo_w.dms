@@ -1,15 +1,15 @@
 //Dorothy2
-//caption=vimeo.com
-//version=0.20
+//caption=Vimeo.com_w
+//version=1.3
 //hint=http://vimeo.com/
-//match=http://(www\.)?vimeo\.com/\w+
+//match=https?://(www\.|player\.)?vimeo(pro)?\.com/\w+
 //author=wan
 //path=program
 //priority=500
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,338 +27,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 function(){
-	common_load('download', 'utf8', 'character_references', 'fileSave', 'json');
+	user_program_load("vimeo_w");
 
-	Object.prototype.getValue = function(key, dflt){
-		return this.hasKey(key) ? this[key] : dflt;
-	};
-	Array.prototype.select = function(func){
-		var arr = [];
-		if(!(func && typeof func == 'function')) return arr;
+	var testMode = false;
 
-		for(var i = 0; i < this.length; i++){
-			if(func(this[i])) arr.add(this[i]);
-		}
-		return arr;
-	};
-	Array.prototype.selectMax = function(func){
-		var arr = [], max = NaN, tmp;
-		if(!(func && typeof func == 'function')) return arr;
+	var vimeo = new Vimeo();
 
-		var funcFlag = typeof func == 'function' ? true : false;
-		for(var i = 0; i < this.length; i++){
-			tmp = funcFlag ? func(this[i]) : this[i];
-			if(max > tmp){
-				continue;
-			}else if(max < tmp){
-				arr.clear();
-			}
-			max = tmp;
-			arr.add(this[i]);
-		}
-		return arr;
-	};
-	Array.prototype.selectMin = function(func){
-		var arr = [], min = NaN, tmp;
-		if(!(func && typeof func == 'function')) return arr;
+	var r = vimeo.get(urlinfo.url);
 
-		var funcFlag = typeof func == 'function' ? true : false;
-		for(var i = 0; i < this.length; i++){
-			tmp = funcFlag ? func(this[i]) : this[i];
-			if(min < tmp){
-				continue;
-			}else if(min > tmp){
-				arr.clear();
-			}
-			min = tmp;
-			arr.add(this[i]);
-		}
-		return arr;
-	};
-	function compare(c, a, b){
-		if(isUndefined(c) || isUndefined(a) || isUndefined(b)) return -1;
-		c = c.trim();
-		switch(c){
-			case '==':
-				return a == b;
-			case '!=':
-				return a != b;
-			case '<':
-				return a < b;
-			case '>':
-				return a > b;
-			case '<=':
-				return a <= b;
-			case '>=':
-				return a >= b;
-			default:
-				return -1;
-		}
-	}
-	var getConditional = function(s){
-		var r = [];
-		var keys = list[0].getProperties().join('|');
-		s = s.split(';');
-		for(var i = 0; i < s.length; i++){
-			if(s[i].match('^\s*(' + keys + ')\s*(==|!=|<|<=|>|>=)\s*(.+)')){
-				r.push({operator: RegExp.$2, key: RegExp.$1, value: RegExp.$3.trim()});
-			}
-		}
-		return r;
-	};
-	var simpleApi_video = function(video_id){
-		var api_url = new URL('http://vimeo.com/api/v2/video/' + video_id + '.json');
-		var api_http = download(api_url.url, false);
-		if(api_http.responseHeader.code != 200){
-			println('api_error>' + api_http.responseHeader.code);
-			return false;
-		}
-		var r = parseJSON(api_http.data);
-		return nameOf(r) == 'Array' ? r[0] : r;
-	};
-	var extractName = function(str, ext){
-		return (/(.*[\/|\\])?(.+?)((\.[^\.\?]*)(\?.+)?$|$)/.test(str), RegExp.$2 + (ext===true? RegExp.$4: typeof ext == 'string'? ext: ''));
-	};
-
-	var ini = new Ini(Dorothy.userIniPath);
-	var savename = ini.read('GENERAL','savename','%TITLE%');
-	var priority = ini.read('GENERAL','priority','ADGBEHCFI');
-	var tag_max = ini.read('GENERAL', 'tag_max', 10) | 0;
-	var tag_delimiter = ini.read('GENERAL', 'tag_delimiter', ',').replace(/^"(.+)"$/, '$1');
-	var remove_slash = ini.read('GENERAL', 'remove_slash', false) == true;
-	var con_flag = ini.read('GENERAL', 'con_flag', false) == true;
-	var conditional = ini.read('GENERAL', 'conditional', '');
-	if(!priority.match('^[A-I]+$')){
-		println('設定値異常');
-		println('優先順位の設定> ' + priority);
-		exit();
-	}
-
-	var list = [];
-	list[0] = {key: 'A', codec: 'h264', quality: 'hd', ext: '.mp4', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[1] = {key: 'B', codec: 'h264', quality: 'sd', ext: '.mp4', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[2] = {key: 'C', codec: 'h264', quality: 'mobile', ext: '.mp4', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[3] = {key: 'D', codec: 'vp8', quality: 'hd', ext: '.webm', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[4] = {key: 'E', codec: 'vp8', quality: 'sd', ext: '.webm', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[5] = {key: 'F', codec: 'vp8', quality: 'mobile', ext: '.webm', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[6] = {key: 'G', codec: 'vp6', quality: 'hd', ext: '.flv', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[7] = {key: 'H', codec: 'vp6', quality: 'sd', ext: '.flv', url: '', filename: '', width: '', height: '', bitrate: ''};
-	list[8] = {key: 'I', codec: 'vp6', quality: 'mobile', ext: '.flv', url: '', filename: '', width: '', height: '', bitrate: ''};
-
-
-	var url = new URL(urlinfo.url);
-
-	var http = download(url.url, false, {Cookie: 'language=en'});
-	if(http.responseHeader.code == 301){
-		url.url = url.expand(http.responseHeader.location);
-		http = download(url.url, false, {Cookie: 'language=en'});
-	}
-	if(http.responseHeader.code != 200){
-		println('error> ' + http.responseHeader.code);
-		if(http.data.match('<h1>\s*(Page not found)\s*</h1>')){
-			println(RegExp.$1);
-		}else if(http.data.match(/>(We couldn't find that page.)</)){
-			println(RegExp.$1);
+	if(testMode){
+		if(r){
+			Util.remove_this();
+			return;
 		}
 		exit();
 	}
-	if(!url.url.match('http://(www\.)?vimeo\.com/(channels/\w+/|groups/\w+/videos/)?(\d+)')){
-		println('未対応> ' + url.url);
-		exit();
-	}
-	var id = RegExp.$3;
 
-	if(http.data.match('This is a private video. Do you have permission to watch it\?')){
-		println(RegExp.$0);
-		url.url = 'http://vimeo.com/channels/staffpicks/' + id;
-		println('試行>' + url.url);
-		http = download(url.url, false, {Cookie: 'language=en'});
-		if(http.responseHeader.code != 200) exit();
+	if(r){
+		vimeo.download();
 	}
-
-	if(http.data.match('property="video:duration" content="(\d+)')) duration = RegExp.$1;
-	if(url.url.match('http://(www\.)?vimeo\.com/channels/\w+/\d+')){
-		if(http.data.match('vimeo.com/' + id + '</a>\s*</span>\s*<span class="time">\s*Uploaded\s*<time datetime="([^"]+)')){
-			uploade_date = RegExp.$1;
-		}
-	}else{
-		if(http.data.match('<time datetime="([^"]+)')){
-			uploade_date = RegExp.$1;
-		}
-	}
-	if(!http.data.match('data-config-url="([^"]+/' + id + '/[^"]+)')){
-		println('error> data-config-urlが見つからない');
-		exit();
-	}
-	var config_url = new URL(RegExp.$1.replace(/&amp;/g, '&'));
-	config_http = download(config_url.url, false);
-	if(config_http.responseHeader.code != 200){
-		println('error>' + config_http.responseHeader.code);
-		exit();
-	}
-
-	var Config = parseJSON(config_http.data);
-	if(typeof Config != 'object'){
-		println('error> JSONデータを取得できませんでした');
-		println('config_url>' + config_url.url);
-		fileSave('error_vimeo_data_config.html', config_http.data);
-		exit();
-	}
-	if(typeof Config.request.files == 'undefined'){
-		if(!Config.hasKey('request')) println('error> requestが見つからない');
-		println('error> request.filesが見つからない');
-		exit();
-	}
-
-	var Video = simpleApi_video(id);
-	if(typeof Video != 'object'){
-		println('Simple API Video Requestでのデータ取得失敗');
-		println(Video);
-		Video = {};
-	}
-
-	var title, duration, upload_date, user_name, user_id, user_url, account_type, tags;
-/*
-	if(http.data.match('var ClipConfig = ({.*?});')){
-		var clip = parseJSON(RegExp.$1);
-		if(nameOf(clip) == 'Object'){
-			title = clip.getValue('title', '');
-			user_name = clip.getValue('name', '');
-			user_id = clip.getValue('user_id', '');
-			user_url = clip.getValue('user_url', '');
-		}else{
-			println('ClipConfigからデータ取得失敗');
-		}
-	}else{
-		println('ClipConfigが見つかりませんでした');
-	}
-*/
-	var c_video = Config.getValue('video', {});
-	var owner = c_video.getValue('owner', {});
-	if(!title) title = Video.getValue('title', c_video.getValue('title'));
-	if(!duration) duration = Video.getValue('duration', c_video.getValue('duration'));
-	if(!uploade_date) uploade_date = Video.getValue('uploade_date');
-	if(!user_name) user_name = Video.getValue('user_name', owner.getValue('name'));
-	if(!user_id) user_id = Video.getValue('user_id', owner.getValue('id'));
-	if(!user_url) user_url = Video.getValue('user_url', owner.getValue('url'));
-	//user_url = user_url.replace(/\\/g, '').replace('http://vimeo.com', '');
-	user_url = user_url.replace('^http://vimeo.com' + (remove_slash ? '/' : ''), '');
-	account_type = owner.getValue('account_type');
-	tags = Video.getValue('tags', '').split(',\s?');
-
-	var uk = [], files = Config.request.files, tmp, list_flag, match_flag = false;
-	for(var codec in files){
-		if(codec == 'codecs' || codec == 'hls') continue;
-		for(var quality in files[codec]){
-			match_flag = false;
-			for(var i = 0; i < list.length; i++){
-				if(list[i].codec == codec && list[i].quality == quality){
-					match_flag = list_flag = true;
-					list[i].url = files[codec][quality].getValue('url');
-					list[i].filename = extractName(list[i].url);
-					list[i].width = files[codec][quality].getValue('width');
-					list[i].height = files[codec][quality].getValue('height');
-					list[i].bitrate = files[codec][quality].getValue('bitrate');
-					//println(toJSON(list[i]));
-					break;
-				}
-			}
-			if(!match_flag){
-				tmp = files[codec][quality].getValue('url');
-				var j = uk.add({
-					codec: codec,
-					quality: quality,
-					url: tmp,
-					ext: 'unknown',
-					filename: extractName(tmp),
-					width: files[codec][quality].getValue('width'),
-					height: files[codec][quality].getValue('height'),
-					bitrate: files[codec][quality].getValue('bitrate')
-				});
-				//println(toJSON('unknown>' + uk[j]));
-			}
-		}
-	}
-	if(files.hasKey('hls')){
-		println('HLS--------------------------------------------------');
-		for(var i in files.hls){
-			println(i + '>' + files.hls[i]);
-		}
-		println('-----------------------------------------------------');
-	}
-	if(list_flag){
-		println('DL可能な動画');
-		for(var i = 0; i < list.length; i++){
-			if(list[i].url){
-				println(list[i].key + '--->' + list[i].codec + ' ' + list[i].quality + ' ' + list[i].width + 'x' + list[i].height + ' bitrate: ' + list[i].bitrate + ' ext: ' + list[i].ext + ' url: ' + list[i].url);
-			}
-		}
-	}
-	if(uk.length){
-		println('新しい画質?');
-		for(var i = 0; i < uk.length; i++){
-			println('UNKNOWN--->' + list[i].codec + ' ' + list[i].quality + ' ' + list[i].width + 'x' + list[i].height + ' bitrate: ' + list[i].bitrate + ' ext: ' + list[i].ext + ' url: ' + list[i].url);
-		}
-	}
-
-	if(con_flag){
-		println('指定条件:' + conditional);
-		var con = getConditional(conditional);
-		for(var i = 0; i < con.length; i++){
-			if(con[i].value == 'max'){
-				list = list.selectMax(function(a){return a[con[i].key];});
-			}else if(con[i].value == 'min'){
-				list = list.selectMin(function(a){return a[con[i].key];});
-			}else{
-				list = list.select(function(a){return compare(con[i].operator, a[con[i].key], con[i].value);});
-			}
-		}
-	}
-	var priority_flag = false;
-	for(var i = 0; i < priority.length && !priority_flag; i++){
-		for(var index = 0; index < list.length; index++){
-			if(list[index].url && list[index].key == priority[i]){
-				priority_flag = true;
-				break;
-			}
-		}
-	}
-
-	println('指定優先順位:' + priority);
-	if(!list_flag && !uk.length){
-		println('動画URLが一つも見つからない');
-		exit();
-	}else if(!priority_flag){
-		println('指定された優先順位(' + priority + ')では動画は見つかりませんでした');
-		exit();
-	}
-	var dl_url = new URL(list[index].url);
-	println('DLする動画> ' + list[index].key);
-	println('url> ' + dl_url);
-
-	var map = {
-		TITLE: new Utf8(title).decodeCharRef().toSJIS(),
-		FILENAME: list[index].filename,
-		ID: id,
-		WIDTH: list[index].width,
-		HEIGHT: list[index].height,
-		DURATION: duration,
-		CODEC: list[index].codec.toUpperCase(),
-		QUALITY: list[index].quality.toUpperCase(),
-		BITRATE: list[index].bitrate,
-		TAGS: tags.slice(0, tag_max).join(tag_delimiter),
-		UPLOAD_DATE: uploade_date,
-		USER_NAME: new Utf8(user_name).decodeCharRef().toSJIS(),
-		USER_ID: user_id,
-		USER_URL: user_url,
-		ACCOUNT_TYPE: account_type
-	};
-	for(var i in map) println(i + '> ' + map[i]);
-
-	var p = map.getProperties().join('|');
-	savename = savename.replace('%(' + p + ')%', 'gi', function(m,n){return map[n.toUpperCase()];});
-
-	Dorothy.fileName = character_references(savename) + list[index].ext;
-	urlinfo.url = dl_url.url;
-	headers['Host'] = dl_url.host;
+	vimeo.end();
 }

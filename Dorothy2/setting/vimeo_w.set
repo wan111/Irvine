@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=vimeo.com用設定
-//version=0.14
+//version=1.3
 //hint=
 //match=
 //author=wan
@@ -9,7 +9,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,36 +27,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 function (){
-	common_load('EZDialog');
+	common_load('EZDialog', 'Utils');
 
-	var dir=new Directory(Dorothy.userPath);
-	if(!dir.exists()){
-		dir.make();
-	}
-
-	var ini=new Ini(Dorothy.userIniPath);
-
-	var v={};
-	v.savename=ini.read('GENERAL','savename','%TITLE%');
-	v.priority = ini.read('GENERAL','priority','ADGBEHCFI');
-	v.tag_max = ini.read('GENERAL', 'tag_max', 10) | 0;
-	v.tag_delimiter = ini.read('GENERAL', 'tag_delimiter', ',').replace(/^"(.+)"$/, '$1');
-	v.remove_slash = ini.read('GENERAL', 'remove_slash', false) == true;
-	v.con_flag = ini.read('GENERAL', 'con_flag', false) == true;
-	v.conditinal = ini.read('GENERAL', 'conditional', '');
-
-	//ダイアログ
-	var d=new EZDialog('vimeo_w');
-	d.prototype.spinEdit=function(value, MinValue, MaxValue, width, fontName, fontSize){
+	EZDialog.prototype.spinEdit=function(value, minValue, maxValue, width, fontName, fontSize){
 		var tmp=new VCLSpinEdit(this.p);
 		if(isUndefined(value)||isNull(value)){
 			value=0;
 		}
-		if(!isUndefined(MinValue)&&!isNull(MinValue)){
-			tmp.MinValue=MinValue;
+		if(!isUndefined(minValue)&&!isNull(minValue)){
+			tmp.minValue=minValue;
 		}
-		if(!isUndefined(MaxValue)&&!isNull(MaxValue)){
-			tmp.MaxValue=MaxValue;
+		if(!isUndefined(maxValue)&&!isNull(maxValue)){
+			tmp.maxValue=maxValue;
 		}
 		if(!isUndefined(width)&&!isNull(width)){
 			tmp.width=width;
@@ -71,115 +53,150 @@ function (){
 		tmp.top=this.top;
 		tmp.left=this.left+this.marginLeft;
 		s=tmp.left+tmp.width;
-		if(s>p.width){
-			p.width=s+marginRight;
+		if(s>this.p.width){
+			this.p.width=s+marginRight;
 		}
-		if(this.maxWidth<p.width){
-			this.maxWidth=p.width;
+		if(this.maxWidth<this.p.width){
+			this.maxWidth=this.p.width;
 		}
 		this.lf(tmp);
 		return tmp;
 	};
+	EZDialog.prototype.label_spinEdit = function(caption, value, minValue, maxValue, width1, width2, Alignment, fontName, fontSize){
+		Alignment= Alignment || 'l';
+		var oldCont = this.contFlag;
+		if(!oldCont) this.contOn();
+		var label = this.label(caption, width1, Alignment, fontName, fontSize);
+		var spin = this.spinEdit(value, minValue, maxValue, width2, fontName, fontSize);
+		spin.left = label.left + label.width + 5;
+
+		label.height = spin.height;
+		label.Alignment = this.Alignment[Alignment];
+		label.Layout = 'tlCenter';
+
+		if(!oldCont) this.contOff();
+		return {label: label, spinEdit: spin};
+	};
+
+	user_program_load('vimeo_w');
+	var opt = new Vimeo().opt;
+
+	var d = new EZDialog('vimeo_w');
+	var frm = {};
+
+	frm.groupGeneral = d.group('一般');
+	frm.checkDebug = d.checkBox('デバッグモード', opt.general.debug);
+	frm.checkTrace = d.checkBox('トレースモード', opt.general.trace);
+	frm.checkSkip = d.checkBox('ファイル名情報が取得出来なくても続行する', opt.general.skipError);
+	frm.checkQuiet = d.checkBox('メッセージを表示しない', opt.general.quiet);
+	d.groupEnd(frm.groupGeneral);
 
 
-	var width = d.sWidth('%TITLE% %USER_ID% %USER_URL% %NAME% %WIDTH% %HEIGHT% %DURATION% %ID% %CODEC% %FILENAME%');
-	var group1 = d.group('保存ファイル名(拡張子不要)');
-	var label1 = d.label('%TITLE%---------タイトル', null, null,'g');
-	var label2 = d.label('%FILENAME%------動画URLのファイル名', null, null,'g');
-	var label3 = d.label('%ID%------------動画ID', null, null,'g');
-	var label4 = d.label('%WIDTH%---------幅', null, null,'g');
-	var label5 = d.label('%HEIGHT%--------高さ', null, null,'g');
-	var label6 = d.label('%DURATION%------再生時間', null, null,'g');
-	var label7 = d.label('%CODEC%---------コーデック', null, null,'g');
-	var label8 = d.label('%QUALITY%-------画質', null, null,'g');
-	var label9 = d.label('%BITRATE%-------ビットレート', null, null,'g');
+	frm.groupDL = d.group('ダウンロード');
+	frm.label270 = d.label('A: 270p', null, null, 'g');
+	frm.label360 = d.label('B: 360p', null, null, 'g');
+	frm.label480 = d.label('C: 480p', null, null, 'g');
+	frm.label540 = d.label('D: 540p', null, null, 'g');
+	frm.label720 = d.label('E: 720p', null, null, 'g');
+	frm.label1080 = d.label('F: 1080p', null, null, 'g');
+	frm.label1440 = d.label('G: 1440p', null, null, 'g');
+	frm.label2160 = d.label('H: 2160p', null, null, 'g');
+	frm.labelOriginal = d.label('Z: Original', null, null, 'g');
+	var priorityWidth = d.sWidth('ABCDEFGHZ    ');
+	frm.editPriority = d.label_edit('優先順位', opt.download.priority, null, priorityWidth);
+	frm.checkReQueue = d.checkBox('新規アイテムとして追加する', opt.download.reQueue);
+	d.groupEnd(frm.groupDL);
+
+	frm.groupAddItem = d.group('AddItem');
+	var itemCapWidth = d.sWidth('AAAAAAAA');
+	var itemWidth = d.sWidth('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+	frm.editMode = d.label_edit('Mode', opt.addItem.Mode, itemCapWidth, itemWidth);
+	frm.editQueue = d.label_edit('Queue', opt.addItem.Queue, itemCapWidth, itemWidth);
+	frm.editListName = d.label_edit('Listname', opt.addItem.Listname, itemCapWidth, itemWidth);
+	frm.checkWorkaround = d.checkBox('Workaround', opt.addItem.Workaround);
+	d.groupEnd(frm.groupAddItem);
+
+	d.moveRightTop();
+
+	frm.groupName = d.group('保存ファイル名(拡張子不要)');
+	frm.checkZen2han   = d.checkBox('全角文字を半角に変換する', opt.fileName.zen2han);
+	frm.labelTitle     = d.label('%TITLE%-------------タイトル', null, null,'g');
+	frm.labelQuality   = d.label('%QUALITY%-----------画質(360p,480p,...)', null, null,'g');
+	frm.labelFps       = d.label('%FPS%---------------fps', null, null, 'g');
+	frm.labelWidth     = d.label('%WIDTH%-------------幅', null, null,'g');
+	frm.labelHeight    = d.label('%HEIGHT%------------高さ', null, null,'g');
+	frm.labelDuration  = d.label('%DURATION%----------再生時間', null, null,'g');
+	frm.labelVID       = d.label('%VIDEO_ID%----------動画ID', null, null,'g');
+	frm.labelVUrl      = d.label('%VIDEO_URL%---------動画URL', null, null, 'g');
+	frm.labelUserName  = d.label('%USER_NAME%---------投稿者', null, null,'g');
+	frm.labelUserUrl   = d.label('%USER_URL%----------投稿者のユーザーURL', null, null,'g');
+	frm.labelUserID    = d.label('%USER_ID%-----------投稿者のID', null, null,'g');
+	frm.labelUpDate    = d.label('%UPLOAD_DATE%-------投稿日時', null, null,'g');
 	d.contOn();
-	var label10 = d.label('%TAGS%----------タグ', null, null,'g');
+	frm.labelTag       = d.label('%TAGS%--------------タグ', null, null,'g');
 	d.widthSpace(10);
-	var tag_label = d.label('タグ最大数', null, null, 'g');
-	d.heightSpace(-5);
-	var tag_max = d.spinEdit(v.tag_max, 0, null, d.sWidth('AAAAAA'));
-	var tag_delimiter = d.label_edit('区切り文字', v.tag_delimiter, null, d.sWidth('AAAAAA'));
+	frm.spinTagMax = d.label_spinEdit('タグ最大数', opt.fileName.tag.max, 0, null, null, d.sWidth('12341234'));
+	frm.labelTag.height = frm.spinTagMax.label.height;
+	frm.editTagDelimiter = d.label_edit('区切り文字', opt.fileName.tag.delimiter, null, d.sWidth('ABCD'));
+	frm.spinTagLen = d.label_spinEdit('文字列化後の最大文字数', opt.fileName.tag.len, 0, null, null, d.sWidth('12431234'));
 	d.contOff();
-	var label11 = d.label('%UPLOAD_DATE%---投稿日時', null, null,'g');
-	var label12 = d.label('%USER_NAME%-----投稿者', null, null,'g');
-	var label13 = d.label('%USER_ID%-------投稿者のID', null, null,'g');
 	d.contOn();
-	var label14 = d.label('%USER_URL%------投稿者のユーザーURL', null, null,'g');
+	frm.labelCat       = d.label('%CATEGORIES%--------カテゴリ', null, null,'g');
 	d.widthSpace(10);
-	var check1 = d.checkBox('先頭の/を削除', v.remove_slash);
+	frm.spinCatMax = d.label_spinEdit('カテゴリ最大数', opt.fileName.category.max, 0, null, null, d.sWidth('12341234'));
+	frm.labelCat.height = frm.spinCatMax.label.height;
+	frm.editCatDelimiter = d.label_edit('区切り文字', opt.fileName.category.delimiter, null, d.sWidth('ABCD'));
+	frm.spinCatLen = d.label_spinEdit('文字列化後の最大文字数', opt.fileName.category.len, 0, null, null, d.sWidth('12431234'));
 	d.contOff();
-	var label15 = d.label('%ACCOUNT_TYPE%--投稿者のアカウントタイプ', null, null,'g');
-	var savename = d.edit(v.savename, width);
-	d.groupEnd(group1);
+	frm.labelPFUrl     = d.label('%PORTFOLIO_URL%-----ポートフォリオURL', null, null, 'g');
+	frm.labelPFID      = d.label('%PORTFOLIO_ID%------ポートフォリオID', null, null, 'g');
+	frm.labelChName    = d.label('%CHANNEL_NAME%------チャンネル名', null, null, 'g');
+	frm.labelChUrl     = d.label('%CHANNEL_URL%-------チャンネルURL', null, null, 'g');
+	frm.labelChId      = d.label('%CHANNEL_ID%--------チャンネルID', null, null, 'g');
+	frm.labelGrName    = d.label('%GROUP_NAME%--------グループ名', null, null, 'g');
+	frm.labelGrUrl     = d.label('%GROUP_URL%---------グループURL', null, null, 'g');
+	frm.labelGrID      = d.label('%GROUP_ID%----------グループID', null, null, 'g');
+	frm.labelAlbumID   = d.label('%ALBUM_ID%----------アルバムID', null, null, 'g');
+	frm.labelODUrl     = d.label('%ONDEMAND_URL%------オンデマンドURL', null, null, 'g');
+	frm.labelODID      = d.label('%ONDEMAND_ID%-------オンデマンドID', null, null, 'g');
+	frm.labelTrackID   = d.label('%TRACK_ID%----------トラックID', null, null, 'g');
+	frm.labelMusicUrl  = d.label('%MUSIC_URL%---------ミュージックURL', null, null, 'g');
 
-	var group2 = d.group('画質設定');
-	var group2_1 = d.group('');
-	var width2 = d.sWidth('ABCDEFGHI  ');
-	var label16 = d.label('A: H264 HD', null, null, 'g');
-	var label17 = d.label('B: H264 SD', null, null, 'g');
-	var label18 = d.label('C: H264 mobile', null, null, 'g');
-	var label19 = d.label('D: VP8 HD', null, null, 'g');
-	var label20 = d.label('E: VP8 SD', null, null, 'g');
-	var label21 = d.label('F: VP8 mobile', null, null, 'g');
-	var label22 = d.label('G: VP6 HD', null, null, 'g');
-	var label23 = d.label('H: VP6 SD', null, null, 'g');
-	var label24 = d.label('I: VP6 mobile', null, null, 'g');
-	var priority = d.label_edit('優先順位', v.priority, null, width2);
-	d.groupEnd(group2_1);
-	
-	//d.widthSpace(200);
-	//d.heightSpace(-200);
-	d.moveRightTop2(group2_1);
-	d.heightSpace(10);
-	var group2_2 = d.group('');
-	var keys = ['key', 'codec', 'quality', 'ext', 'url', 'filename', 'width', 'height', 'bitrate'];
-	var width3 = d.sWidth(keys.toString());
-	var check2 = d.checkBox('条件による選択', v.con_flag);
-	var label25 = d.label('条件文: キー名 演算子 値;', null, null, 'g');
-	var label26 = d.label('演算子: ==, !=, <, <=, >, >=', null, null, 'g');
-	var label27 = d.label('キー名        値');
-	var label28 = d.label('  key:      画質設定A～I', null, null, 'g');
-	var label29 = d.label('  codec:    h264, vp8, vp6', null, null, 'g');
-	var label30 = d.label('  quality:  hd, sd, mobile', null, null, 'g');
-	var label31 = d.label('  ext:      .mp4, .webm, .flv', null, null, 'g');
-	var label32 = d.label('  url:      動画本体のURL', null, null, 'g');
-	var label33 = d.label('  filename: 動画URLのファイル名', null, null, 'g');
-	var label34 = d.label('  width:    動画の横サイズ', null, null, 'g');
-	var label35 = d.label('  height:   動画の縦サイズ', null, null, 'g');
-	var label36 = d.label('  bitrate:  動画のビットレート', null, null, 'g');
-	var label37 = d.label('キー名==max; キー名==min; とした場合は最大値,最小値を選択', null, null, 'g');
-	var label38 = d.label('条件は左から順に行われ最後に優先順位によって選択される', null, null, 'g');
-	var label39 = d.label("例: codec==h264; width>=1280; bitrate==max;", null, null, 'g');
-	var conditional = d.label_edit('条件', v.conditinal, null, width3);
-	d.groupEnd(group2_2);
-	
-	d.groupEnd(group2);
+	var nameWidth = d.sWidth('%TITLE% %USER_ID% %USER_URL% %USER_NAME% %WIDTH% %HEIGHT% %DURATION% %VIDEO_ID% %QUALITY% %FPS%');
+	var nameCapWidth = d.sWidth('AAAAAAAA');
+	frm.editVideo =    d.label_edit('通常動画', opt.fileName.template.video, nameCapWidth, nameWidth);
+	frm.editPro =      d.label_edit('vimeopro ', opt.fileName.template.pro, nameCapWidth, nameWidth);
+	frm.editOndemand = d.label_edit('ondemand', opt.fileName.template.ondemand, nameCapWidth, nameWidth);
+	frm.editMusic =    d.label_edit('music     ', opt.fileName.template.music, nameCapWidth, nameWidth);
+	d.groupEnd(frm.groupName);
 
-	var ok=d.ok_cancel();
 
-	if(1!=d.showModal()){
+	frm.ok = d.ok_cancel();
+
+	if(d.showModal() == 1){
+		opt.general.debug = frm.checkDebug.Checked;
+		opt.general.trace = frm.checkTrace.Checked;
+		opt.general.skipError = frm.checkSkip.Checked;
+		opt.general.quiet = frm.checkQuiet.Checked;
+		opt.addItem.Mode = frm.editMode.edit.Text;
+		opt.addItem.Queue = frm.editQueue.edit.Text;
+		opt.addItem.Listname = frm.editListName.edit.Text;
+		opt.addItem.Workaround = frm.checkWorkaround.Checked;
+		opt.fileName.zen2han = frm.checkZen2han.Checked;
+		opt.fileName.template.video = frm.editVideo.edit.Text;
+		opt.fileName.template.pro = frm.editPro.edit.Text;
+		opt.fileName.template.ondemand = frm.editOndemand.edit.Text;
+		opt.fileName.template.music = frm.editMusic.edit.Text;
+		opt.fileName.tag.max = frm.spinTagMax.spinEdit.Value;
+		opt.fileName.tag.len = frm.spinTagLen.spinEdit.Value;
+		opt.fileName.tag.delimiter = frm.editTagDelimiter.edit.Text;
+		opt.fileName.category.max = frm.spinCatMax.spinEdit.Value;
+		opt.fileName.category.len = frm.spinCatLen.spinEdit.Value;
+		opt.fileName.category.delimiter = frm.editCatDelimiter.edit.Text;
+		opt.download.priority = frm.editPriority.edit.Text;
+		opt.download.reQueue = frm.checkReQueue.Checked;
+		Utils.saveOption(opt, 'vimeo_w.json');
 		return;
 	}
-
-	//設定ファイル更新
-	ini.write('GENERAL', 'savename', savename.Text);
-	ini.write('GENERAL', 'priority', priority.edit.Text);
-	ini.write('GENERAL', 'tag_max', tag_max.Value);
-	ini.write('GENERAL', 'tag_delimiter', '"' + tag_delimiter.edit.Text + '"');
-	ini.write('GENERAL', 'remove_slash', check1.checked);
-	ini.write('GENERAL', 'con_flag' , check2.checked);
-	var txt = '';
-	var tmp = conditional.edit.Text.split(';');
-	for(var i = 0; i< tmp.length; i++){
-		if(tmp[i].match('^\s*(' + keys.join('|') + ')\s*(==|!=|<|<=|>|>=)\s*.+')){
-			txt += tmp[i].trim() + '; ';
-		}
-	}
-	ini.write('GENERAL', 'conditional', txt);
-	
-	ini.update();
-
-	return;
 
 }
