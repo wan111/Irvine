@@ -288,6 +288,22 @@ Utilsオブジェクト
 
             * {Array<string>}
 
+      * < static > objectKeys(obj) → {Array<string>}  
+         オブジェクト自身の全てのプロパティ名を配列で返します。  
+         ArrayやArrayLike Objectの場合はその要素の添字も含みます  
+         組込みオブジェクトの定義済みのプロパティやプロトタイプチェインのプロパティは除きます。
+
+         * パラメータ:
+
+         | 名前 | 型 | 説明         |
+         |------|----|--------------|
+         | obj  | *  | オブジェクト |
+         
+
+         * 戻り値:   
+
+            * {Array<string>}
+
       * < static > extend(var_args) → {*}  
          <pre>
          指定した最初のオブジェクトに複数のオブジェクトをマージして返します。
@@ -582,6 +598,13 @@ Utilsオブジェクト
 
             * {number}
 
+      * < static > getVersionDorothy2ListMenu() → {number}  
+         Dorothy2ListMenu.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
+
+         * 戻り値:   
+
+            * {number}
+
       * < static > getVersionDOA() → {number}  
          DOA.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
 
@@ -664,6 +687,18 @@ Utilsオブジェクト
 
             * {Object}
 
+      * < static > setCommentOption(key, value)  
+         item.commentにkey=value;形式のオプションを設定します  
+         同名のオプションが既に設定されている場合は指定された値で上書きします
+
+         * パラメータ:
+
+         | 名前  | 型     | 説明             |
+         |-------|--------|------------------|
+         | key   | string | オプションの名前 |
+         | value | *      | オプションの値   |
+         
+
       * < static > redefineDorothy()  
          環境別の差異がなるべく少なくなる様にDorothyの関数等を再定義します  
          DOAやDorothy2AやDorothy2set等の環境別に存在したりしなかったりするプロパティや関数等を  
@@ -675,6 +710,9 @@ Utilsオブジェクト
 
 変更履歴:
 =========
+
+* 2016/02/14  version 1.5
+   .objectKeys(), .setCommentOption() を追加
 
 * 2016/02/04  version 1.4
    .setDOA(), .doaItemAdd(), .doaItemAdd_IT() を追加

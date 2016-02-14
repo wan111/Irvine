@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils
-//version=1.4
+//version=1.5
 //hint=
 //match=
 //author=wan
@@ -312,7 +312,7 @@
 	 * @return {*}
 	 */
 	Utils.getObject = (function(){
-		function _getObjForGlobal(name){
+		function _getObjFromGlobal(name){
 			return eval([
 			'(function(){',
 			'  try{',
@@ -324,7 +324,7 @@
 		return function(name, obj, def){
 			var key,
 				keys = isNull(name) || isUndefined(name) ? [] : Utils.toStr(name).split(/\./),
-				r = obj || _getObjForGlobal(key = keys.shift());
+				r = obj || _getObjFromGlobal(key = keys.shift());
 			if(isUndefined(r)) r = def;
 			while(!isUndefined(key = keys.shift())){
 				try{
@@ -357,7 +357,7 @@
 			isStr = type == 'string' || obj === String || obj === StringBuffer;
 
 		if(isArray || isStr){
-			for(var i = 0; i < obj.length; i++) r.push(i);
+			for(var i = 0; i < obj.length; i++) r.push(i + '');
 		}else if(isObj){
 			if(typeof obj.getKeys == 'function'){
 				keys = obj.getKeys();
@@ -368,7 +368,63 @@
 			}
 			//folderdata, prototypeはgetKeysでは取得出来ない
 			if(!r.length){
-				for(key in obj) r.push(key);
+				for(key in obj) r.push(key + '');
+			}
+		}
+		return r;
+	};
+
+	/**
+	 * オブジェクト自身の全てのプロパティ名を配列で返します。  
+	 * ArrayやArrayLike Objectの場合はその要素の添字も含みます  
+	 * 組込みオブジェクトの定義済みのプロパティやプロトタイプチェインのプロパティは除きます。
+	 * @param {*} obj オブジェクト
+	 * @return {Array<string>}
+	 */
+	Utils.objectKeys = function(obj){
+		var keys, key, o, ignoreKeys, hasConstructor,
+			r = [],
+			type = typeof obj,
+			name = nameOf(obj);
+		if(type != 'object'){
+			if(type == 'string'){
+				for(var i = 0; i < obj.length; i++) r.push(i + '');
+			}
+			return r;
+		}
+		if(name == 'Prototype'){
+			for(key in obj) r.push(key);
+			return r;
+		}
+		o = (hasConstructor = typeof obj.constructor == 'function') || name == 'Object' ? {} :
+		    name == 'Mail'? null :
+		    name == 'StringList' ? Strings :
+		    name.indexOf('VCL') == 0 || (name == 'CoolBar' && (name = 'VCLCoolBar')) ? eval('(function(){try{return new ' + name + ';}catch(e){return null;}})()') :
+		    Utils.getObject(name, null, null);
+		keys = isNull(o) ? {}.getKeys() : o.getKeys();
+		if(hasConstructor){
+			keys.push('constructor');
+		}else if(name == 'Ini'){
+			keys = keys.concat(['readSection', 'readSections', 'deleteKey', 'write', 'read', 'eraseSection', 'update', 'sectionExists', 'filename']);
+		}else if(name == 'RegIni'){
+			keys = keys.concat(['readSection', 'readSections', 'deleteKey', 'write', 'read', 'eraseSection', 'sectionExists', 'key', 'rootKey']);
+		}else if(name == 'Struct'){
+			keys = keys.concat(['clear', 'sizeOf', 'define', 'length']);
+		}else if(name == 'RegExp'){
+			for(var i = 0; i < keys.length; i++) keys[i] = keys[i][0] == '$' ? "\\" + keys[i] : keys[i];
+		}
+		ignoreKeys = new RegExp('^(' + keys.join('|') + ')$');
+		if(typeof obj.length == 'number'){
+			for(key in obj){
+				if(typeof key == 'number') r.push(key.toString());
+			}
+		}
+		if(typeof obj.getKeys == 'function'){
+			if(r.length) ignoreKeys = new RegExp('^(' + keys.concat(r).join('|') + ')$');
+			keys = obj.getKeys();
+			for(var i = 0; i < keys.length; i++){
+				key = keys[i];
+				if(!ignoreKeys.test(key)) r.push(key);
 			}
 		}
 		return r;
@@ -386,7 +442,7 @@
 	 *  same: 省略可 trueならば同名のプロパティは同じ型の場合のみ上書き デフォルトはfalse
 	 *  destination: 省略可  マージ先 拡張するオブジェクト 省略した場合はthis
 	 *  source1,2...: マージ元 オブジェクト
-	 * </pre>	 
+	 * </pre>
 	 * @example
 	 * 例1: Utils.extend(destination, source); //destinationにsoucreの内容をコピー
 	 * 例2: Utils.extend(true, destination, source, source2); //destinationにsoucreとsourc2の内容をディープコピー
@@ -1150,6 +1206,10 @@
 		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2set.dms');
 	};
 
+	/**
+	 * Dorothy2ListMenu.dmsのバージョンを取得します Dorothy2Rの場合はDorothy.rVersionの値を返します
+	 * @return {number}
+	 */
 	Utils.getVersionDorothy2ListMenu = function(){
 		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2ListMenu.dms');
 	};
@@ -1354,6 +1414,29 @@
 		})(loadOption);
 
 	})();
+
+	/**
+	 * item.commentにkey=value;形式のオプションを設定します  
+	 * 同名のオプションが既に設定されている場合は指定された値で上書きします
+	 * @param {string} key オプションの名前
+	 * @param {*} value オプションの値
+	 */
+	Utils.setCommentOption = function(key, value){
+		if(typeof item.comment == 'undefined'){
+			return Utils.showError('item.commentが正しく定義されていません', 'Utils.dms', '.setCommentOption');
+		}
+		value = Utils.toStr(value);
+		var isMatch = false;
+		item.comment = item.comment.replace(/(\s*([^;=]+)\s*=\s*)[^;]*;?/g, function(a, l, name){
+			if(name == key){
+				isMatch = true;
+				return l + value + ';';
+			}else{
+				return a;
+			}
+		});
+		if(!isMatch) item.comment += (item.comment && !/;\s*$/.test(item.comment) ? ';' : '') + key + '=' + value + ';';
+	};
 
 
 	/** 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils_spec
-//version=1.4
+//version=1.5
 //hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
 //match=
 //author=wan
@@ -314,10 +314,10 @@ describe('Utils.keys', function(){
 
 	cases([
 		[ {a: 1, b: 'a', c: true, d: false, e: null, f: Number.POSITIVE_INFINITY, g: UNDEFINED, h: function(){}}, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] ],
-		[ [1, 'a', true, false, null, Number.POSITIVE_INFINITY, UNDEFINED, function(){}], [0, 1, 2, 3, 4, 5, 6, 7] ],
-		[ 'abcdefgh', [0, 1, 2, 3, 4, 5, 6, 7] ],
-		[ new String('abcdefgh'), [0, 1, 2, 3, 4, 5, 6, 7] ],
-		[ new StringBuffer('abcdefgh'), [0, 1, 2, 3, 4, 5, 6, 7] ],
+		[ [1, 'a', true, false, null, Number.POSITIVE_INFINITY, UNDEFINED, function(){}], ['0', '1', '2', '3', '4', '5', '6', '7'] ],
+		[ 'abcdefgh', ['0', '1', '2', '3', '4', '5', '6', '7'] ],
+		[ new String('abcdefgh'), ['0', '1', '2', '3', '4', '5', '6', '7'] ],
+		[ new StringBuffer('abcdefgh'), ['0', '1', '2', '3', '4', '5', '6', '7'] ],
 		[ Test.prototype,  ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] ],
 		[ new Test, ['i'] ]
 	]).it('keys', function(obj, keys){
@@ -330,6 +330,154 @@ describe('Utils.keys', function(){
 			keys.push(key);
 		}
 		expect(Utils.keys(folderdata)).toEqual(keys);
+	});
+});
+describe('Utils.objectKeys', function(){
+	function add(o){
+		o.a = 1;
+		o.b = 'a';
+		o.c = true;
+		o.d = false;
+		o.e = null;
+		o.f = Number.POSITIVE_INFINITY;
+		o.g = UNDEFINED;
+		o.h = function(){};
+	}
+	function oKeysTest(){
+		this.i = 1;
+		this.j = function(){};
+	}
+	add(oKeysTest.prototype);
+
+	it('user-defined object', function(){
+		var o = new oKeysTest();
+		expect(Utils.objectKeys(o)).toEqual(['i', 'j']);
+	});
+	it('prototype', function(){
+		expect(Utils.objectKeys(oKeysTest.prototype)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+	});
+
+	it('Object', function(){
+		Object.prototype.ABC = function(){};
+		var o = {};
+		add(o);
+		expect(Utils.objectKeys(o)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+		delete Object.prototype.ABC;
+	});
+	it('Array', function(){
+		var arr = [1, 'a', true, false, null, Number.POSITIVE_INFINITY, UNDEFINED, function(){}];
+		add(arr);
+		expect(Utils.objectKeys(arr)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+	});
+	it('String, string, Strings, StringBuffer', function(){
+		var s = 'abcdefgh';
+		var str = new String(s);
+		var sl = new Strings(s);
+		var sb = new StringBuffer(s);
+		add(str);
+		add(sl);
+		add(sb);
+		expect(Utils.objectKeys(s)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7']);
+		expect(Utils.objectKeys(str)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+		expect(Utils.objectKeys(sl)).toEqual(['0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+		expect(Utils.objectKeys(sb)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+	});
+	cases([
+		new Object,
+		new Number,
+		new Boolean,
+		new RegExp,
+		new Date,
+		new File,
+		new Directory,
+		new Ini(''),
+		new RegIni(''),
+		new CRC,
+		new Base64,
+		new Dialog,
+		new Mutex('_objectKeys_'),
+		new URL,
+		new Cookie,
+		new HTTP,
+		new HTTPS,
+		new HtmlParser,
+		new TCPSocket,
+		new POP3,
+		new SMTP,
+		new FTP,
+		//new ActiveXObject,
+		//new Enumerator,
+		new DynaCall,
+		new Struct,
+		new IrvineCookieManager,
+		new IrvineInfo,
+		//new IrvineFolderData,
+		new IrvineItem,
+		new MD5,
+		new Misc,
+		new IrvineUrlInfo
+	]).it('Built-in objects', function(obj){
+		add(obj);
+		expect(Utils.objectKeys(obj)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+	});
+	cases([
+		Global,
+		Math,
+		Win32,
+		Mail,
+		Keyboard,
+		Mouse,
+		Clipboard,
+		CheckListBox,
+		WScript,
+		Action,
+		Timer
+	]).it('Built-in objects2', function(obj){
+		expect(Utils.objectKeys(obj)).toEqual([]);
+	});
+	cases([
+		'VCLForm',
+		'VCLEdit',
+		'VCLButton',
+		'VCLMemo',
+		'VCLLabel',
+		'VCLTimer',
+		'VCLMenuItem',
+		'VCLMainMenu',
+		'VCLPopupMenu',
+		'VCLCheckBox',
+		'VCLRadioButton',
+		'VCLListBox',
+		'VCLComboBox',
+		'VCLGroupBox',
+		'VCLRadioGroup',
+		'VCLPanel',
+		'VCLSplitter',
+		'VCLCheckListBox',
+		'VCLImage',
+		'VCLTabControl',
+		'VCLTabSheet',
+		'VCLPageControl',
+		'VCLProgressBar',
+		'VCLTreeView',
+		'VCLListView',
+		'VCLStatusBar',
+		'VCLToolButton',
+		'VCLToolBar',
+		'VCLCoolBar',
+		'VCLAction',
+		'VCLOpenDialog',
+		'VCLSaveDialog',
+		'VCLFontDialog',
+		'VCLFindDialog',
+		'VCLReplaceDialog',
+		'VCLSpinEdit',
+		'VCLUpDown'
+	]).it('Built-in objects VCL', function(name){
+		var o = eval('(function(){return new ' + name + ';})()');
+		add(o);
+		expect(Utils.objectKeys(o)).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+		o = null;
 	});
 });
 describe('Utils.extend', function(){
@@ -1496,6 +1644,24 @@ describe('Utils Dorothy', function(){
 			expect(Utils.getCommentOption('f')).toBe(UNDEFINED);
 			expect(Utils.getCommentOption('g', true)).toBeTruthy();
 		});
+
+		it('setCommentOption', function(){
+			item.comment = '';
+			Utils.setCommentOption('a', 1);
+			expect(item.comment).toBe('a=1;');
+
+			item.comment = 'hoge=fuga';
+			Utils.setCommentOption('a', true);
+			expect(item.comment).toBe('hoge=fuga;a=true;');
+			Utils.setCommentOption('a', null);
+			expect(item.comment).toBe('hoge=fuga;a=null;');
+
+			item.comment = 'hoge=fuga; a=null;b=0';
+			Utils.setCommentOption('b', NaN);
+			expect(item.comment).toBe('hoge=fuga; a=null;b=NaN;');
+			Utils.setCommentOption('hoge', 'moga');
+			expect(item.comment).toBe('hoge=moga; a=null;b=NaN;');
+		});
 	});
 
 	describe('Utils.redefineDorothy', function(){
@@ -1516,11 +1682,11 @@ describe('Utils Dorothy', function(){
 				'Dorothy.oldUrl',
 				'Dorothy.continueCount',
 				'Dorothy.cancel',
-				'Dorothy.i',
-				'Dorothy.tempStr',
+				//'Dorothy.i',
+				//'Dorothy.tempStr',
 				'Dorothy.end',
 				'Dorothy.continue',
-				'Dorothy.matchFlg',
+				//'Dorothy.matchFlg',
 				'Dorothy.matchFile',
 				'Dorothy.matchType',
 				'Dorothy.program',
@@ -1544,8 +1710,8 @@ describe('Utils Dorothy', function(){
 				'user_program_load',
 				'retry',
 				'reset',
-				'DorothyFileSavePath',
-				'DorothyItemFilenameWrite',
+				//'DorothyFileSavePath',
+				//'DorothyItemFilenameWrite',
 				'dorothy2_path',
 				'dorothy2_temp',
 				'dorothy2_document',
@@ -1581,8 +1747,8 @@ describe('Utils Dorothy', function(){
 				'Dorothy.userName',
 				'Dorothy.version',
 				'Dorothy.common',
-				//'Dorothy.userPath',
-				//'Dorothy.userIniPath',
+				'Dorothy.userPath',
+				'Dorothy.userIniPath',
 				'Dorothy.common_show',
 				'Dorothy.common_sp',
 				'Dorothy.common_name',
