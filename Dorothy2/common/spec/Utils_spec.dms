@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils_spec
-//version=1.5
+//version=1.6
 //hint=http://yasmine.dorothy.test/common/spec/Utils_spec.dms
 //match=
 //author=wan
@@ -29,10 +29,10 @@ common_load('Utils');
 
 UNDEFINED = (function(){})();
 
-var dorothy2AVersion = 0.32;
-var dorothy2setVersion = 0.20;
-var dorothy2ListMenuVersion = 0.44;
-var doaVersion = 0.26;
+var dorothy2AVersion = 0.33;
+var dorothy2setVersion = 0.21;
+var dorothy2ListMenuVersion = 0.45;
+var doaVersion = 0.27;
 
 
 function keys(o){
@@ -242,7 +242,11 @@ describe('Utils.has', function(){
 		[o, 'b', true],
 		[o, 'c', false],
 		[hasTest.prototype, 'a', true],
-		[hasTest.prototype, 'b', false]
+		[hasTest.prototype, 'b', false],
+		[new String('abc'), 'text', true],
+		[new StringBuffer('abc'), 'text', true],
+		[new String('abc'), '0', true],
+		[new StringBuffer('abc'), '0', true]
 	]).it('has', function(o, k, bool){
 		expect(Utils.has(o, k)).toBe(bool);
 	});
@@ -273,7 +277,7 @@ describe('Utils.getObject', function(){
 		['TestFn.prototype.a', TestFn.prototype.a],
 		['aaaa', UNDEFINED],
 		['Test.c', UNDEFINED]
-	]).it('get object for Global', function(name, v){
+	]).it('get object from Global', function(name, v){
 		var r = Utils.getObject(name);
 		var r2 = Utils.getObject(name, null);
 		var isFn = typeof r == 'function';
@@ -288,7 +292,7 @@ describe('Utils.getObject', function(){
 		['b.b2', Global.Test, Global.Test.b.b2],
 		['a', TestFn.prototype, TestFn.prototype.a],
 		['a', {}, UNDEFINED]
-	]).it('get value for object', function(name, obj, value){
+	]).it('get value from object', function(name, obj, value){
 		expect(Utils.getObject(name, obj)).toBe(value);
 	});
 
@@ -298,6 +302,15 @@ describe('Utils.getObject', function(){
 		expect(Utils.getObject('aaaa', null, false)).toBeFalsy();
 
 		expect(Utils.getObject(null, Test, 1)).toBe(Test);
+	});
+
+	cases([
+		['text', new String('abc'), 'abc'],
+		['text', new StringBuffer('abc'), 'abc'],
+		['0', new String('abc'), 'a'],
+		['0', new StringBuffer('abc'), 'a']
+	]).it('String, StringBuffer', function(name, obj, value){
+		expect(Utils.getObject(name, obj)).toBe(value);
 	});
 });
 
@@ -708,7 +721,7 @@ describe('Utils.call', function(){
 
 		expect(o.f.call(o2, 1, 2)).toEqual([o2, 1, 2]);
 		//モードが変更される
-		expect(o.f(1, 2)).toEqual([1, 2, UNDEFINED]);
+		expect(o.f(o2, 1)).toEqual([o2, 1, UNDEFINED]);
 	});
 	it('Utils .call()', function(){
 		var o = {
@@ -745,7 +758,7 @@ describe('Utils.apply', function(){
 		expect(o.f.apply(o2, [1, 2])).toEqual([o2, 1, 2]);
 		//モードが変更される
 		expect(function(){o.f(1, 2);}).toThrow();
-		expect(o.f(1, [2])).toEqual([1, 2, UNDEFINED]);
+		expect(o.f(o2, [1])).toEqual([o2, 1, UNDEFINED]);
 	});
 	it('Utils .apply()', function(){
 		var o = {

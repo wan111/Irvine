@@ -711,6 +711,11 @@ Utilsオブジェクト
 変更履歴:
 =========
 
+* 2016/02/16  version 1.6
+   .has()と.getObject()でStringとStringBufferに対応
+   .getVersionDorothy2A()にてDorothy.versionを使用しない様にした
+   .redefineDorothy()にてfile_loadの再定義を追加
+
 * 2016/02/14  version 1.5
    .objectKeys(), .setCommentOption() を追加
 

@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=Utils
-//version=1.5
+//version=1.6
 //hint=
 //match=
 //author=wan
@@ -295,7 +295,11 @@
 			r = obj.length > key;
 		}else{
 			try{
-				obj[key];
+				if((obj == String || obj == StringBuffer) && !/^\d+$/.test(key)){
+					eval('obj.' + key);
+				}else{
+					obj[key];
+				}
 			}catch(e){
 				r = false;
 			}
@@ -328,8 +332,13 @@
 			if(isUndefined(r)) r = def;
 			while(!isUndefined(key = keys.shift())){
 				try{
-					if(key == 'prototype') r = r.prototype;
-					else r = r[key];
+					if(key == 'prototype'){
+						r = r.prototype;
+					}else if((obj == String || obj == StringBuffer) && !/^\d+$/.test(key)){
+						r = eval('obj.' + key);
+					}else{
+						r = r[key];
+					}
 				}catch(e){
 					r = def;
 					break;
@@ -1195,7 +1204,7 @@
 	 * @return {number}
 	 */
 	Utils.getVersionDorothy2A = function(){
-		return Utils.isRentan ? Dorothy.rVersion : (Utils.isDorothy2A ? parseFloat(Dorothy.version) : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms'));
+		return Utils.isRentan ? Dorothy.rVersion : Utils.getScriptVersion((new irvinePath).scripts + 'Dorothy2A.dms');
 	};
 
 	/**
@@ -1450,6 +1459,27 @@
 				for (var i = 0; i < arguments.length; i++) {
 					common_xload (arguments [i]);
 				}
+			};
+		}else{
+			file_load = function (path) {
+				var r,
+					path2 = /^[a-z]:\\/i.test(path) ? path : Dorothy.path + path,
+					file = new File(path2),
+					mutex = new Mutex ('file_load');
+				
+				mutex.lock();
+				try{
+					file.open('r');
+					r = file.read();
+				}catch(e){
+					println('error>' + e + ' ' + path + ' ÇÃì«Ç›çûÇ›Ç…é∏îsÇµÇ‹ÇµÇΩÅB');
+					if(!file.exists()) println('error>' + path2 + ' Ç™ë∂ç›ÇµÇ‹ÇπÇÒÅB');
+					exit();
+				}finally{
+					file.close();
+					mutex.unlock();
+				}
+				return r;
 			};
 		}
 		if(Utils.isDorothy2A){
