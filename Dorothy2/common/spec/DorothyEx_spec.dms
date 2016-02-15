@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DorothyEx
-//version=0.42
+//version=0.43
 //hint=http://yasmine.dorothy.test/common/spec/DorothyEx_spec.dms
 //match=
 //author=wan
@@ -45,12 +45,18 @@ describe('dorothy', function(){
 		if(isRentan){
 			expect(DorothyEx.getVersionDorothy2A()).toBe(Dorothy.rVersion);
 			expect(DorothyEx.getVersionDorothy2set()).toBe(Dorothy.rVersion);
+			expect(DorothyEx.getVersionDorothy2ListMenu()).toBe(Dorothy.rVersion);
 			expect(DorothyEx.getVersionDOA()).toBe(Dorothy.rVersion);
 		}else{
-			expect(DorothyEx.getVersionDorothy2A()).toBe('0.31');
-			expect(DorothyEx.getVersionDorothy2set()).toBe('0.19');
-			expect(DorothyEx.getVersionDOA()).toBe('0.26');
+			expect(DorothyEx.getVersionDorothy2A()).toBe('0.33');
+			expect(DorothyEx.getVersionDorothy2set()).toBe('0.21');
+			expect(DorothyEx.getVersionDorothy2ListMenu()).toBe('0.45');
+			expect(DorothyEx.getVersionDOA()).toBe('0.27');
 		}
+	});
+	it('getUserPath, getUserIniPath', function(){
+		expect(DorothyEx.getUserPath()).toBe(Dorothy.path + 'user\yasmine\');
+		expect(DorothyEx.getUserIniPath()).toBe(Dorothy.path + 'user\yasmine\yasmine.ini');
 	});
 	var names;
 	if(is2A){
@@ -231,10 +237,10 @@ describe('dorothy', function(){
 folderdata.Post queueÉIÉvÉVÉáÉìê›íËçœÇ›
 Root (C:\)
 Ñ§ÑüDefault (default)
-    Ñ§ÑüDorothy2 (dorothy2)
-        Ñ§Ñütest (test)
-            Ñ§Ñüyasmine (yasmine)
-                Ñ§DorothyEx_spec.dms (DorothyEx)
+		Ñ§ÑüDorothy2 (dorothy2)
+				Ñ§Ñütest (test)
+						Ñ§Ñüyasmine (yasmine)
+								Ñ§DorothyEx_spec.dms (DorothyEx)
 
 describe('queue folder', function(){
 	it('Path', function(){
