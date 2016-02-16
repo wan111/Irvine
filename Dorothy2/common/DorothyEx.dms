@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2015,2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -282,15 +282,15 @@ DorothyEx.setFolderData = function(){
 };
 
 DorothyEx.setDOA = function(itemData){
-	if(!DorothyEx.isDOA){
+	if(!this.isDOA){
 		println('.setDOA()は DOA でしか使用できません');
 		exit();
 	}else if(typeof itemData != 'object' || nameOf(itemData) != 'IrvineItem'){
 		alert('未知のエラー。itemDataが正しく指定されていません');
 		exit();
 	}
-	Dorothy.userPath = DorothyEx.getUserPath();
-	Dorothy.userIniPath = DorothyEx.getUserIniPath();
+	Dorothy.userPath = this.getUserPath();
+	Dorothy.userIniPath = this.getUserIniPath();
 	item = itemData;//Global.item とはしない様にする事
 
 	headers = {
@@ -422,25 +422,35 @@ DorothyEx.define = function(){
 };
 
 DorothyEx.doaSetitem = function(){
-	if(typeof item == 'undefined' || typeof DOA_IT == 'undefined') return false;
+	if(!this.isDOA){
+		println('.doaSetItem()は DOA でしか使用できません');
+		return false;
+	}else if(typeof DOA_IT != 'number' || typeof item != 'object' || nameOf(item) != 'IrvineItem'){
+		println('未知のエラー。DOA_ITまたはitemが正しく定義されていません');
+		return false;
+	}
 
 	DOA.status = DOA_IT;
-	item.filename = DOA.name;
-	if(DOA.comment) item.comment = DOA.comment;
+	if(DOA.name) item.filename = DOA.name;
+	if(DOA.comment) item.comment += DOA.comment;
 	if(!item.url) item.url = urlinfo.url;
-	switch(DOA.size.replace(/,/g, '')){
-		case /^\s*([\d\.]+)\s*(B|Byte)?\s*$/i:
-			item.filesize = RegExp.$1;
-			break;
-		case /^\s*([\d\.]+)\s*K(B|Byte)\s*$/i:
-			item.filesize = RegExp.$1 * 1024;
-			break;
-		case /^\s*([\d\.]+)\s*M(B|Byte)\s*$/i:
-			item.filesize = RegExp.$1 * 1048576;
-			break;
-		case /^\s*([\d\.]+)\s*G(B|Byte)\s*$/i:
-			item.filesize = RegExp.$1 * 1073741824;
-			break;
+
+	var size = DOA.size.replace(/[,\s]+/g, '');
+	if(/^([\d\.]+)([KMG])?(B|Byte)?$/i.test(size)){
+		switch(RegExp.$2.toUpperCase()){
+			case '':
+				item.filesize = RegExp.$1 * 1;
+				break;
+			case 'K':
+				item.filesize = RegExp.$1 * 1024;
+				break;
+			case 'M':
+				item.filesize = RegExp.$1 * 1048576;
+				break;
+			case 'G':
+				item.filesize = RegExp.$1 * 1073741824;
+				break;
+		}
 	}
 	return true;
 };

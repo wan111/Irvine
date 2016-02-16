@@ -1,6 +1,6 @@
 //Dorothy2
 //caption=DorothyEx
-//version=0.43
+//version=0.44
 //hint=http://yasmine.dorothy.test/common/spec/DorothyEx_spec.dms
 //match=
 //author=wan
@@ -8,7 +8,7 @@
 //end
 
 /*
-Copyright (C) 2015 wan <thewanwan111@gmail.com>
+Copyright (C) 2015,2016 wan <thewanwan111@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -75,11 +75,11 @@ describe('dorothy', function(){
 			'Dorothy.oldUrl',
 			'Dorothy.continueCount',
 			'Dorothy.cancel',
-			'Dorothy.i',
-			'Dorothy.tempStr',
+			//'Dorothy.i',
+			//'Dorothy.tempStr',
 			'Dorothy.end',
 			'Dorothy.continue',
-			'Dorothy.matchFlg',
+			//'Dorothy.matchFlg',
 			'Dorothy.matchFile',
 			'Dorothy.matchType',
 			'Dorothy.program',
@@ -103,8 +103,8 @@ describe('dorothy', function(){
 			'user_program_load',
 			'retry',
 			'reset',
-			'DorothyFileSavePath',
-			'DorothyItemFilenameWrite',
+			//'DorothyFileSavePath',
+			//'DorothyItemFilenameWrite',
 			'dorothy2_path',
 			'dorothy2_temp',
 			'dorothy2_document',
@@ -140,8 +140,8 @@ describe('dorothy', function(){
 			'Dorothy.userName',
 			'Dorothy.version',
 			'Dorothy.common',
-			//'Dorothy.userPath',
-			//'Dorothy.userIniPath',
+			'Dorothy.userPath',
+			'Dorothy.userIniPath',
 			'Dorothy.common_show',
 			'Dorothy.common_sp',
 			'Dorothy.common_name',
