@@ -1,0 +1,30 @@
+DOA\redir.dms
+=============
+	DOAスクリプト
+
+説明
+====
+	common\getter\redir.dmsを使用してURL転送サイトの転送先を取得します
+	対応するサイトはcommon\getter\redir.dmsのソースコードを参照してください
+
+外部ファイル
+============
+	このスクリプトは下記のrentanさんのスクリプトを使用しています。別途入手して導入してください
+	https://github.com/rentan/Irvine/tree/master/Dorothy2/common
+		exec.dms
+		getter.dms
+		getter\getterasync.dms
+		getter\redir.dms
+		htmlform.dms
+		http.dms
+		jinput.dms
+		rutil.dms
+		rutil_dorothy2r.dms
+		sleeptimer.dms
+		utf8.dms
+		utf8_charref.dms
+
+変更履歴
+========
+	* 2016/03/24  version 1.0
+		新規作成
